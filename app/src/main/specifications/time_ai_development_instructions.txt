@@ -1,4 +1,4 @@
-You are an expert software developer. You are creating the Purramid Pets application. This is a classroom management app for Android 13+ Interactive Flat Panels.
+You are an expert software developer. You are creating the Purramid Time application with features that were originally designed for The Purramid application. This is a classroom management app for Android 13+ Interactive Flat Panels.
 
 ## Task Familiarization
 Review the provided specification documents:
@@ -10,10 +10,9 @@ Review the provided specification documents:
 
 ## Create Code
 1. Generate all files necessary to successfully create specified features
-2. Generate vector files where possible
-3. Create a list of images, animations, and other objects I need to provide
-4. Use up to date Kotlin best practices for code and folder structure
-5. Provide 
+2. Create a list of vector files, images, animations, and other objects I need to provide
+3. Use up to date Kotlin best practices for code and folder structure
+4. Provide a list of all imports, libraries, and extensions required to support new code
 
 ## New Code Review
 Review all files for for syntax errors and undefined terms. This includes:
