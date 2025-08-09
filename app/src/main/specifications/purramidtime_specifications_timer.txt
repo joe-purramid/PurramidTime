@@ -188,7 +188,7 @@ Timer is the second PurramidTime app-intent
 					(9.2.2.6.2.2) a new timer appears at the geometric center of the screen.
 						(9.2.2.6.2.2.1) the new timer is offset 25px to the right and 25px down if a timer already exists at the center of the screen.
 						(9.2.2.6.2.2.2) it adopts all the preferences of the timer from which it was opened
-							(9.2.2.6.2.2.2.1) For example, a new timer opened from a 300px by 300px stopwatch that has a light blue background would also be a 300px by 300px stopwatch with a light blue background.
+							(9.2.2.6.2.2.2.1) For example, a new timer opened from a 300px by 300px timer that has a light blue background would also be a 300px by 300px timer with a light blue background.
 					(9.2.2.6.2.3) If four timers already exist on the screen, the Add Another setting is inactivated.
 
 
@@ -205,12 +205,10 @@ Timer is the second PurramidTime app-intent
 	(11.1) When a user taps the reset button
 		(11.1.1) the icon changes to its active state for the duration of the onTouch event
 		(11.1.2) a countdown timer resets to the set time
-		(11.1.3) a stopwatch resets to 00:00:00.00
-			(11.1.3.1) If there were lap times displayed, all lap times are cleared
-		(11.1.4) if time was paused
-			(11.3.4.1) time remains paused
-		(11.1.5) if time was playing
-			(11.3.5.1) time continues counting.
+		(11.1.3) if time was paused
+			(11.1.3.1) time remains paused
+		(11.1.4) if time was playing
+			(11.1.4.1) time continues counting.
 
 
 (12) TODO: Is "Enable Overlay" implemented correctly? It should be an auto-prompt and not a button.
