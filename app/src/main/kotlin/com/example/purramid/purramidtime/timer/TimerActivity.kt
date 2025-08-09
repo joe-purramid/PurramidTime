@@ -9,14 +9,13 @@ import androidx.core.content.ContextCompat
 import com.example.purramid.thepurramid.R
 import com.example.purramid.thepurramid.databinding.ActivityTimersBinding
 import com.example.purramid.thepurramid.instance.InstanceManager
-import com.example.purramid.thepurramid.timers.ui.TimersSettingsFragment
-import com.example.purramid.thepurramid.timers.viewmodel.TimersViewModel
+import com.example.purramid.thepurramid.timers.ui.TimerSettingsFragment
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class TimersActivity : AppCompatActivity() {
+class TimerActivity : AppCompatActivity() {
 
     @Inject lateinit var instanceManager: InstanceManager
     private lateinit var binding: ActivityTimersBinding
@@ -93,10 +92,10 @@ class TimersActivity : AppCompatActivity() {
     }
 
     private fun showSettingsFragment(timerId: Int) {
-        if (supportFragmentManager.findFragmentByTag(TimersSettingsFragment.TAG) == null) {
+        if (supportFragmentManager.findFragmentByTag(TimerSettingsFragment.TAG) == null) {
             Log.d(TAG, "Showing settings fragment for timerId: $timerId")
-            TimersSettingsFragment.newInstance(timerId).show(
-                supportFragmentManager, TimersSettingsFragment.TAG
+            TimerSettingsFragment.newInstance(timerId).show(
+                supportFragmentManager, TimerSettingsFragment.TAG
             )
         }
     }

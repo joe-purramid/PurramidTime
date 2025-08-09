@@ -1,4 +1,4 @@
-// TimersViewModel.kt
+// TimerViewModel.kt
 package com.example.purramid.thepurramid.timers.viewmodel
 
 import android.os.SystemClock
@@ -10,25 +10,23 @@ import com.example.purramid.thepurramid.data.db.TimerDao
 import com.example.purramid.thepurramid.data.db.TimerStateEntity
 import com.example.purramid.thepurramid.timers.TimerState
 import com.example.purramid.thepurramid.timers.TimerType
-import com.example.purramid.thepurramid.ui.PurramidPalette
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltViewModel
-class TimersViewModel @Inject constructor(
+class TimerViewModel @Inject constructor(
     private val timerDao: TimerDao,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     companion object {
         const val KEY_TIMER_ID = "timerId"
-        private const val TAG = "TimersViewModel"
+        private const val TAG = "TimerViewModel"
         private const val TICK_INTERVAL_MS = 50L
         private const val MAX_LAPS = 10 // As per specification
     }

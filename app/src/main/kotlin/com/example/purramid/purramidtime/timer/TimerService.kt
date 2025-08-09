@@ -16,7 +16,6 @@ import android.media.RingtoneManager
 import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
-import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -38,7 +37,7 @@ import androidx.lifecycle.*
 import com.example.purramid.thepurramid.instance.InstanceManager
 import com.example.purramid.thepurramid.MainActivity
 import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.timers.viewmodel.TimersViewModel
+import com.example.purramid.thepurramid.timers.viewmodel.TimerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -53,7 +52,7 @@ import kotlin.math.abs
 const val ACTION_START_STOPWATCH = "com.example.purramid.timers.ACTION_START_STOPWATCH"
 const val ACTION_START_COUNTDOWN = "com.example.purramid.timers.ACTION_START_COUNTDOWN"
 const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.timers.ACTION_STOP_TIMER_SERVICE"
-const val EXTRA_TIMER_ID = TimersViewModel.KEY_TIMER_ID
+const val EXTRA_TIMER_ID = TimerViewModel.KEY_TIMER_ID
 const val EXTRA_DURATION_MS = "com.example.purramid.timers.EXTRA_DURATION_MS"
 
 @AndroidEntryPoint
@@ -64,7 +63,7 @@ class TimersService : LifecycleService() {
     @Inject lateinit var notificationManager: NotificationManager
     @Inject lateinit var timerCoordinator: TimerCoordinator
 
-    private lateinit var viewModel: TimersViewModel
+    private lateinit var viewModel: TimerViewModel
 
     private var overlayView: View? = null
     private var timerId: Int = 0
@@ -147,7 +146,7 @@ class TimersService : LifecycleService() {
 
         // Initialize ViewModel if needed (first start or ID change)
         if (!::viewModel.isInitialized || this.timerId != intentTimerId) {
-            viewModel = ViewModelProvider(this)[TimersViewModel::class.java]
+            viewModel = ViewModelProvider(this)[TimerViewModel::class.java]
             Log.d(TAG, "ViewModel initialized for timerId: $timerId")
             observeViewModelState()
         }

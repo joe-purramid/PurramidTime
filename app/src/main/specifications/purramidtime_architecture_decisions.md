@@ -1,7 +1,7 @@
-# Purramid Pets - Technical Architecture Decisions
+# PurramidTime - Technical Architecture Decisions
 
 ## Overview
-This document defines the mandatory architectural patterns and implementation approaches for the Purramid Pets classroom management application.
+This document defines the mandatory architectural patterns and implementation approaches for Purramid applications.
 
 ## Core Architecture Pattern
 
@@ -28,7 +28,7 @@ object ServiceModule
 
 // Activity-level injection
 @AndroidEntryPoint
-class PurrPetsActivity : AppCompatActivity()
+class ClockActivity : AppCompatActivity()
 ```
 
 **Injection Strategy:**
@@ -42,20 +42,19 @@ class PurrPetsActivity : AppCompatActivity()
 
 ### **UI State Pattern**
 ```kotlin
-sealed class PurrPetsUiState {
-    object Loading : PurrPetsUiState()
-    data class Success(val data: PurrPetsData) : PurrPetsUiState()
-    data class Error(val message: String) : PurrPetsUiState()
+sealed class ClockUiState {
+    object Loading : ClockUiState()
+    data class Success(val data: ClockData) : ClockUiState()
+    data class Error(val message: String) : ClockUiState()
 }
 ```
 
 ### **Settings State Pattern**
 ```kotlin
-data class PurrPetsSettings(
+data class ClockSettings(
     val windowSize: WindowSize = WindowSize.DEFAULT,
     val screenPosition: ScreenPosition = ScreenPosition.DEFAULT,
-    val activePetId: Long? = null,
-    val mode: PetMode = PetMode.REWARDS,
+    val activeClockId: Long? = null,
     val musicEnabled: Boolean = false,
     val marathonEnabled: Boolean = false
 )
@@ -72,15 +71,15 @@ data class PurrPetsSettings(
 ### **Threading Rules**
 ```kotlin
 class PurrPetsRepository @Inject constructor(
-    private val dao: PurrPetsDao,
+    private val dao: ClockDao,
     private val audioManager: AudioManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
-    suspend fun savePetData(pet: Pet) = withContext(ioDispatcher) {
-        dao.insertPet(pet)
+    suspend fun saveClockData(clock: Clock) = withContext(ioDispatcher) {
+        dao.insertClock(clock)
     }
     
-    fun observePets() = dao.getAllPets().flowOn(ioDispatcher)
+    fun observeClock() = dao.getAllClock().flowOn(ioDispatcher)
 }
 ```
 
@@ -89,8 +88,8 @@ class PurrPetsRepository @Inject constructor(
 ### **Foreground Service Pattern**
 ```kotlin
 @AndroidEntryPoint
-class PurrPetsService : Service() {
-    @Inject lateinit var repository: PurrPetsRepository
+class ClockOverlaysService : Service() {
+    @Inject lateinit var repository: ClockRepository
     @Inject lateinit var audioManager: AudioManager
     
     // Service manages overlay window lifecycle
@@ -103,7 +102,6 @@ class PurrPetsService : Service() {
 - Overlay window management
 - System permission handling
 - Alarm scheduling and execution
-- Background audio monitoring (Responsive Mode)
 - Inter-component communication
 
 ## Data Flow Architecture
@@ -143,24 +141,104 @@ data class WindowState(
 ## Animation Architecture
 
 ### **Animation Management**
-- Lottie animations for pet behaviors
-- Vector Drawable animations for UI elements
-- AnimationDrawable for simple frame animations
-- Custom AnimationManager for pet state transitions
+1. Core Animation Types
+ 1.1 Time Display Animations
+  - Second Hand Movement (Analog Mode)
+   - Smooth sweep option: Continuous rotation at 6°/second
+   - Tick option: Discrete 6° jumps every second
+   - Requirement: User-configurable per instance
+  - Digit Transitions (Digital Mode)
+   - Fade in/out for changing digits
+   - Optional flip animation for retro-style display
+   - Requirement: Smooth transitions without text jumping
 
-### **Performance Requirements**
-- Maximum 60 FPS for all animations
-- Memory-efficient animation caching
-- Lazy loading for non-active pet animations
-- Background animation cleanup
+ 1.2 Mode Transition Animations
+    - Digital ↔ Analog Switching
+   - Duration: 300-500ms
+   - Type: Crossfade with optional rotation
+   - Requirement: No jarring visual artifacts during transition
+
+ 1.3 Window State Animations
+  - Nest Mode Transitions
+   - Scale down animation: 500ms ease-in-out
+   - Position animation to stack location
+   - Requirement: Synchronized movement for multiple clocks
+  - Window Resize Animations
+   - Smooth scaling during pinch gestures
+   - Requirement: Real-time response without lag
+
+ 1.4 Interactive Animations
+  - Hand Dragging Feedback (Analog Mode)
+   - Visual highlight on touched hand
+   - Smooth rotation following touch
+   - Snap-to-position on release
+  - Button Press Feedback
+   - Scale/opacity change on touch
+   - Ripple effect for Material Design compliance
+
+2. Performance Requirements
+ - 2.1 Frame Rate Targets
+  - Minimum 30 FPS for all animations
+  - Target 60 FPS for time-critical animations (second hand, digit changes)
+  - Degradation: Graceful fallback for multiple active instances
+
+ - 2.2 Resource Management
+  - Memory Budget: Max 10MB per clock instance for animation resources
+  - CPU Usage: Animation thread should not exceed 5% CPU per instance
+  - Battery Impact: Implement frame skipping when device is in power-saving mode
+
+ - 2.3 Multi-Instance Coordination
+  - Shared Animation Thread: Single animator for all clock instances
+  - Priority System:
+   - Foreground/focused clocks: Full animation quality
+   - Background/nested clocks: Reduced animation frequency
+   - Off-screen clocks: Animation paused
+
+3. Technical Implementation Requirements
+ - 3.1 Animation Framework
+  - Primary: Android Animator API for property animations
+  - Secondary: Custom Canvas drawing for analog clock hands
+  - Constraint: Must work with WindowManager overlay system
+
+ - 3.2 Synchronization
+  - Time Sync: All animations must sync with the shared time ticker
+  - Frame Alignment: Coordinate updates to prevent screen tearing
+  - State Consistency: Animation state must persist through configuration changes
+
+ - 3.3 Lifecycle Management
+```kotlin
+interface AnimationLifecycle {
+    fun onAnimationStart()
+    fun onAnimationPause()
+    fun onAnimationResume()
+    fun onAnimationStop()
+    fun onAnimationDestroy()
+}
+```
+
+4. Special Animation Requirements
+ - 4.1 Alarm Animations
+  - Alarm Trigger: Pulsing glow effect around clock
+  - Snooze Indicator: Subtle breathing animation
+  - Dismissal: Particle burst or fade effect
+
+ - 6.2 Timezone Transitions
+  - Globe Rotation: Smooth interpolation between timezone positions
+  - Overlay Morphing: Animated transition between timezone highlights
+  - City Pin Animations: Pop-in effect for city markers
+
+ - 6.3 Error State Animations
+  - Connection Lost: Gentle shake animation
+  - Invalid Time: Red pulse on affected elements
+  - Permission Denied: Bounce-back effect
 
 ## Error Handling
 
 ### **Repository Error Handling**
 ```kotlin
-sealed class PurrPetsResult<T> {
-    data class Success<T>(val data: T) : PurrPetsResult<T>()
-    data class Error<T>(val exception: Exception) : PurrPetsResult<T>()
+sealed class ClockResult<T> {
+    data class Success<T>(val data: T) : ClockResult<T>()
+    data class Error<T>(val exception: Exception) : ClockResult<T>()
 }
 ```
 
@@ -206,7 +284,7 @@ object TestAppModule
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
 <application android:supportsRtl="true">
-    <service android:name=".service.PurrPetsService" 
+    <service android:name=".service.ClockOverlayService" 
              android:foregroundServiceType="specialUse" />
 </application>
 ```
@@ -215,7 +293,7 @@ object TestAppModule
 
 ### **Memory Management**
 - Maximum 100MB RAM usage
-- Efficient bitmap handling for pet graphics
+- Efficient bitmap handling for graphics
 - Proper lifecycle cleanup for animations
 - Service memory monitoring
 

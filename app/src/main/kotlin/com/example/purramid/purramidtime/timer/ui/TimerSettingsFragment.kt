@@ -1,24 +1,20 @@
-// TimersSettingsFragment.kt
+// TimerSettingsFragment.kt
 package com.example.purramid.thepurramid.timers.ui
 
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -28,9 +24,8 @@ import com.example.purramid.thepurramid.R
 import com.example.purramid.thepurramid.databinding.FragmentTimersSettingsBinding
 import com.example.purramid.thepurramid.instance.InstanceManager
 import com.example.purramid.thepurramid.timers.TimerType
-import com.example.purramid.thepurramid.timers.TimersActivity
 import com.example.purramid.thepurramid.timers.TimersService
-import com.example.purramid.thepurramid.timers.viewmodel.TimersViewModel
+import com.example.purramid.thepurramid.timers.viewmodel.TimerViewModel
 import com.example.purramid.thepurramid.ui.PurramidPalette
 import com.example.purramid.thepurramid.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,14 +34,14 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class TimersSettingsFragment : DialogFragment() {
+class TimerSettingsFragment : DialogFragment() {
 
     @Inject lateinit var instanceManager: InstanceManager
 
     private var _binding: FragmentTimersSettingsBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: TimersViewModel by activityViewModels()
+    private val viewModel: TimerViewModel by activityViewModels()
 
     private var blockListeners = false
     private var selectedTimerColor: Int = PurramidPalette.WHITE.colorInt
@@ -364,12 +359,12 @@ class TimersSettingsFragment : DialogFragment() {
     }
 
     companion object {
-        const val TAG = "TimersSettingsFragment"
+        const val TAG = "TimerSettingsFragment"
 
-        fun newInstance(timerId: Int): TimersSettingsFragment {
-            val fragment = TimersSettingsFragment()
+        fun newInstance(timerId: Int): TimerSettingsFragment {
+            val fragment = TimerSettingsFragment()
             val args = Bundle()
-            args.putInt(TimersViewModel.KEY_TIMER_ID, timerId)
+            args.putInt(TimerViewModel.KEY_TIMER_ID, timerId)
             fragment.arguments = args
             return fragment
         }

@@ -1,7 +1,7 @@
 # Purramid Pets - Audio Requirements
 
 ## Overview
-This document defines the audio system requirements for microphone monitoring (Responsive Mode), music playback, and alarm sound functionality.
+This document defines the audio system requirements for microphone monitoring, music playback, and alarm sound functionality. Not all these features are used in every Purramid app.
 
 ## Audio Permissions
 

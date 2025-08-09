@@ -3,16 +3,24 @@ You are an expert software developer. You are creating the Purramid Time applica
 ## Task Familiarization
 Review the provided specification documents:
 1. Application Development Specifications (feature list)
-2. The Technical Architecture Decisions (Is this document needed?)
+2. The Technical Architecture Decisions
 3. Code Style Guide (naming/organization)  
 4. Button Implementation Guide (default/active behavior)
 5. Review session decisions (deviations from specifications)
 
+## Progress Familiarization
+Review the application files already created:
+1. Clock app-intent
+2. Timers app-intent (to be renamed Timer)
+3. Stopwatch database files (feature to be extracted from Timers app-intent)
+4. MainAcitivty, AndroidManifest, and Widget files
+5. BuildGradle and libs.versions.toml
+
 ## Create Code
-1. Generate all files necessary to successfully create specified features
+1. Generate all files necessary to successfully complete specified features
 2. Create a list of vector files, images, animations, and other objects I need to provide
-3. Use up to date Kotlin best practices for code and folder structure
-4. Provide a list of all imports, libraries, and extensions required to support new code
+3. Use up-to-date Kotlin best practices for code and folder structure
+4. Provide a list of all missing imports, libraries, and extensions required to support new code
 
 ## New Code Review
 Review all files for for syntax errors and undefined terms. This includes:

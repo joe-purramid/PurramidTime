@@ -1,12 +1,12 @@
 # The Purramid - Code Style Guide
 
 ## Naming Conventions
-- Naming: PurramidPets can be abbreviated as PurrPets in file titles for efficiency
-- Activities: *Activity (e.g., PurrPetsActivity)
-- Services: *Service (e.g., PurrPetsService)
+- Naming: PurramidTime can be abbreviated as PurrTime in file titles for efficiency
+- Activities: *Activity (e.g., ClockActivity, TimerActivity, StopwatchActivity)
+- Services: *Service (e.g., ClockOverlayService)
 - ViewModels: *ViewModel
 - Repositories: *Repository
-- Use lowercase for packages: com.purramid.purramidpets.*
+- Use lowercase for packages: com.purramid.purramidtime.*
 
 ## Resolution standards
 - Pixel density must support 2k and 4k resolutions
