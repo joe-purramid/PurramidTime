@@ -1,5 +1,5 @@
 // src/main/kotlin/com/example/purramid/com.example.purramid.purramidtime/timers/TimersActivity.kt
-package com.example.purramid.purramidtime.timers
+package com.example.purramid.purramidtime.timer
 
 import android.content.Intent
 import android.os.Bundle

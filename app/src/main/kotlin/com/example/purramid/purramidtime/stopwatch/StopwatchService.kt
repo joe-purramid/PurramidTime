@@ -1,5 +1,5 @@
 // StopwatchService.kt
-package com.example.purramid.thepurramid.stopwatch
+package com.example.purramid.purramidtime.stopwatch
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -33,10 +33,10 @@ import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.example.purramid.thepurramid.MainActivity
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.instance.InstanceManager
-import com.example.purramid.thepurramid.stopwatch.viewmodel.StopwatchViewModel
+import com.example.purramid.purramidtime.MainActivity
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.stopwatch.viewmodel.StopwatchViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

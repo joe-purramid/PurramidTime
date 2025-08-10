@@ -1,11 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.hilt.gradle)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.androidx.navigation.safeargs.kotlin)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -31,23 +29,24 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
+
     buildFeatures {
-        compose = true
         viewBinding = true
     }
 
     packaging {
         resources {
-            excludes += "/META-INF/LICENSE.txt" // Note the leading '/' and '+=' operator
+            excludes += "/META-INF/LICENSE.txt"
             excludes += "/META-INF/NOTICE.txt"
-            // Add other excludes if build errors occur due to duplicate files
         }
     }
 
@@ -57,54 +56,58 @@ android {
             kotlin.srcDirs("src/main/kotlin")
         }
     }
-
-    // If using Room with KSP, you might need to configure sourcesets
-    sourceSets.configureEach { // <- Potentially needed for KSP + Room
-        kotlin.srcDir("build/generated/ksp/$name/kotlin")
-    }
 }
 
 dependencies {
-
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx")
-    implementation("androidx.lifecycle:lifecycle-livedata-ktx")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("com.google.ar:core:1.48.0")
-    implementation(libs.androidsvg)
-    implementation(libs.androidx.animation.core.android)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.service)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.window)
-    implementation(libs.appcompat)
-    implementation(libs.cardview)
-    implementation(libs.colorpicker)
-    implementation(libs.constraintlayout)
-    implementation(libs.gson)
-    implementation(libs.hilt.android)
-    implementation(libs.hilt.navigation.compose)
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Core Android
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.appcompat)
+    implementation(libs.androidx.recyclerview)
+
+    // UI Components
+    implementation(libs.material)
+    implementation(libs.constraintlayout)
+    implementation(libs.cardview)
+    implementation(libs.flexbox)
+    implementation(libs.androidx.window)
+    implementation(libs.colorpicker)
+
+    // Lifecycle
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.lifecycle.service)
+
+    // Navigation
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
+
+    // Coroutines
+    implementation(libs.coroutines.android)
+
+    // Dependency Injection
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
+    // Database
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    // AR & 3D
+    implementation(libs.google.ar.core)
+    implementation(libs.sceneview)
+    implementation(libs.filament.android)
+    implementation(libs.gltfio.android)
+
+    // Utilities
+    implementation(libs.gson)
+    implementation(libs.androidsvg)
+    implementation(libs.jts.core)
+    implementation(libs.jts.io.common)
 }

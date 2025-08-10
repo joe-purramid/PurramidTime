@@ -1,8 +1,8 @@
 // StopwatchCoordinator.kt
-package com.example.purramid.thepurramid.stopwatch
+package com.example.purramid.purramidtime.stopwatch
 
 import android.content.Context
-import com.example.purramid.thepurramid.data.db.StopwatchDao
+import com.example.purramid.purramidtime.data.db.StopwatchDao
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking

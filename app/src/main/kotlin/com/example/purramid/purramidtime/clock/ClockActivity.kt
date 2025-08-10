@@ -1,93 +1,37 @@
 // ClockActivity.kt
 package com.example.purramid.purramidtime.clock
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.databinding.ActivityClockBinding
 import com.example.purramid.purramidtime.clock.ui.ClockSettingsFragment
-import com.example.purramid.purramidtime.instance.InstanceManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class ClockActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityClockBinding
-    
-    @Inject
-    lateinit var instanceManager: InstanceManager
-
     companion object {
         private const val TAG = "ClockActivity"
-        // Use constants from Service for SharedPreferences & actions
-        const val PREFS_NAME = ClockOverlayService.PREFS_NAME_FOR_ACTIVITY
-        const val KEY_ACTIVE_COUNT = ClockOverlayService.KEY_ACTIVE_COUNT_FOR_ACTIVITY
-        // Action to show settings can be defined here or in ClockSettingsFragment
         const val ACTION_SHOW_CLOCK_SETTINGS = "com.example.purramid.clock.ACTION_SHOW_SETTINGS"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityClockBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        Log.d(TAG, "onCreate - Intent Action: ${intent.action}")
+        setContentView(R.layout.activity_clock)
 
-        // Handle the initial intent that started the activity
-        handleIntent(intent)
-    }
-
-    /**
-     * Handles the logic based on the activity's current intent.
-     * This can be called from onCreate or onNewIntent.
-     */
-    private fun handleIntent(currentIntent: Intent?) {
-        Log.d(TAG, "handleIntent - Action: ${currentIntent?.action}")
-        if (currentIntent?.action == ACTION_SHOW_CLOCK_SETTINGS) {
-            val instanceId = currentIntent.getIntExtra(ClockOverlayService.EXTRA_CLOCK_ID, 0)
-            showSettingsFragment(instanceIdForSettings)
-        } else {
-            // Default launch path if not showing settings
-            handleDefaultLaunch()
+        // Check if service is running, if not start it
+        val serviceIntent = Intent(this, ClockOverlayService::class.java).apply {
+            action = ClockOverlayService.ACTION_START_CLOCK_SERVICE
         }
-    }
+        ContextCompat.startForegroundService(this, serviceIntent)
 
-    private fun handleDefaultLaunch() {
-        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.CLOCK)
-        
-        if (activeCount > 0) {
-            Log.d(TAG, "Clocks active ($activeCount), showing ClockSettingsFragment.")
-            showSettingsFragment(0) // Pass 0 or a "primary" ID if settings needs context
-        } else {
-            Log.d(TAG, "No active Clocks, requesting service to add a new one.")
-            val serviceIntent = Intent(this, ClockOverlayService::class.java).apply {
-                action = ClockOverlayService.ACTION_ADD_NEW_CLOCK // This action tells service to generate ID
-            }
-            ContextCompat.startForegroundService(this, serviceIntent)
-            finish() // Finish after launching service
-        }
-    }
-
-    private fun showSettingsFragment(instanceId: Int) {
-        if (supportFragmentManager.findFragmentByTag(ClockSettingsFragment.TAG_FRAGMENT) == null) {
-            Log.d(TAG, "Showing Clock settings fragment for clock ID: $instanceId")
+        // Show settings fragment
+        if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.clock_fragment_container, ClockSettingsFragment.newInstance(instanceId), ClockSettingsFragment.TAG_FRAGMENT)
+                .replace(R.id.clock_fragment_container, ClockSettingsFragment())
                 .commit()
-        }
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        setIntent(intent) // Update the activity's intent
-        Log.d(TAG, "onNewIntent - Action: ${intent?.action}")
-        if (intent?.action == ACTION_SHOW_CLOCK_SETTINGS) {
-            val instanceIdForSettings = intent.getIntExtra(ClockOverlayService.EXTRA_CLOCK_ID, 0)
-            showSettingsFragment(instanceIdForSettings)
         }
     }
 }

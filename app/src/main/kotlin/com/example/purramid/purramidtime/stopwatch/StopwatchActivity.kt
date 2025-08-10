@@ -1,15 +1,15 @@
 // StopwatchActivity.kt
-package com.example.purramid.thepurramid.stopwatch
+package com.example.purramid.purramidtime.stopwatch
 
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.ActivityStopwatchBinding
-import com.example.purramid.thepurramid.instance.InstanceManager
-import com.example.purramid.thepurramid.stopwatch.ui.StopwatchSettingsFragment
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.databinding.ActivityStopwatchBinding
+import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.stopwatch.ui.StopwatchSettingsFragment
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject

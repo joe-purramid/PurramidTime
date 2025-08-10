@@ -8,6 +8,7 @@ import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
 import java.util.concurrent.ConcurrentHashMap
+import androidx.core.content.edit
 
 @Singleton
 class InstanceManager @Inject constructor(
@@ -19,12 +20,8 @@ class InstanceManager @Inject constructor(
 
     companion object {
         const val CLOCK = "clock"
-        const val SCREEN_MASK = "screen_mask"
-        const val SPOTLIGHT = "spotlight"
-        const val TIMERS = "timers"
-        const val TRAFFIC_LIGHT = "traffic_light"
-        const val RANDOMIZERS = "randomizers"
-        const val PROBABILITIES = "probabilities"
+        const val STOPWATCH = "stopwatch"
+        const val TIMER = "timer"
     }
 
     init {
@@ -33,7 +30,7 @@ class InstanceManager @Inject constructor(
     }
 
     private fun loadPersistedStates() {
-        for (appIntent in listOf(CLOCK, SCREEN_MASK, SPOTLIGHT, TIMERS, TRAFFIC_LIGHT, RANDOMIZERS, PROBABILITIES)) {
+        for (appIntent in listOf(CLOCK, STOPWATCH, TIMER)) {
             val activeIds = prefs.getStringSet("${appIntent}_active_ids", emptySet())
                 ?.mapNotNull { it.toIntOrNull() }
                 ?.toMutableSet() ?: mutableSetOf()
@@ -43,14 +40,11 @@ class InstanceManager @Inject constructor(
 
     private fun saveState(appIntent: String) {
         val ids = activeInstances[appIntent]?.map { it.toString() }?.toSet() ?: emptySet()
-        prefs.edit().putStringSet("${appIntent}_active_ids", ids).apply()
+        prefs.edit { putStringSet("${appIntent}_active_ids", ids) }
     }
 
     fun getNextInstanceId(appIntent: String): Int? {
-        val maxInstances = when (appIntent) {
-            PROBABILITIES -> 7
-            else -> 4
-        }
+        val maxInstances = 4
 
         // Synchronize access to the MutableSet
         synchronized(activeInstances) {
@@ -86,10 +80,7 @@ class InstanceManager @Inject constructor(
 
     // Helper method to register existing instances during restoration
     fun registerExistingInstance(appIntent: String, instanceId: Int): Boolean {
-        val maxInstances = when (appIntent) {
-            PROBABILITIES -> 7
-            else -> 4
-        }
+        val maxInstances = 4
 
         if (instanceId in 1..maxInstances) {
             val active = activeInstances.getOrPut(appIntent) { mutableSetOf() }
