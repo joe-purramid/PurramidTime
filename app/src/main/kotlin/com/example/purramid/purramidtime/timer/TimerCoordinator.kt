@@ -1,8 +1,8 @@
 // TimerCoordinator.kt
-package com.example.purramid.thepurramid.timers
+package com.example.purramid.purramidtime.timers
 
 import android.content.Context
-import com.example.purramid.thepurramid.data.db.TimerDao
+import com.example.purramid.purramidtime.data.db.TimerDao
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking

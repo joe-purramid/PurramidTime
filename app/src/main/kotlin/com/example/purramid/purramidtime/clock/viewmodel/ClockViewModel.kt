@@ -1,22 +1,18 @@
 // ClockViewModel.kt
-package com.example.purramid.thepurramid.clock.viewmodel
+package com.example.purramid.purramidtime.clock.viewmodel
 
 import android.graphics.Color
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.purramid.thepurramid.data.db.ClockDao
-import com.example.purramid.thepurramid.data.db.ClockStateEntity
+import com.example.purramid.purramidtime.data.db.ClockDao
+import com.example.purramid.purramidtime.data.db.ClockStateEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalTime

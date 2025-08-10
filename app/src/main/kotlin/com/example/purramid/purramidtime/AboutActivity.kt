@@ -1,4 +1,4 @@
-package com.example.purramid.thepurramid
+package com.example.purramid.purramidtime
 
 import android.os.Bundle
 import android.widget.TextView

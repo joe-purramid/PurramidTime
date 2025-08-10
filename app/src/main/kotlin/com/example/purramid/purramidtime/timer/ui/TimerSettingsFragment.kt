@@ -1,5 +1,5 @@
 // TimerSettingsFragment.kt
-package com.example.purramid.thepurramid.timers.ui
+package com.example.purramid.purramidtime.timers.ui
 
 import android.content.Intent
 import android.graphics.Color
@@ -20,14 +20,14 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.FragmentTimersSettingsBinding
-import com.example.purramid.thepurramid.instance.InstanceManager
-import com.example.purramid.thepurramid.timers.TimerType
-import com.example.purramid.thepurramid.timers.TimersService
-import com.example.purramid.thepurramid.timers.viewmodel.TimerViewModel
-import com.example.purramid.thepurramid.ui.PurramidPalette
-import com.example.purramid.thepurramid.util.dpToPx
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.databinding.FragmentTimersSettingsBinding
+import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.timers.TimerType
+import com.example.purramid.purramidtime.timers.TimersService
+import com.example.purramid.purramidtime.timers.viewmodel.TimerViewModel
+import com.example.purramid.purramidtime.ui.PurramidPalette
+import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -302,12 +302,12 @@ class TimerSettingsFragment : DialogFragment() {
         val currentState = viewModel.uiState.value
         val intent = Intent(requireContext(), TimersService::class.java).apply {
             action = if (currentState.type == TimerType.COUNTDOWN) {
-                com.example.purramid.thepurramid.timers.ACTION_START_COUNTDOWN
+                com.example.purramid.purramidtime.timers.ACTION_START_COUNTDOWN
             } else {
-                com.example.purramid.thepurramid.timers.ACTION_START_STOPWATCH
+                com.example.purramid.purramidtime.timers.ACTION_START_STOPWATCH
             }
             if (currentState.type == TimerType.COUNTDOWN) {
-                putExtra(com.example.purramid.thepurramid.timers.EXTRA_DURATION_MS, currentState.initialDurationMillis)
+                putExtra(com.example.purramid.purramidtime.timers.EXTRA_DURATION_MS, currentState.initialDurationMillis)
             }
         }
         ContextCompat.startForegroundService(requireContext(), intent)

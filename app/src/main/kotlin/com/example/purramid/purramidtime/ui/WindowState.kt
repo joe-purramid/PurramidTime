@@ -1,5 +1,5 @@
 // WindowState.kt
-package com.example.purramid.thepurramid.ui
+package com.example.purramid.purramidtime.ui
 
 /**
  * Constants for window states used across all app-intents

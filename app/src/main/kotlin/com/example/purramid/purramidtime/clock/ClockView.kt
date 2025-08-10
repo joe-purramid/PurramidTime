@@ -1,5 +1,5 @@
 // ClockView.kt
-package com.example.purramid.thepurramid.clock // Use your package name
+package com.example.purramid.purramidtime.clock // Use your package name
 
 import android.content.Context
 import android.graphics.Canvas
@@ -15,7 +15,7 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.core.view.isVisible
 import com.caverock.androidsvg.SVGImageView
-import com.example.purramid.thepurramid.util.dpToPx
+import com.example.purramid.purramidtime.util.dpToPx
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

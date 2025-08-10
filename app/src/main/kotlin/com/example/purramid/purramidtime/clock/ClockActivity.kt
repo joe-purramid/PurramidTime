@@ -1,5 +1,5 @@
 // ClockActivity.kt
-package com.example.purramid.thepurramid.clock
+package com.example.purramid.purramidtime.clock
 
 import android.content.Context
 import android.content.Intent
@@ -7,10 +7,10 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.ActivityClockBinding
-import com.example.purramid.thepurramid.clock.ui.ClockSettingsFragment
-import com.example.purramid.thepurramid.instance.InstanceManager
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.databinding.ActivityClockBinding
+import com.example.purramid.purramidtime.clock.ui.ClockSettingsFragment
+import com.example.purramid.purramidtime.instance.InstanceManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 

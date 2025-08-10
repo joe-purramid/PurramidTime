@@ -1,5 +1,5 @@
 // PurramidWidgetProvider.kt
-package com.example.purramid.thepurramid
+package com.example.purramid.purramidtime
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager

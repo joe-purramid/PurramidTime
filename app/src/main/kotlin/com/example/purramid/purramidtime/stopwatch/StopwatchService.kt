@@ -1,5 +1,5 @@
-// TimersService.kt
-package com.example.purramid.purramidtime.timers
+// StopwatchService.kt
+package com.example.purramid.thepurramid.stopwatch
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -11,10 +11,7 @@ import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
 import android.media.AudioManager
-import android.media.MediaPlayer
-import android.media.RingtoneManager
 import android.media.ToneGenerator
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -33,11 +30,13 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.ColorUtils
-import androidx.lifecycle.*
-import com.example.purramid.purramidtime.instance.InstanceManager
-import com.example.purramid.purramidtime.MainActivity
-import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.timers.viewmodel.TimerViewModel
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.example.purramid.thepurramid.MainActivity
+import com.example.purramid.thepurramid.R
+import com.example.purramid.thepurramid.instance.InstanceManager
+import com.example.purramid.thepurramid.stopwatch.viewmodel.StopwatchViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,41 +47,28 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
 
-// Service Actions
-const val ACTION_START_STOPWATCH = "com.example.purramid.timers.ACTION_START_STOPWATCH"
-const val ACTION_START_COUNTDOWN = "com.example.purramid.timers.ACTION_START_COUNTDOWN"
-const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.timers.ACTION_STOP_TIMER_SERVICE"
-const val EXTRA_TIMER_ID = TimerViewModel.KEY_TIMER_ID
-const val EXTRA_DURATION_MS = "com.example.purramid.timers.EXTRA_DURATION_MS"
-
 @AndroidEntryPoint
-class TimersService : LifecycleService() {
+class StopwatchService : LifecycleService() {
 
     @Inject lateinit var windowManager: WindowManager
     @Inject lateinit var instanceManager: InstanceManager
     @Inject lateinit var notificationManager: NotificationManager
-    @Inject lateinit var timerCoordinator: TimerCoordinator
+    @Inject lateinit var stopwatchCoordinator: StopwatchCoordinator
 
-    private lateinit var viewModel: TimerViewModel
+    private lateinit var viewModel: StopwatchViewModel
 
     private var overlayView: View? = null
-    private var timerId: Int = 0
+    private var stopwatchId: Int = 0
     private var layoutParams: WindowManager.LayoutParams? = null
     private var isViewAdded = false
     private var stateObserverJob: Job? = null
-    private var currentInflatedLayoutId: Int = 0
 
-    // --- Cached Views (Common and Specific) ---
-    // Common
+    // Cached Views
     private var digitalTimeTextView: TextView? = null
     private var playPauseButton: ImageView? = null
     private var settingsButton: ImageView? = null
     private var closeButton: TextView? = null
-    // Countdown Specific
-    private var centisecondsTextView: TextView? = null
-    private var resetButtonCountdown: ImageView? = null
-    // Stopwatch Specific
-    private var lapResetButtonStopwatch: Button? = null
+    private var lapResetButton: Button? = null
     private var lapTimesLayout: LinearLayout? = null
     private var lapTimeTextViews = mutableListOf<TextView>()
     private var noLapsTextView: TextView? = null
@@ -102,15 +88,15 @@ class TimersService : LifecycleService() {
         ).toInt()
     }
 
-    // Track if finish sound has been played for current countdown
-    private var hasPlayedFinishSound = false
-    private var lastCountdownMillis = -1L
-
     companion object {
-        private const val TAG = "TimersService"
-        private const val NOTIFICATION_ID = 5
-        private const val CHANNEL_ID = "TimersServiceChannel"
-        const val PREFS_NAME_FOR_ACTIVITY = "timers_prefs"
+        private const val TAG = "StopwatchService"
+        private const val NOTIFICATION_ID = 6
+        private const val CHANNEL_ID = "StopwatchServiceChannel"
+        const val PREFS_NAME_FOR_ACTIVITY = "stopwatch_prefs"
+
+        const val ACTION_START_STOPWATCH = "com.example.purramid.stopwatch.ACTION_START_STOPWATCH"
+        const val ACTION_STOP_STOPWATCH_SERVICE = "com.example.purramid.stopwatch.ACTION_STOP_STOPWATCH_SERVICE"
+        const val EXTRA_STOPWATCH_ID = "com.example.purramid.stopwatch.EXTRA_STOPWATCH_ID"
     }
 
     override fun onCreate() {
@@ -122,50 +108,43 @@ class TimersService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         val action = intent?.action
-        val intentTimerId = intent?.getIntExtra(EXTRA_TIMER_ID, 0) ?: 0
-        Log.d(TAG, "onStartCommand: Action: $action, ID: $intentTimerId")
+        val intentStopwatchId = intent?.getIntExtra(EXTRA_STOPWATCH_ID, 0) ?: 0
+        Log.d(TAG, "onStartCommand: Action: $action, ID: $intentStopwatchId")
 
         // Handle instance management
-        if (intentTimerId <= 0 && action != ACTION_STOP_TIMER_SERVICE) {
+        if (intentStopwatchId <= 0 && action != ACTION_STOP_STOPWATCH_SERVICE) {
             // Request new instance ID from InstanceManager
             val instanceId = instanceManager.getNextInstanceId(InstanceManager.TIMERS)
             if (instanceId == null) {
-                Log.e(TAG, "No available instance slots for Timer")
+                Log.e(TAG, "No available instance slots for Stopwatch")
                 stopSelf()
                 return START_NOT_STICKY
             }
-            this.timerId = instanceId
-            Log.d(TAG, "Allocated new instanceId: $timerId")
-        } else if (intentTimerId > 0) {
+            this.stopwatchId = instanceId
+            Log.d(TAG, "Allocated new instanceId: $stopwatchId")
+        } else if (intentStopwatchId > 0) {
             // Register existing instance with InstanceManager
-            if (!instanceManager.registerExistingInstance(InstanceManager.TIMERS, intentTimerId)) {
-                Log.w(TAG, "Failed to register existing instance $intentTimerId")
+            if (!instanceManager.registerExistingInstance(InstanceManager.TIMERS, intentStopwatchId)) {
+                Log.w(TAG, "Failed to register existing instance $intentStopwatchId")
             }
-            this.timerId = intentTimerId
+            this.stopwatchId = intentStopwatchId
         }
 
-        // Initialize ViewModel if needed (first start or ID change)
-        if (!::viewModel.isInitialized || this.timerId != intentTimerId) {
-            viewModel = ViewModelProvider(this)[TimerViewModel::class.java]
-            Log.d(TAG, "ViewModel initialized for timerId: $timerId")
+        // Initialize ViewModel if needed
+        if (!::viewModel.isInitialized || this.stopwatchId != intentStopwatchId) {
+            viewModel = ViewModelProvider(this)[StopwatchViewModel::class.java]
+            viewModel.setStopwatchId(stopwatchId)
+            Log.d(TAG, "ViewModel initialized for stopwatchId: $stopwatchId")
             observeViewModelState()
         }
 
         // Handle actions
         when (action) {
             ACTION_START_STOPWATCH -> {
-                viewModel.setTimerType(TimerType.STOPWATCH)
                 startForegroundServiceIfNeeded()
                 lifecycleScope.launch { addOverlayViewIfNeeded() }
             }
-            ACTION_START_COUNTDOWN -> {
-                val duration = intent.getLongExtra(EXTRA_DURATION_MS, 60000L)
-                viewModel.setTimerType(TimerType.COUNTDOWN)
-                viewModel.setInitialDuration(duration)
-                startForegroundServiceIfNeeded()
-                lifecycleScope.launch { addOverlayViewIfNeeded() }
-            }
-            ACTION_STOP_TIMER_SERVICE -> {
+            ACTION_STOP_STOPWATCH_SERVICE -> {
                 stopService()
             }
         }
@@ -176,61 +155,23 @@ class TimersService : LifecycleService() {
         stateObserverJob?.cancel()
         stateObserverJob = lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
-                Log.d(TAG, "Collecting State: Type=${state.type}, Running=${state.isRunning}, Millis=${state.currentMillis}")
-                val requiredLayoutId = when (state.type) {
-                    TimerType.STOPWATCH -> R.layout.view_floating_timer_stopwatch
-                    TimerType.COUNTDOWN -> R.layout.view_floating_timer_countdown
-                }
-                if (overlayView == null || currentInflatedLayoutId != requiredLayoutId) {
-                    Log.d(TAG, "State requires layout change. Current: $currentInflatedLayoutId, Required: $requiredLayoutId")
-                    addOverlayViewIfNeeded()
-                } else {
-                    updateOverlayViews(state)
-                }
+                Log.d(TAG, "Collecting State: Running=${state.isRunning}, Millis=${state.currentMillis}")
+                updateOverlayViews(state)
                 updateLayoutParamsIfNeeded(state)
-
-                // Handle countdown finish sound
-                if (state.type == TimerType.COUNTDOWN) {
-                    // Reset flag when countdown restarts
-                    if (state.currentMillis > 0 && lastCountdownMillis == 0L) {
-                        hasPlayedFinishSound = false
-                    }
-
-                    // Play sound when countdown reaches zero
-                    if (state.currentMillis == 0L &&
-                        !state.isRunning &&
-                        state.playSoundOnEnd &&
-                        !hasPlayedFinishSound) {
-                        playFinishSound(state)
-                        hasPlayedFinishSound = true
-                    }
-
-                    lastCountdownMillis = state.currentMillis
-                }
             }
         }
-        Log.d(TAG, "Started observing ViewModel state for timer $timerId")
+        Log.d(TAG, "Started observing ViewModel state for stopwatch $stopwatchId")
     }
 
     private suspend fun addOverlayViewIfNeeded() {
         withContext(Dispatchers.Main) {
-            val currentState = viewModel.uiState.value
-            val requiredLayoutId = when (currentState.type) {
-                TimerType.STOPWATCH -> R.layout.view_floating_timer_stopwatch
-                TimerType.COUNTDOWN -> R.layout.view_floating_timer_countdown
-            }
-
-            if (overlayView != null && currentInflatedLayoutId != requiredLayoutId) {
-                removeOverlayView()
-            }
-
             if (overlayView == null) {
                 layoutParams = createDefaultLayoutParams()
+                val currentState = viewModel.uiState.value
                 applyStateToLayoutParams(currentState, layoutParams!!)
 
-                val inflater = LayoutInflater.from(this@TimersService)
-                overlayView = inflater.inflate(requiredLayoutId, null)
-                currentInflatedLayoutId = requiredLayoutId
+                val inflater = LayoutInflater.from(this@StopwatchService)
+                overlayView = inflater.inflate(R.layout.view_floating_stopwatch, null)
 
                 cacheViews()
                 setupListeners()
@@ -240,14 +181,14 @@ class TimersService : LifecycleService() {
                     if (!isViewAdded) {
                         windowManager.addView(overlayView, layoutParams)
                         isViewAdded = true
-                        Log.d(TAG, "Timer overlay view added (Layout ID: $requiredLayoutId).")
+                        Log.d(TAG, "Stopwatch overlay view added.")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error adding timer overlay view", e)
+                    Log.e(TAG, "Error adding stopwatch overlay view", e)
                     cleanupViewReferences()
                 }
             }
-            updateOverlayViews(currentState)
+            updateOverlayViews(viewModel.uiState.value)
         }
     }
 
@@ -274,11 +215,11 @@ class TimersService : LifecycleService() {
         playPauseButton = overlayView?.findViewById(R.id.playPauseButton)
         settingsButton = overlayView?.findViewById(R.id.settingsButton)
         closeButton = overlayView?.findViewById(R.id.closeButton)
-        centisecondsTextView = overlayView?.findViewById(R.id.centisecondsTextView)
-        resetButtonCountdown = overlayView?.findViewById(R.id.resetButton)
-        lapResetButtonStopwatch = overlayView?.findViewById(R.id.lapResetButton)
+        lapResetButton = overlayView?.findViewById(R.id.lapResetButton)
         lapTimesLayout = overlayView?.findViewById(R.id.lapTimesLayout)
         noLapsTextView = overlayView?.findViewById(R.id.noLapsTextView)
+
+        // Cache lap time text views
         lapTimeTextViews.clear()
         lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime1TextView) ?: TextView(this))
         lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime2TextView) ?: TextView(this))
@@ -295,32 +236,19 @@ class TimersService : LifecycleService() {
         }
         closeButton?.setOnClickListener { stopService() }
         settingsButton?.setOnClickListener { openSettings() }
-        lapResetButtonStopwatch?.setOnClickListener {
+        lapResetButton?.setOnClickListener {
             if (viewModel.uiState.value.isRunning) {
                 playButtonSound()
                 viewModel.addLap()
             } else {
                 playButtonSound()
-                viewModel.resetTimer()
+                viewModel.resetStopwatch()
             }
-        }
-        resetButtonCountdown?.setOnClickListener {
-            playButtonSound()
-            viewModel.resetTimer()
         }
     }
 
-    private fun updateOverlayViews(state: TimerState) {
+    private fun updateOverlayViews(state: StopwatchState) {
         if (overlayView == null || !isViewAdded) return
-
-        val requiredLayoutId = when (state.type) {
-            TimerType.STOPWATCH -> R.layout.view_floating_timer_stopwatch
-            TimerType.COUNTDOWN -> R.layout.view_floating_timer_countdown
-        }
-        if (currentInflatedLayoutId != requiredLayoutId) {
-            Log.w(TAG, "Timer state update received, but layout mismatch. Waiting for re-inflation.")
-            return
-        }
 
         // Apply nested state if needed
         applyNestedState(state)
@@ -337,14 +265,8 @@ class TimersService : LifecycleService() {
         val showCenti = state.showCentiseconds
         val timeStr = formatTime(state.currentMillis, showCenti)
 
-        digitalTimeTextView?.text = timeStr.substringBeforeLast('.')
+        digitalTimeTextView?.text = timeStr
         digitalTimeTextView?.setTextColor(textColor)
-
-        centisecondsTextView?.let {
-            it.text = if (showCenti && timeStr.contains('.')) ".${timeStr.substringAfterLast('.')}" else ""
-            it.visibility = if (showCenti && state.type == TimerType.COUNTDOWN) View.VISIBLE else View.GONE
-            it.setTextColor(textColor)
-        }
 
         playPauseButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
         playPauseButton?.setImageResource(if (state.isRunning) R.drawable.ic_pause else R.drawable.ic_play)
@@ -352,43 +274,36 @@ class TimersService : LifecycleService() {
 
         closeButton?.setTextColor(textColor)
 
-        if (state.type == TimerType.STOPWATCH) {
-            lapResetButtonStopwatch?.setTextColor(textColor)
-            lapResetButtonStopwatch?.text = getString(if (state.isRunning) R.string.lap else R.string.reset)
-            lapResetButtonStopwatch?.isEnabled = state.isRunning || state.currentMillis > 0L
+        lapResetButton?.setTextColor(textColor)
+        lapResetButton?.text = getString(if (state.isRunning) R.string.lap else R.string.reset)
+        lapResetButton?.isEnabled = state.isRunning || state.currentMillis > 0L
 
-            // Disable lap button if max laps reached
-            if (state.isRunning && state.laps.size >= 10) {
-                lapResetButtonStopwatch?.isEnabled = false
-            }
+        // Disable lap button if max laps reached
+        if (state.isRunning && state.laps.size >= 10) {
+            lapResetButton?.isEnabled = false
+        }
 
-            // Only show lap times if enabled in settings
-            val hasLaps = state.laps.isNotEmpty() && state.showLapTimes
-            lapTimesLayout?.visibility = if (hasLaps) View.VISIBLE else View.GONE
-            noLapsTextView?.visibility = if (state.showLapTimes && !hasLaps) View.VISIBLE else View.GONE
-            noLapsTextView?.setTextColor(textColor)
+        // Only show lap times if enabled in settings
+        val hasLaps = state.laps.isNotEmpty() && state.showLapTimes
+        lapTimesLayout?.visibility = if (hasLaps) View.VISIBLE else View.GONE
+        noLapsTextView?.visibility = if (state.showLapTimes && !hasLaps) View.VISIBLE else View.GONE
+        noLapsTextView?.setTextColor(textColor)
 
-            if (hasLaps) {
-                val reversedLaps = state.laps.reversed()
-                lapTimeTextViews.forEachIndexed { index, textView ->
-                    if (index < reversedLaps.size) {
-                        textView.text = "${state.laps.size - index}. ${formatTime(reversedLaps[index], true)}"
-                        textView.visibility = View.VISIBLE
-                        textView.setTextColor(textColor)
-                    } else {
-                        textView.visibility = View.GONE
-                    }
+        if (hasLaps) {
+            val reversedLaps = state.laps.reversed()
+            lapTimeTextViews.forEachIndexed { index, textView ->
+                if (index < reversedLaps.size) {
+                    textView.text = "${state.laps.size - index}. ${formatTime(reversedLaps[index], true)}"
+                    textView.visibility = View.VISIBLE
+                    textView.setTextColor(textColor)
+                } else {
+                    textView.visibility = View.GONE
                 }
             }
         }
-
-        if (state.type == TimerType.COUNTDOWN) {
-            resetButtonCountdown?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
-            resetButtonCountdown?.isEnabled = !state.isRunning && (state.currentMillis != state.initialDurationMillis || state.currentMillis == 0L)
-        }
     }
 
-    private fun applyStateToLayoutParams(state: TimerState, params: WindowManager.LayoutParams) {
+    private fun applyStateToLayoutParams(state: StopwatchState, params: WindowManager.LayoutParams) {
         params.x = state.windowX
         params.y = state.windowY
         params.width = if (state.windowWidth > 0) state.windowWidth else WindowManager.LayoutParams.WRAP_CONTENT
@@ -400,7 +315,7 @@ class TimersService : LifecycleService() {
         }
     }
 
-    private fun updateLayoutParamsIfNeeded(state: TimerState) {
+    private fun updateLayoutParamsIfNeeded(state: StopwatchState) {
         if (layoutParams == null || !isViewAdded || overlayView == null) return
         var needsUpdate = false
         if (layoutParams?.x != state.windowX || layoutParams?.y != state.windowY) {
@@ -437,9 +352,9 @@ class TimersService : LifecycleService() {
                 try {
                     windowManager.removeView(it)
                     isViewAdded = false
-                    Log.d(TAG, "Timer overlay view removed.")
+                    Log.d(TAG, "Stopwatch overlay view removed.")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error removing timer overlay view", e)
+                    Log.e(TAG, "Error removing stopwatch overlay view", e)
                 }
             }
         }
@@ -450,12 +365,9 @@ class TimersService : LifecycleService() {
         overlayView = null
         layoutParams = null
         isViewAdded = false
-        currentInflatedLayoutId = 0
         digitalTimeTextView = null
-        centisecondsTextView = null
         playPauseButton = null
-        lapResetButtonStopwatch = null
-        resetButtonCountdown = null
+        lapResetButton = null
         settingsButton = null
         closeButton = null
         lapTimesLayout = null
@@ -484,9 +396,9 @@ class TimersService : LifecycleService() {
     }
 
     private fun openSettings() {
-        val intent = Intent(this, TimersActivity::class.java).apply {
-            action = TimersActivity.ACTION_SHOW_TIMER_SETTINGS
-            putExtra(EXTRA_TIMER_ID, timerId)
+        val intent = Intent(this, StopwatchActivity::class.java).apply {
+            action = StopwatchActivity.ACTION_SHOW_STOPWATCH_SETTINGS
+            putExtra(EXTRA_STOPWATCH_ID, stopwatchId)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
@@ -545,8 +457,8 @@ class TimersService : LifecycleService() {
     }
 
     private fun stopService() {
-        if (timerId > 0) {
-            instanceManager.releaseInstanceId(InstanceManager.TIMERS, timerId)
+        if (stopwatchId > 0) {
+            instanceManager.releaseInstanceId(InstanceManager.TIMERS, stopwatchId)
             viewModel.deleteState()
         }
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -573,9 +485,9 @@ class TimersService : LifecycleService() {
         try {
             startForeground(NOTIFICATION_ID, notification)
             isForeground = true
-            Log.d(TAG, "TimersService started in foreground.")
+            Log.d(TAG, "StopwatchService started in foreground.")
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting foreground service for Timers", e)
+            Log.e(TAG, "Error starting foreground service for Stopwatch", e)
         }
     }
 
@@ -585,9 +497,9 @@ class TimersService : LifecycleService() {
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, pendingIntentFlags)
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle(getString(R.string.timer_notification_title))
-            .setContentText(getString(R.string.timer_notification_content))
-            .setSmallIcon(R.drawable.ic_timer)
+            .setContentTitle(getString(R.string.stopwatch_notification_title))
+            .setContentText(getString(R.string.stopwatch_notification_content))
+            .setSmallIcon(R.drawable.ic_stopwatch)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
@@ -597,7 +509,7 @@ class TimersService : LifecycleService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                getString(R.string.timer_notification_channel_name),
+                getString(R.string.stopwatch_notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             )
             notificationManager.createNotificationChannel(channel)
@@ -612,7 +524,7 @@ class TimersService : LifecycleService() {
         ).toInt()
     }
 
-    private fun applyNestedState(state: TimerState) {
+    private fun applyNestedState(state: StopwatchState) {
         if (state.isNested) {
             layoutParams?.apply {
                 width = dpToPx(75)
@@ -624,9 +536,9 @@ class TimersService : LifecycleService() {
                     x = resources.displayMetrics.widthPixels - width - dpToPx(20)
                     y = dpToPx(20)
 
-                    // Stack if other nested timers exist
+                    // Stack if other nested stopwatches exist
                     lifecycleScope.launch {
-                        val stackPosition = timerCoordinator.getNestedTimerStackPosition(timerId)
+                        val stackPosition = stopwatchCoordinator.getNestedStopwatchStackPosition(stopwatchId)
                         withContext(Dispatchers.Main) {
                             layoutParams?.let { params ->
                                 params.y = dpToPx(20) + (stackPosition * (params.height + dpToPx(10)))
@@ -655,35 +567,28 @@ class TimersService : LifecycleService() {
 
             // Hide control buttons for nested view
             playPauseButton?.visibility = View.GONE
-            resetButtonCountdown?.visibility = View.GONE
-            lapResetButtonStopwatch?.visibility = View.GONE
+            lapResetButton?.visibility = View.GONE
             settingsButton?.visibility = View.GONE
             lapTimesLayout?.visibility = View.GONE
             noLapsTextView?.visibility = View.GONE
 
             // Keep only time display and close button visible
             digitalTimeTextView?.textSize = 20f
-            centisecondsTextView?.textSize = 12f
         } else {
             // Restore normal view
             playPauseButton?.visibility = View.VISIBLE
             settingsButton?.visibility = View.VISIBLE
+            lapResetButton?.visibility = View.VISIBLE
 
-            if (viewModel.uiState.value.type == TimerType.COUNTDOWN) {
-                resetButtonCountdown?.visibility = View.VISIBLE
-            } else {
-                lapResetButtonStopwatch?.visibility = View.VISIBLE
-                if (viewModel.uiState.value.showLapTimes) {
-                    if (viewModel.uiState.value.laps.isNotEmpty()) {
-                        lapTimesLayout?.visibility = View.VISIBLE
-                    } else {
-                        noLapsTextView?.visibility = View.VISIBLE
-                    }
+            if (viewModel.uiState.value.showLapTimes) {
+                if (viewModel.uiState.value.laps.isNotEmpty()) {
+                    lapTimesLayout?.visibility = View.VISIBLE
+                } else {
+                    noLapsTextView?.visibility = View.VISIBLE
                 }
             }
 
             digitalTimeTextView?.textSize = 36f
-            centisecondsTextView?.textSize = 20f
         }
 
         // Update layout if needed
@@ -698,7 +603,7 @@ class TimersService : LifecycleService() {
 
     private fun playButtonSound() {
         val state = viewModel.uiState.value
-        if (state.soundsEnabled && state.type == TimerType.STOPWATCH) {
+        if (state.soundsEnabled) {
             // Play a short beep sound
             playBeepSound()
         }
@@ -717,81 +622,6 @@ class TimersService : LifecycleService() {
             }, 200)
         } catch (e: Exception) {
             Log.e(TAG, "Error playing beep sound", e)
-        }
-    }
-
-    private fun playFinishSound(state: TimerState) {
-        try {
-            when {
-                // First priority: Custom music URL
-                !state.musicUrl.isNullOrEmpty() -> {
-                    playMusicUrl(state.musicUrl)
-                }
-                // Second priority: Selected system sound
-                !state.selectedSoundUri.isNullOrEmpty() -> {
-                    playSystemSound(state.selectedSoundUri)
-                }
-                // Default: Play default notification sound
-                else -> {
-                    playDefaultSound()
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error playing finish sound", e)
-        }
-    }
-
-    private fun playMusicUrl(url: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val mediaPlayer = MediaPlayer().apply {
-                    setDataSource(url)
-                    prepareAsync()
-                    setOnPreparedListener {
-                        start()
-                        Log.d(TAG, "Playing music URL: $url")
-                    }
-                    setOnCompletionListener {
-                        release()
-                    }
-                    setOnErrorListener { _, _, _ ->
-                        Log.e(TAG, "Error playing music URL: $url")
-                        withContext(Dispatchers.Main) {
-                            playDefaultSound() // Fallback
-                        }
-                        release()
-                        true
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to play music URL", e)
-                withContext(Dispatchers.Main) {
-                    playDefaultSound() // Fallback
-                }
-            }
-        }
-    }
-
-    private fun playSystemSound(uriString: String) {
-        try {
-            val uri = Uri.parse(uriString)
-            val ringtone = RingtoneManager.getRingtone(this, uri)
-            ringtone?.play()
-            Log.d(TAG, "Playing system sound: $uriString")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to play system sound", e)
-            playDefaultSound() // Fallback
-        }
-    }
-
-    private fun playDefaultSound() {
-        try {
-            val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val ringtone = RingtoneManager.getRingtone(this, notification)
-            ringtone?.play()
-            Log.d(TAG, "Playing default notification sound")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to play default sound", e)
         }
     }
 }

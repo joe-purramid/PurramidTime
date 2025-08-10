@@ -1,5 +1,5 @@
 // ClockOverlayService.kt
-package com.example.purramid.thepurramid.clock
+package com.example.purramid.purramidtime.clock
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -33,14 +33,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.lifecycleScope
-import com.example.purramid.thepurramid.instance.InstanceManager
-import com.example.purramid.thepurramid.MainActivity
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.data.db.ClockDao // Keep for restoration logic if needed directly
-import com.example.purramid.thepurramid.clock.viewmodel.ClockState
-import com.example.purramid.thepurramid.clock.viewmodel.ClockViewModel
-import com.example.purramid.thepurramid.di.ClockPrefs
-import com.example.purramid.thepurramid.util.dpToPx
+import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.MainActivity
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.data.db.ClockDao // Keep for restoration logic if needed directly
+import com.example.purramid.purramidtime.clock.viewmodel.ClockState
+import com.example.purramid.purramidtime.clock.viewmodel.ClockViewModel
+import com.example.purramid.purramidtime.di.ClockPrefs
+import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -84,9 +84,9 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
         const val ACTION_STOP_CLOCK_SERVICE = "com.example.purramid.clock.ACTION_STOP_SERVICE"
 
         // Existing actions from ClockActivity, keep if they target specific instances via EXTRA_CLOCK_ID
-        const val ACTION_ADD_NEW_CLOCK = "com.example.purramid.thepurramid.ACTION_ADD_NEW_CLOCK" // From settings
-        const val ACTION_UPDATE_CLOCK_SETTING = "com.example.purramid.thepurramid.ACTION_UPDATE_CLOCK_SETTING"
-        const val ACTION_NEST_CLOCK = "com.example.purramid.thepurramid.ACTION_NEST_CLOCK"
+        const val ACTION_ADD_NEW_CLOCK = "com.example.purramid.com.example.purramid.purramidtime.ACTION_ADD_NEW_CLOCK" // From settings
+        const val ACTION_UPDATE_CLOCK_SETTING = "com.example.purramid.com.example.purramid.purramidtime.ACTION_UPDATE_CLOCK_SETTING"
+        const val ACTION_NEST_CLOCK = "com.example.purramid.com.example.purramid.purramidtime.ACTION_NEST_CLOCK"
         const val EXTRA_CLOCK_ID = ClockViewModel.KEY_INSTANCE_ID // Use ViewModel's key
         const val EXTRA_SETTING_TYPE = "setting_type"
         const val EXTRA_SETTING_VALUE = "setting_value"

@@ -1,12 +1,11 @@
 // ClockAlarmActivity.kt
-package com.example.purramid.thepurramid.clock
+package com.example.purramid.purramidtime.clock
 
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
@@ -14,7 +13,6 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
-import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Switch
@@ -22,9 +20,9 @@ import android.widget.TextView
 import android.widget.TimePicker
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.data.db.ClockAlarmDao
-import com.example.purramid.thepurramid.data.db.ClockAlarmEntity
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.data.db.ClockAlarmDao
+import com.example.purramid.purramidtime.data.db.ClockAlarmEntity
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -32,7 +30,6 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.UUID
 import javax.inject.Inject
 
 @AndroidEntryPoint

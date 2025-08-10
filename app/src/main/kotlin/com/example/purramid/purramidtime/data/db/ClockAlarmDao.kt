@@ -1,5 +1,5 @@
 // ClockAlarmDao.kt
-package com.example.purramid.thepurramid.data.db
+package com.example.purramid.purramidtime.data.db
 
 import androidx.room.Dao
 import androidx.room.Insert

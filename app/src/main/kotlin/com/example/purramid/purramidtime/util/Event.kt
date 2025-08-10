@@ -1,5 +1,5 @@
 // Event.kt
-package com.example.purramid.thepurramid.util
+package com.example.purramid.purramidtime.util
 
 /**
  * Used as a wrapper for data that is exposed via a LiveData that represents an event.

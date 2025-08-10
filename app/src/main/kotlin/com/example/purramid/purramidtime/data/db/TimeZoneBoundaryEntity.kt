@@ -1,4 +1,4 @@
-package com.example.purramid.thepurramid.data.db
+package com.example.purramid.purramidtime.data.db
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

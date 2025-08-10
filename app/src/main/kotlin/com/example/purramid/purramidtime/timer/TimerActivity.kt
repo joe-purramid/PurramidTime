@@ -1,15 +1,15 @@
-// src/main/kotlin/com/example/purramid/thepurramid/timers/TimersActivity.kt
-package com.example.purramid.thepurramid.timers
+// src/main/kotlin/com/example/purramid/com.example.purramid.purramidtime/timers/TimersActivity.kt
+package com.example.purramid.purramidtime.timers
 
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.ActivityTimersBinding
-import com.example.purramid.thepurramid.instance.InstanceManager
-import com.example.purramid.thepurramid.timers.ui.TimerSettingsFragment
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.databinding.ActivityTimersBinding
+import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.timers.ui.TimerSettingsFragment
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject

@@ -1,9 +1,8 @@
 // ClockStateEntity.kt
-package com.example.purramid.thepurramid.data.db
+package com.example.purramid.purramidtime.data.db
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.purramid.thepurramid.clock.ClockOverlayService // For default values if needed
 import java.time.ZoneId // Import for default zone ID
 import java.util.UUID
 

@@ -1,5 +1,5 @@
 // WidgetConfigData.kt
-package com.example.purramid.thepurramid
+package com.example.purramid.purramidtime
 
 import android.content.Intent
 import androidx.annotation.DrawableRes

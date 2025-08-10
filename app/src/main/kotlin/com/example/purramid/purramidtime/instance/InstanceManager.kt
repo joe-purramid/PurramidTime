@@ -1,6 +1,6 @@
 // InstanceManager.kt
 
-package com.example.purramid.thepurramid.instance
+package com.example.purramid.purramidtime.instance
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext

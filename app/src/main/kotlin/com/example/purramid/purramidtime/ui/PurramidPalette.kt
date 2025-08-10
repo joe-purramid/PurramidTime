@@ -1,5 +1,5 @@
 // PurramidPalette.kt
-package com.example.purramid.thepurramid.ui
+package com.example.purramid.purramidtime.ui
 
 import android.graphics.Color
 

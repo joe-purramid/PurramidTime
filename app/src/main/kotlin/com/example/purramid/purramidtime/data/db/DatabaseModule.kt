@@ -1,8 +1,8 @@
 // DatabaseModule.kt
-package com.example.purramid.thepurramid.data.db
+package com.example.purramid.purramidtime.data.db
 
 import android.content.Context
-import com.example.purramid.thepurramid.di.IoDispatcher
+import com.example.purramid.purramidtime.di.IoDispatcher
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

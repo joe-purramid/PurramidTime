@@ -1,5 +1,5 @@
 // SetCountdownDialog.kt
-package com.example.purramid.thepurramid.timers.ui
+package com.example.purramid.purramidtime.timers.ui
 
 import android.app.Dialog
 import android.os.Bundle
@@ -7,8 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.DialogSetCountdownBinding
+import com.example.purramid.purramidtime.databinding.DialogSetCountdownBinding
 import java.util.concurrent.TimeUnit
 
 class SetCountdownDialog : DialogFragment() {

@@ -1,5 +1,5 @@
 // CityData.kt
-package com.example.purramid.thepurramid.clock.data
+package com.example.purramid.purramidtime.clock.data
 
 data class CityData(
      val name: String,

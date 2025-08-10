@@ -20,7 +20,7 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="16dp"/>
 
-        <com.example.purramid.thepurramid.timers.ui.CountdownDurationPickerView
+        <com.example.purramid.purramidtime.timers.ui.CountdownDurationPickerView
             android:id="@+id/durationPicker"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

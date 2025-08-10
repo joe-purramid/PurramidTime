@@ -1,12 +1,12 @@
 // WidgetPrefs.kt
-package com.example.purramid.thepurramid
+package com.example.purramid.purramidtime
 
 import android.content.Context
 import android.content.Intent
 
 object WidgetPrefs {
 
-    private const val PREFS_NAME = "com.example.purramid.thepurramid.WidgetPrefs"
+    private const val PREFS_NAME = "com.example.purramid.purramidtime.WidgetPrefs"
     private const val PREF_PREFIX_KEY = "widget_"
     private const val PREF_ICON_SUFFIX = "_icon"
     private const val PREF_INTENT_URI_SUFFIX = "_intent_uri"

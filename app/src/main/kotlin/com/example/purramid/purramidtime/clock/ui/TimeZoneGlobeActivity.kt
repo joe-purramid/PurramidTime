@@ -1,4 +1,4 @@
-package com.example.purramid.thepurramid.clock.ui
+package com.example.purramid.purramidtime.clock.ui
 
 import android.animation.ValueAnimator
 import android.animation.TypeEvaluator
@@ -8,11 +8,10 @@ import android.util.Log
 import android.view.MotionEvent
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.example.purramid.thepurramid.R
+import com.example.purramid.purramidtime.R
 import com.google.android.filament.Box
 import com.google.android.filament.IndexBuffer
 import com.google.android.filament.MaterialInstance
@@ -32,17 +31,12 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import org.locationtech.jts.geom.Polygon
-import java.io.IOException
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
 import kotlin.math.cos
 import kotlin.math.sin
 
 // Import ViewModel and State classes from this package
-import com.example.purramid.thepurramid.clock.ui.TimeZoneGlobeUiState
-import com.example.purramid.thepurramid.clock.ui.TimeZoneGlobeViewModel
-import com.example.purramid.thepurramid.clock.ui.TimeZoneOverlayInfo
-import com.example.purramid.thepurramid.clock.ui.RotationDirection // Import Enum
 import com.google.android.material.snackbar.Snackbar
 import java.util.concurrent.ConcurrentHashMap
 

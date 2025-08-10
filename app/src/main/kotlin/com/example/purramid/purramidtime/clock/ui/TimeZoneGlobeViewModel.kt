@@ -1,10 +1,10 @@
-package com.example.purramid.thepurramid.clock.ui
+package com.example.purramid.purramidtime.clock.ui
 
 import android.graphics.Color
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.purramid.thepurramid.clock.data.TimeZoneRepository
+import com.example.purramid.purramidtime.clock.data.TimeZoneRepository
 import io.github.sceneview.math.Rotation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -13,15 +13,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.locationtech.jts.geom.Polygon
-import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.TimeZone // Keep for getRawOffset if needed, but prefer ZoneId
 import javax.inject.Inject
 import kotlin.math.abs
-import kotlin.math.atan2
-import kotlin.math.roundToInt
-import kotlin.math.sqrt
 
 // Data class to hold processed info for overlays
 data class TimeZoneOverlayInfo(

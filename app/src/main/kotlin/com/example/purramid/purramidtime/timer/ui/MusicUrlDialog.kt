@@ -1,8 +1,7 @@
 // MusicUrlDialog.kt
-package com.example.purramid.thepurramid.timers.ui
+package com.example.purramid.purramidtime.timers.ui
 
 import android.app.Dialog
-import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.media.MediaPlayer
@@ -17,8 +16,8 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.DialogMusicUrlBinding
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.databinding.DialogMusicUrlBinding
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

@@ -1,15 +1,14 @@
-// TimerViewModel.kt
-package com.example.purramid.purramidtime.timers.viewmodel
+// StopwatchViewModel.kt
+package com.example.purramid.thepurramid.stopwatch.viewmodel
 
 import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.purramid.purramidtime.data.db.TimerDao
-import com.example.purramid.purramidtime.data.db.TimerStateEntity
-import com.example.purramid.purramidtime.timers.TimerState
-import com.example.purramid.purramidtime.timers.TimerType
+import com.example.purramid.thepurramid.data.db.StopwatchDao
+import com.example.purramid.thepurramid.data.db.StopwatchStateEntity
+import com.example.purramid.thepurramid.stopwatch.StopwatchState
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,36 +18,36 @@ import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
-class TimerViewModel @Inject constructor(
-    private val timerDao: TimerDao,
+class StopwatchViewModel @Inject constructor(
+    private val stopwatchDao: StopwatchDao,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     companion object {
-        const val KEY_TIMER_ID = "timerId"
-        private const val TAG = "TimerViewModel"
+        const val KEY_STOPWATCH_ID = "stopwatchId"
+        private const val TAG = "StopwatchViewModel"
         private const val TICK_INTERVAL_MS = 50L
         private const val MAX_LAPS = 10 // As per specification
     }
 
-    // Initialize timerId - will be set by setTimerId() from Service
-    private var timerId: Int = 0
+    // Initialize stopwatchId - will be set by setStopwatchId() from Service
+    private var stopwatchId: Int = 0
 
-    private val _uiState = MutableStateFlow(TimerState(timerId = timerId))
-    val uiState: StateFlow<TimerState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(StopwatchState(stopwatchId = stopwatchId))
+    val uiState: StateFlow<StopwatchState> = _uiState.asStateFlow()
 
     private var tickerJob: Job? = null
     private val gson = Gson()
 
     init {
         Log.d(TAG, "Initializing ViewModel")
-        // TimerId will be set by the Service
+        // StopwatchId will be set by the Service
     }
 
-    fun setTimerId(id: Int) {
-        if (timerId == 0 && id > 0) {
-            timerId = id
-            savedStateHandle[KEY_TIMER_ID] = id
+    fun setStopwatchId(id: Int) {
+        if (stopwatchId == 0 && id > 0) {
+            stopwatchId = id
+            savedStateHandle[KEY_STOPWATCH_ID] = id
             loadInitialState(id)
         }
     }
@@ -56,18 +55,18 @@ class TimerViewModel @Inject constructor(
     private fun loadInitialState(id: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val entity = timerDao.getById(id)
+                val entity = stopwatchDao.getById(id)
                 withContext(Dispatchers.Main) {
                     if (entity != null) {
-                        Log.d(TAG, "Loaded state from DB for timer $id")
+                        Log.d(TAG, "Loaded state from DB for stopwatch $id")
                         _uiState.value = mapEntityToState(entity)
                         if (_uiState.value.isRunning) {
                             startTicker()
                         }
                     } else {
-                        Log.d(TAG, "No saved state for timer $id, using defaults.")
-                        val defaultState = TimerState(
-                            timerId = id,
+                        Log.d(TAG, "No saved state for stopwatch $id, using defaults.")
+                        val defaultState = StopwatchState(
+                            stopwatchId = id,
                             uuid = UUID.randomUUID()
                         )
                         _uiState.value = defaultState
@@ -75,10 +74,10 @@ class TimerViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading initial state for timer $id", e)
+                Log.e(TAG, "Error loading initial state for stopwatch $id", e)
                 withContext(Dispatchers.Main) {
-                    val defaultState = TimerState(
-                        timerId = id,
+                    val defaultState = StopwatchState(
+                        stopwatchId = id,
                         uuid = UUID.randomUUID()
                     )
                     _uiState.value = defaultState
@@ -87,14 +86,10 @@ class TimerViewModel @Inject constructor(
         }
     }
 
-    // --- Timer Controls ---
+    // --- Stopwatch Controls ---
 
     fun togglePlayPause() {
         val currentState = _uiState.value
-        if (currentState.type == TimerType.COUNTDOWN && currentState.currentMillis <= 0L) {
-            return // Don't start countdown if already finished
-        }
-
         val newRunningState = !currentState.isRunning
         _uiState.update { it.copy(isRunning = newRunningState) }
 
@@ -106,12 +101,12 @@ class TimerViewModel @Inject constructor(
         saveState(_uiState.value)
     }
 
-    fun resetTimer() {
+    fun resetStopwatch() {
         stopTicker()
         _uiState.update {
             it.copy(
                 isRunning = false,
-                currentMillis = if (it.type == TimerType.COUNTDOWN) it.initialDurationMillis else 0L,
+                currentMillis = 0L,
                 laps = emptyList()
             )
         }
@@ -120,7 +115,7 @@ class TimerViewModel @Inject constructor(
 
     fun addLap() {
         val currentState = _uiState.value
-        if (currentState.type != TimerType.STOPWATCH || !currentState.isRunning) return
+        if (!currentState.isRunning) return
 
         // Check max laps limit from specification
         if (currentState.laps.size >= MAX_LAPS) {
@@ -144,74 +139,29 @@ class TimerViewModel @Inject constructor(
         tickerJob = viewModelScope.launch(Dispatchers.Default) {
             while (isActive && _uiState.value.isRunning) {
                 val elapsed = SystemClock.elapsedRealtime() - startTime
-                val newMillis = when (_uiState.value.type) {
-                    TimerType.STOPWATCH -> initialMillis + elapsed
-                    TimerType.COUNTDOWN -> (initialMillis - elapsed).coerceAtLeast(0L)
-                }
+                val newMillis = initialMillis + elapsed
 
                 withContext(Dispatchers.Main.immediate) {
                     _uiState.update { it.copy(currentMillis = newMillis) }
                 }
 
-                if (_uiState.value.type == TimerType.COUNTDOWN && newMillis <= 0L) {
-                    handleCountdownFinish()
-                    break
-                }
-
                 delay(TICK_INTERVAL_MS)
             }
-            Log.d(TAG, "Ticker coroutine ended for timer $timerId")
+            Log.d(TAG, "Ticker coroutine ended for stopwatch $stopwatchId")
         }
-        Log.d(TAG, "Ticker starting for timer $timerId...")
+        Log.d(TAG, "Ticker starting for stopwatch $stopwatchId...")
     }
 
     private fun stopTicker() {
         tickerJob?.cancel()
         tickerJob = null
-        Log.d(TAG, "Ticker stopped for timer $timerId")
-    }
-
-    private fun handleCountdownFinish() {
-        stopTicker()
-        viewModelScope.launch(Dispatchers.Main) {
-            _uiState.update { it.copy(isRunning = false, currentMillis = 0) }
-            // Sound playing is handled by the Service observing this state change
-            Log.d(TAG, "Timer $timerId finished.")
-            saveState(_uiState.value)
-        }
+        Log.d(TAG, "Ticker stopped for stopwatch $stopwatchId")
     }
 
     // --- Settings Updates ---
-    fun setInitialDuration(durationMillis: Long) {
-        if (_uiState.value.type == TimerType.COUNTDOWN && !_uiState.value.isRunning) {
-            _uiState.update { it.copy(initialDurationMillis = durationMillis, currentMillis = durationMillis) }
-            saveState(_uiState.value)
-        }
-    }
-
     fun setShowCentiseconds(show: Boolean) {
         if (_uiState.value.showCentiseconds == show) return
         _uiState.update { it.copy(showCentiseconds = show) }
-        saveState(_uiState.value)
-    }
-
-    fun setPlaySoundOnEnd(play: Boolean) {
-        if (_uiState.value.playSoundOnEnd == play) return
-        _uiState.update { it.copy(playSoundOnEnd = play) }
-        saveState(_uiState.value)
-    }
-
-    fun setTimerType(type: TimerType) {
-        if (_uiState.value.type == type) return
-        stopTicker()
-        _uiState.update {
-            it.copy(
-                type = type,
-                isRunning = false,
-                currentMillis = if (type == TimerType.COUNTDOWN) it.initialDurationMillis else 0L,
-                laps = emptyList()
-            )
-        }
         saveState(_uiState.value)
     }
 
@@ -294,37 +244,37 @@ class TimerViewModel @Inject constructor(
     }
 
     // --- Persistence ---
-    private fun saveState(state: TimerState) {
-        if (state.timerId <= 0) {
-            Log.w(TAG, "Attempted to save state with invalid timerId: ${state.timerId}")
+    private fun saveState(state: StopwatchState) {
+        if (state.stopwatchId <= 0) {
+            Log.w(TAG, "Attempted to save state with invalid stopwatchId: ${state.stopwatchId}")
             return
         }
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val entity = mapStateToEntity(state)
-                timerDao.insertOrUpdate(entity)
-                Log.d(TAG, "Saved state for timer ${state.timerId}")
+                stopwatchDao.insertOrUpdate(entity)
+                Log.d(TAG, "Saved state for stopwatch ${state.stopwatchId}")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to save state for timer ${state.timerId}", e)
+                Log.e(TAG, "Failed to save state for stopwatch ${state.stopwatchId}", e)
             }
         }
     }
 
     fun deleteState() {
-        if (timerId <= 0) return
+        if (stopwatchId <= 0) return
         stopTicker()
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                timerDao.deleteById(timerId)
-                Log.d(TAG, "Deleted state for timer $timerId")
+                stopwatchDao.deleteById(stopwatchId)
+                Log.d(TAG, "Deleted state for stopwatch $stopwatchId")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete state for timer $timerId", e)
+                Log.e(TAG, "Failed to delete state for stopwatch $stopwatchId", e)
             }
         }
     }
 
     // --- Mappers ---
-    private fun mapEntityToState(entity: TimerStateEntity): TimerState {
+    private fun mapEntityToState(entity: StopwatchStateEntity): StopwatchState {
         val lapsList = try {
             val typeToken = object : TypeToken<List<Long>>() {}.type
             gson.fromJson<List<Long>>(entity.lapsJson, typeToken) ?: emptyList()
@@ -341,25 +291,18 @@ class TimerViewModel @Inject constructor(
             emptyList()
         }
 
-        return TimerState(
-            timerId = entity.timerId,
+        return StopwatchState(
+            stopwatchId = entity.stopwatchId,
             uuid = try {
                 UUID.fromString(entity.uuid)
             } catch (e: Exception) {
                 Log.e(TAG, "Invalid UUID in entity, generating new one", e)
                 UUID.randomUUID()
             },
-            type = try {
-                TimerType.valueOf(entity.type)
-            } catch (e: Exception) {
-                TimerType.STOPWATCH
-            },
-            initialDurationMillis = entity.initialDurationMillis,
             currentMillis = entity.currentMillis,
             isRunning = entity.isRunning,
             laps = lapsList,
             showCentiseconds = entity.showCentiseconds,
-            playSoundOnEnd = entity.playSoundOnEnd,
             overlayColor = entity.overlayColor,
             windowX = entity.windowX,
             windowY = entity.windowY,
@@ -376,20 +319,17 @@ class TimerViewModel @Inject constructor(
         )
     }
 
-    private fun mapStateToEntity(state: TimerState): TimerStateEntity {
+    private fun mapStateToEntity(state: StopwatchState): StopwatchStateEntity {
         val lapsJson = gson.toJson(state.laps)
         val recentUrlsJson = gson.toJson(state.recentMusicUrls)
 
-        return TimerStateEntity(
-            timerId = state.timerId,
+        return StopwatchStateEntity(
+            stopwatchId = state.stopwatchId,
             uuid = state.uuid.toString(),
-            type = state.type.name,
-            initialDurationMillis = state.initialDurationMillis,
             currentMillis = state.currentMillis,
             isRunning = state.isRunning,
             lapsJson = lapsJson,
             showCentiseconds = state.showCentiseconds,
-            playSoundOnEnd = state.playSoundOnEnd,
             overlayColor = state.overlayColor,
             windowX = state.windowX,
             windowY = state.windowY,
@@ -408,7 +348,7 @@ class TimerViewModel @Inject constructor(
 
     // --- Cleanup ---
     override fun onCleared() {
-        Log.d(TAG, "ViewModel cleared for timerId: $timerId")
+        Log.d(TAG, "ViewModel cleared for stopwatchId: $stopwatchId")
         stopTicker()
         super.onCleared()
     }

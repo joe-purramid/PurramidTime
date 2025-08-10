@@ -1,10 +1,9 @@
 // CountdownDurationPickerView.kt
-package com.example.purramid.thepurramid.timers.ui
+package com.example.purramid.purramidtime.timers.ui
 
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.util.AttributeSet
@@ -13,7 +12,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import androidx.core.content.ContextCompat
-import com.example.purramid.thepurramid.R
+import com.example.purramid.purramidtime.R
 import kotlin.math.abs
 import kotlin.math.roundToInt
 

@@ -1,4 +1,4 @@
-package com.example.purramid.thepurramid.clock.ui
+package com.example.purramid.purramidtime.clock.ui
 
 import android.content.Context
 import android.content.Intent
@@ -15,10 +15,10 @@ import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.clock.ClockOverlayService
-import com.example.purramid.thepurramid.clock.ClockAlarmActivity
-import com.example.purramid.thepurramid.databinding.FragmentClockSettingsBinding
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.clock.ClockOverlayService
+import com.example.purramid.purramidtime.clock.ClockAlarmActivity
+import com.example.purramid.purramidtime.databinding.FragmentClockSettingsBinding
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.ZoneId

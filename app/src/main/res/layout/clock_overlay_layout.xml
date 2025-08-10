@@ -21,7 +21,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <com.example.purramid.thepurramid.clock.ClockView
+        <com.example.purramid.purramidtime.clock.ClockView
             android:id="@+id/clockView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -1,5 +1,5 @@
 // SoundPickerDialog.kt
-package com.example.purramid.thepurramid.timers.ui
+package com.example.purramid.purramidtime.timers.ui
 
 import android.app.Dialog
 import android.media.RingtoneManager
@@ -11,9 +11,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.DialogSoundPickerBinding
-import com.example.purramid.thepurramid.databinding.ItemSoundBinding
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.databinding.DialogSoundPickerBinding
+import com.example.purramid.purramidtime.databinding.ItemSoundBinding
 
 class SoundPickerDialog : DialogFragment() {
     
