@@ -18,64 +18,46 @@ import kotlinx.coroutines.Dispatchers
 object DatabaseModule {
 
     @Provides
-    @Singleton // Ensures only one instance of the DAO is created
-    fun provideRandomizerDao(database: PurramidDatabase): RandomizerDao {
-        return database.randomizerDao()
-    }
-
-    @Provides
     @Singleton
-    fun provideClockAlarmDao(database: PurramidDatabase): ClockAlarmDao {
+    fun provideClockAlarmDao(database: PurrTimeDatabase): ClockAlarmDao {
         return database.clockAlarmDao()
     }
 
     @Provides
     @Singleton
-    fun provideClockDao(database: PurramidDatabase): ClockDao {
+    fun provideClockDao(database: PurrTimeDatabase): ClockDao {
         return database.clockDao()
     }
 
     @Provides
     @Singleton
-    fun provideTimeZoneDao(database: PurramidDatabase): TimeZoneDao {
-        // Get TimeZoneDao from the PurramidDatabase instance
+    fun provideTimeZoneDao(database: PurrTimeDatabase): TimeZoneDao {
+        // Get TimeZoneDao from the PurrTimeDatabase instance
         return database.timeZoneDao()
     }
 
     @Provides
     @Singleton
-    fun provideCityDao(database: PurramidDatabase): CityDao {
+    fun provideCityDao(database: PurrTimeDatabase): CityDao {
         return database.cityDao()
     }
 
     @Provides
     @Singleton
-    fun provideScreenMaskDao(database: PurramidDatabase): ScreenMaskDao { // Added
-        return database.screenMaskDao()
+    fun provideSpotlightDao(database: PurrTimeDatabase): StopwatchDao {
+        return database.stopwatchDao()
     }
 
     @Provides
     @Singleton
-    fun provideSpotlightDao(database: PurramidDatabase): SpotlightDao {
-        return database.spotlightDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideTimerDao(database: PurramidDatabase): TimerDao {
+    fun provideTimerDao(database: PurrTimeDatabase): TimerDao {
         return database.timerDao()
     }
 
     @Provides
-    @Singleton
-    fun provideTrafficLightDao(database: PurramidDatabase): TrafficLightDao {
-        return database.trafficLightDao()
-    }
-
-    @Provides
     @Singleton // Ensures only one instance of the Database is created
-    fun providePurramidDatabase(@ApplicationContext appContext: Context): PurramidDatabase {
-        return PurramidDatabase.getDatabase(appContext)
+    fun providePurrTimeDatabase(@ApplicationContext appContext: Context): PurrTimeDatabase {
+        return PurrTimeDatabase.getDatabase(appContext)
     }
 
     @Provides

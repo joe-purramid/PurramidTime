@@ -49,13 +49,6 @@ android {
             excludes += "/META-INF/NOTICE.txt"
         }
     }
-
-    sourceSets {
-        getByName("main") {
-            java.srcDirs("src/main/kotlin")
-            kotlin.srcDirs("src/main/kotlin")
-        }
-    }
 }
 
 dependencies {

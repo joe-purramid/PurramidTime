@@ -1,4 +1,4 @@
-// PurramidDatabase.kt
+// PurrTimeDatabase.kt
 package com.example.purramid.purramidtime.data.db
 
 import android.content.Context
@@ -12,7 +12,7 @@ import java.util.UUID
 
 
 /**
- * The Room database for Purramid Class Tools application.
+ * The Room database for Purramid Time Tools application.
  * This contains tables for Clock, Randomizers, Screen Mask, Spotlight, Timers, and Traffic Light features.
  */
 @Database(
@@ -21,23 +21,15 @@ import java.util.UUID
         CityEntity::class,
         ClockAlarmEntity::class,
         ClockStateEntity::class,
-        RandomizerInstanceEntity::class,
-        ScreenMaskStateEntity::class,
-        SpinItemEntity::class,
-        SpinListEntity::class,
-        SpinSettingsEntity::class,
-        SpotlightInstanceEntity::class,
-        SpotlightOpeningEntity::class,
-        SpotlightStateEntity::class,
+        StopwatchStateEntity::class,
         TimerStateEntity::class,
         TimeZoneBoundaryEntity::class,
-        TrafficLightStateEntity::class
     ],
-    version = 2, // Release to production
+    version = 1, // Release to production
     exportSchema = false // Set to true if you want to export the schema to a file for version control (recommended for production apps)
 )
 @TypeConverters(Converters::class) // Register the TypeConverters class
-abstract class PurramidDatabase : RoomDatabase() {
+abstract class PurrTimeDatabase : RoomDatabase() {
 
     /**
      * Abstract function to get the Data Access Objects
@@ -46,19 +38,16 @@ abstract class PurramidDatabase : RoomDatabase() {
     abstract fun cityDao(): CityDao
     abstract fun clockAlarmDao(): ClockAlarmDao
     abstract fun clockDao(): ClockDao
-    abstract fun randomizerDao(): RandomizerDao
-    abstract fun screenMaskDao(): ScreenMaskDao
-    abstract fun spotlightDao(): SpotlightDao
+    abstract fun stopwatchDao(): StopwatchDao
     abstract fun timerDao(): TimerDao
     abstract fun timeZoneDao(): TimeZoneDao
-    abstract fun trafficLightDao(): TrafficLightDao
 
     companion object {
         @Volatile
-        private var INSTANCE: PurramidDatabase? = null
+        private var INSTANCE: PurrTimeDatabase? = null
 
-        // Migration from 1 to 2: Add UUID to screen_mask_state
-        private val MIGRATION_1_2 = object : Migration(1, 14) {
+        // Migration from 0 to 1: Add UUID to screen_mask_state
+        private val MIGRATION_0_1 = object : Migration(0, 1) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE screen_mask_state ADD COLUMN uuid TEXT NOT NULL DEFAULT '${UUID.randomUUID()}'")
                 db.execSQL("ALTER TABLE timer_state ADD COLUMN isNested INTEGER NOT NULL DEFAULT 0")
@@ -77,15 +66,15 @@ abstract class PurramidDatabase : RoomDatabase() {
 
         // Future migrations would be added here
 
-        fun getDatabase(context: Context): PurramidDatabase {
+        fun getDatabase(context: Context): PurrTimeDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
-                    PurramidDatabase::class.java,
+                    PurrTimeDatabase::class.java,
                     "purramid_database"
                 )
                     .addMigrations(
-                        MIGRATION_1_2,
+                        MIGRATION_0_1,
                         // Add future migrations here
                     )
                     .fallbackToDestructiveMigrationOnDowngrade(false) // Only destroy on downgrade

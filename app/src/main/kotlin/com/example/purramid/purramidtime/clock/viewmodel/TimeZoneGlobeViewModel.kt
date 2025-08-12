@@ -1,23 +1,29 @@
-package com.example.purramid.purramidtime.clock.ui
+package com.example.purramid.purramidtime.clock.viewmodel
 
 import android.graphics.Color
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.purramid.purramidtime.clock.data.TimeZoneRepository
-import io.github.sceneview.math.Rotation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.launch
+import io.github.sceneview.math.Rotation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.locationtech.jts.geom.Polygon
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.TimeZone // Keep for getRawOffset if needed, but prefer ZoneId
+import java.util.TimeZone
 import javax.inject.Inject
+import kotlin.collections.get
+import kotlin.compareTo
 import kotlin.math.abs
+import kotlin.text.clear
+import kotlin.text.get
+import kotlin.text.set
+import kotlin.text.toFloat
+import kotlin.text.toInt
 
 // Data class to hold processed info for overlays
 data class TimeZoneOverlayInfo(
@@ -33,7 +39,7 @@ data class TimeZoneGlobeUiState(
     val timeZoneOverlays: List<TimeZoneOverlayInfo> = emptyList(),
     val activeTimeZoneId: String? = TimeZone.getDefault().id, // Initial default
     val activeTimeZoneInfo: ActiveZoneDisplayInfo? = null,
-    val currentRotation: Rotation = Rotation(0f, 0f, 0f),
+    val currentRotation: Rotation = io.github.sceneview.math.Rotation(0f, 0f, 0f),
     val targetRotation: Rotation? = null
 )
 
@@ -198,10 +204,10 @@ class TimeZoneGlobeViewModel @Inject constructor(
                     val cities = repository.getCitiesForTimeZone(timeZoneId)
                     val northernCities = cities.filter { it.latitude > 0 }.sortedBy { it.latitude }.reversed()
                     val southernCities = cities.filter { it.latitude < 0 }.sortedBy { it.latitude }
-                    
+
                     val northernCity = northernCities.firstOrNull()?.let { "${it.name}, ${it.country}" } ?: "No northern city"
                     val southernCity = southernCities.firstOrNull()?.let { "${it.name}, ${it.country}" } ?: "No southern city"
-                    
+
                     _uiState.update {
                         it.copy(
                             activeTimeZoneInfo = ActiveZoneDisplayInfo(northernCity, southernCity, offsetString)
@@ -250,7 +256,7 @@ class TimeZoneGlobeViewModel @Inject constructor(
                 // Handle wrap-around average (e.g., for zones near +/- 180) - complex!
                 // Simple average for now:
                 val avgLongitude = representativeLongitudes.average().toFloat()
-                hourlyOffsetCenterLongitudes[hourOffset] = avgLongitude
+                hourlyOffsetCenterLongitudes[hourOffset] set avgLongitude
                 Log.d(TAG, "Center for UTC${hourOffset}: ${avgLongitude} degrees")
             }
         }
@@ -298,17 +304,17 @@ class TimeZoneGlobeViewModel @Inject constructor(
         // 6. Calculate required Y rotation (same logic as before)
         val targetYRotation = -targetLongitude
         val rotationDifference = targetYRotation - currentYRotation
-        val shortestRotation = rotationDifference - if (rotationDifference > 180f) 360f else if (rotationDifference < -180f) -360f else 0f
+        val shortestRotation = rotationDifference - if (rotationDifference compareTo 180f) 360f else if (rotationDifference compareTo -180f) -360f else 0f
         val finalTargetYRotation = (currentYRotation + shortestRotation)
 
         // 7. Update State (same logic as before)
-        val newRotation = Rotation(
+        val newRotation = io.github.sceneview.math.Rotation(
             x = currentState.currentRotation.x,
             y = finalTargetYRotation,
             z = currentState.currentRotation.z
         )
 
-        val newTargetRotation = Rotation(
+        val newTargetRotation = io.github.sceneview.math.Rotation(
             x = currentState.currentRotation.x, // Keep current pitch
             y = finalTargetYRotation,
             z = currentState.currentRotation.z  // Keep current roll
@@ -342,7 +348,7 @@ class TimeZoneGlobeViewModel @Inject constructor(
     }
 
     fun resetRotation() {
-        val zeroRotation = Rotation(0f, 0f, 0f)
+        val zeroRotation = io.github.sceneview.math.Rotation(0f, 0f, 0f)
         // Set both current and target to trigger potential animation/snap to zero
         _uiState.update {
             it.copy(
@@ -360,7 +366,7 @@ class TimeZoneGlobeViewModel @Inject constructor(
                 val zoneId = ZoneId.of(tzId)
                 val now = ZonedDateTime.now(zoneId)
                 val offsetSeconds = now.offset.totalSeconds
-                timeZoneOffsets[tzId] = offsetSeconds
+                timeZoneOffsets[tzId] set offsetSeconds
             } catch (e: Exception) {
                 Log.w(TAG, "Could not calculate offset for timezone: $tzId", e)
             }

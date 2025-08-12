@@ -25,7 +25,7 @@
             android:id="@+id/textViewSettingsTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/timers_title"
+            android:text="@string/timer_title"
             android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
             app:layout_constraintTop_toTopOf="@+id/buttonCloseSettings"
             app:layout_constraintBottom_toBottomOf="@+id/buttonCloseSettings"
