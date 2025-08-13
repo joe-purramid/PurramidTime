@@ -50,7 +50,8 @@
             android:layout_height="32dp"
             android:src="@drawable/ic_play"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Play/Pause"
+            android:contentDescription="@string/play"
+            android:tint="@color/button_tint_state_list"
             android:layout_marginEnd="4dp" />
 
         <!-- Reset Button -->
@@ -60,7 +61,8 @@
             android:layout_height="32dp"
             android:src="@drawable/ic_reset"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Reset"
+            android:contentDescription="@string/reset"
+            android:tint="@color/button_tint_state_list"
             android:layout_marginEnd="4dp" />
 
         <!-- Settings Button -->
@@ -70,8 +72,8 @@
             android:layout_height="32dp"
             android:src="@drawable/ic_settings"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Settings" />
-
+            android:contentDescription="@string/settings"
+            android:tint="@color/button_tint_state_list" />
     </LinearLayout>
 
     <!-- Nest Button (for toggling nested state) -->
@@ -81,7 +83,7 @@
         android:layout_height="24dp"
         android:src="@drawable/ic_minimize"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Nest Clock"
+        android:contentDescription="@string/nest_clock"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_margin="4dp" />

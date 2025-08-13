@@ -170,6 +170,31 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
         }
     }
 
+    fun loadClockFaceSVG() {
+        clockFaceImageView?.let { imageView ->
+            try {
+                // Load the appropriate clock face based on 24-hour setting
+                val svgResourceId = if (is24Hour) {
+                    // For now, use same face until clock_face24.xml is created
+                    R.drawable.clock_face
+                } else {
+                    R.drawable.clock_face
+                }
+
+                // Load SVG from resources
+                val svg = com.caverock.androidsvg.SVG.getFromResource(context.resources, svgResourceId)
+                imageView.setSVG(svg)
+
+                // Update number visibility after loading
+                updateNumberVisibility()
+
+                Log.d("ClockView", "Clock face SVG loaded successfully")
+            } catch (e: Exception) {
+                Log.e("ClockView", "Error loading clock face SVG", e)
+            }
+        }
+    }
+
     /**
      * Sets the external SVGImageViews used for the analog display.
      * Should be called by the Service after inflating the analog layout.
@@ -184,6 +209,10 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
         this.hourHandImageView = hourHand
         this.minuteHandImageView = minuteHand
         this.secondHandImageView = secondHand
+
+        // Load the clock face SVG
+        loadClockFaceSVG()
+
         updateAnalogViewVisibility()
         updateNumberVisibility()
         updateAnalogColors()
@@ -525,37 +554,73 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
         val rawSecondAngle = (secondHandImageView?.rotation ?: 0f).mod(360f)
 
         // Convert angles to time components (simplified)
-        val seconds = roundToInt(rawSecondAngle / 6f).mod(60)
-        val minutes = roundToInt(rawMinuteAngle / 6f).mod(60)
+        val seconds = (rawSecondAngle / 6f).roundToInt().mod(60)
+        val minutes = (rawMinuteAngle / 6f).roundToInt().mod(60)
 
-        // Hour calculation needs care due to minute influence and 12 vs 24 ambiguity
-        // Estimate hour component (0-11.99~) based purely on hour hand angle
-        val hourComponent = rawHourAngle / 30f
-        // Let's round for now. ViewModel needs to determine AM/PM or true 24h context.
-        var hour12 = roundToInt(hourComponent).mod(12)
-        if (hour12 == 0) hour12 = 12 // Display 12 instead of 0
+        // Hour calculation with AM/PM context preservation
+        val hourFrom12HourAngle = (rawHourAngle / 30f).roundToInt().mod(12)
 
-        // Construct a time. Defaulting to current displayed time's AM/PM for hour resolution.
-        // ViewModel MUST refine this based on context if 24h accuracy across noon/midnight is critical.
-        var hour24 = hour12
-        if (displayedTime.hour >= 12 && hour12 != 12) { // If currently PM, assume new time is PM unless it's 12
-            hour24 += 12
-        } else if (displayedTime.hour < 12 && hour12 == 12) { // Handle 12 AM case (becomes 0 hour)
-            hour24 = 0
+        // Determine AM/PM based on current displayed time and hand movement
+        var hour24 = when {
+            is24Hour -> {
+                // In 24-hour mode, check if we're in the second rotation (12-23)
+                val previousHour = displayedTime.hour
+                val hourDiff = hourFrom12HourAngle - (previousHour % 12)
+
+                when {
+                    // Crossed midnight backward (23 -> 0)
+                    previousHour >= 20 && hourFrom12HourAngle < 4 && hourDiff < -8 -> {
+                        hourFrom12HourAngle
+                    }
+                    // Crossed midnight forward (0 -> 23)
+                    previousHour < 4 && hourFrom12HourAngle >= 8 && hourDiff > 8 -> {
+                        if (hourFrom12HourAngle == 0) 0 else hourFrom12HourAngle + 12
+                    }
+                    // Crossed noon backward (12 -> 11)
+                    previousHour in 12..15 && hourFrom12HourAngle >= 9 && hourDiff > 6 -> {
+                        hourFrom12HourAngle
+                    }
+                    // Crossed noon forward (11 -> 12)
+                    previousHour in 9..11 && hourFrom12HourAngle < 3 && hourDiff < -6 -> {
+                        if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
+                    }
+                    // Normal case - preserve AM/PM
+                    else -> {
+                        if (previousHour >= 12) {
+                            if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
+                        } else {
+                            hourFrom12HourAngle
+                        }
+                    }
+                }
+            }
+            else -> {
+                // 12-hour mode - preserve current AM/PM unless crossing 12
+                val previousHour = displayedTime.hour
+                val wasAM = previousHour < 12
+
+                // Check if we crossed the 12 o'clock boundary
+                val previousHour12 = if (previousHour == 0) 12 else (previousHour % 12).let { if (it == 0) 12 else it }
+                val crossedNoon = (previousHour12 == 11 && hourFrom12HourAngle == 0) ||
+                        (previousHour12 == 12 && hourFrom12HourAngle == 1)
+                val crossedMidnight = (previousHour12 == 12 && hourFrom12HourAngle == 11) ||
+                        (previousHour12 == 1 && hourFrom12HourAngle == 0)
+
+                when {
+                    crossedNoon && wasAM -> if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
+                    crossedMidnight && !wasAM -> hourFrom12HourAngle
+                    wasAM -> hourFrom12HourAngle
+                    else -> if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
+                }
+            }
         }
-        // If it was already > 12 (e.g., angle was near 360), keep it 24h
-        if (hour12 != 12 && hourComponent >= 12) hour24 = hour12 + 12
 
         hour24 = hour24.coerceIn(0, 23) // Ensure valid 0-23 range
 
         return try {
             LocalTime.of(hour24, minutes, seconds)
         } catch (e: Exception) {
-            Log.e(
-                "ClockView",
-                "Error creating LocalTime from angles, returning previous displayedTime",
-                e
-            )
+            Log.e("ClockView", "Error creating LocalTime from angles: h=$hour24 m=$minutes s=$seconds", e)
             displayedTime // Fallback to last known time
         }
     }

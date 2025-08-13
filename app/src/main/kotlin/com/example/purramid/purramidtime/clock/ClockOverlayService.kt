@@ -42,6 +42,12 @@ import com.example.purramid.purramidtime.clock.viewmodel.ClockViewModel
 import com.example.purramid.purramidtime.di.ClockPrefs
 import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
+import java.lang.ref.WeakReference
+import java.time.LocalTime
+import java.time.ZoneId
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -50,14 +56,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.time.LocalTime
-import java.time.ZoneId
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 import kotlin.math.abs
 import kotlin.math.max
-import java.lang.ref.WeakReference
-import java.util.Collections
 
 @AndroidEntryPoint
 class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
@@ -84,9 +84,12 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
         const val ACTION_STOP_CLOCK_SERVICE = "com.example.purramid.clock.ACTION_STOP_SERVICE"
 
         // Existing actions from ClockActivity, keep if they target specific instances via EXTRA_CLOCK_ID
-        const val ACTION_ADD_NEW_CLOCK = "com.example.purramid.com.example.purramid.purramidtime.ACTION_ADD_NEW_CLOCK" // From settings
-        const val ACTION_UPDATE_CLOCK_SETTING = "com.example.purramid.com.example.purramid.purramidtime.ACTION_UPDATE_CLOCK_SETTING"
-        const val ACTION_NEST_CLOCK = "com.example.purramid.com.example.purramid.purramidtime.ACTION_NEST_CLOCK"
+        const val ACTION_ADD_NEW_CLOCK = "com.example.purramid.purramidtime.ACTION_ADD_NEW_CLOCK" // From settings
+        const val ACTION_UPDATE_CLOCK_SETTING = "com.example.purramid.purramidtime.ACTION_UPDATE_CLOCK_SETTING"
+        const val ACTION_NEST_CLOCK = "com.example.purramid.purramidtime.ACTION_NEST_CLOCK"
+
+        private const val TICK_INTERVAL_MS = 100L
+
         const val EXTRA_CLOCK_ID = ClockViewModel.KEY_INSTANCE_ID // Use ViewModel's key
         const val EXTRA_SETTING_TYPE = "setting_type"
         const val EXTRA_SETTING_VALUE = "setting_value"
@@ -207,6 +210,31 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
         }
     }
 
+    override fun onTimeManuallySet(instanceId: Int, newTime: LocalTime) {
+        Log.d(TAG, "Manual time set for clock $instanceId: $newTime")
+        clockViewModels[instanceId]?.let { viewModel ->
+            // Pause the clock and set the manual time
+            viewModel.setPaused(true)
+            viewModel.setManuallySetTime(newTime)
+        }
+    }
+
+    override fun onDragStateChanged(instanceId: Int, isDragging: Boolean) {
+        Log.d(TAG, "Clock $instanceId drag state changed: $isDragging")
+        if (isDragging) {
+            // Optionally disable window dragging while hand is being dragged
+            // This prevents conflicts between hand dragging and window movement
+            clockLayoutParams[instanceId]?.flags = clockLayoutParams[instanceId]?.flags?.or(
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+            ) ?: WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        } else {
+            // Re-enable window dragging
+            clockLayoutParams[instanceId]?.flags = clockLayoutParams[instanceId]?.flags?.and(
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+            ) ?: 0
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         val action = intent?.action
@@ -289,8 +317,33 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
         // Update clock view
         clockView.updateDisplayTime(state.currentTime)
 
-        // Update play/pause button
-        updatePlayPauseButtonOnOverlay(rootView, state.isPaused)
+        // Update play/pause button with proper activation state
+        rootView.findViewById<ImageButton>(R.id.buttonPlayPause)?.apply {
+            setImageResource(if (state.isPaused) R.drawable.ic_play else R.drawable.ic_pause)
+            isActivated = state.isPaused
+            // Apply tint based on activation state
+            imageTintList = android.content.res.ColorStateList.valueOf(
+                if (state.isPaused) 0xFF1976D2.toInt() else 0xFF757575.toInt()
+            )
+        }
+
+        // Update settings button activation if settings are open
+        rootView.findViewById<ImageButton>(R.id.buttonSettings)?.apply {
+            // Check if settings are open for this instance
+            val settingsOpen = false // TODO: Track this state
+            isActivated = settingsOpen
+            imageTintList = android.content.res.ColorStateList.valueOf(
+                if (settingsOpen) 0xFF1976D2.toInt() else 0xFF757575.toInt()
+            )
+        }
+
+        // Update nest button state
+        rootView.findViewById<ImageButton>(R.id.buttonNest)?.apply {
+            isActivated = state.isNested
+            imageTintList = android.content.res.ColorStateList.valueOf(
+                if (state.isNested) 0xFF1976D2.toInt() else 0xFF757575.toInt()
+            )
+        }
 
         // Apply nest mode visuals if state changed
         if (state.isNested) {
@@ -373,7 +426,23 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
             val inflater = LayoutInflater.from(this)
             val clockRootView = inflater.inflate(R.layout.clock_overlay_layout, null) as ViewGroup
             val clockView = clockRootView.findViewById<ClockView>(R.id.clockView)
-            
+
+            // Initialize ClockView with proper configuration
+            clockView.apply {
+                setInstanceId(instanceId)
+                interactionListener = this@ClockOverlayService  // Set the listener
+
+                // Apply initial state from ViewModel
+                viewModel.uiState.value?.let { state ->
+                    setClockMode(state.mode == "analog")
+                    setClockColor(state.clockColor)
+                    setIs24HourFormat(state.is24Hour)
+                    setClockTimeZone(state.timeZoneId)
+                    setDisplaySeconds(state.displaySeconds)
+                    updateDisplayTime(state.currentTime)
+                }
+            }
+
             // Store references
             activeClockViews[instanceId] = clockRootView
             clockViewInstances[instanceId] = clockView
@@ -392,6 +461,62 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
             setupControlButtons(clockRootView, instanceId, viewModel)
             
             Log.d(TAG, "Clock window created for instance $instanceId")
+        }
+    }
+
+    private fun setupControlButtons(rootView: ViewGroup, instanceId: Int, viewModel: ClockViewModel) {
+        // Play/Pause button
+        rootView.findViewById<ImageButton>(R.id.buttonPlayPause)?.apply {
+            setOnClickListener {
+                val currentState = viewModel.uiState.value
+                val isPaused = currentState?.isPaused ?: false
+                viewModel.setPaused(!isPaused)
+
+                // Update button appearance
+                setImageResource(if (!isPaused) R.drawable.ic_play else R.drawable.ic_pause)
+                isActivated = !isPaused
+            }
+        }
+
+        // Reset button
+        rootView.findViewById<ImageButton>(R.id.buttonReset)?.apply {
+            setOnClickListener {
+                viewModel.resetTime()
+                // Flash activated state
+                isActivated = true
+                postDelayed({ isActivated = false }, 200)
+            }
+        }
+
+        // Settings button
+        rootView.findViewById<ImageButton>(R.id.buttonSettings)?.apply {
+            setOnClickListener {
+                isActivated = true
+                val settingsIntent = Intent(this@ClockOverlayService, ClockActivity::class.java).apply {
+                    action = ClockActivity.ACTION_SHOW_CLOCK_SETTINGS
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(ClockViewModel.KEY_INSTANCE_ID, instanceId)
+                }
+                startActivity(settingsIntent)
+
+                // Deactivate after delay
+                postDelayed({ isActivated = false }, 500)
+            }
+        }
+
+        // Nest button (if present in layout)
+        rootView.findViewById<ImageButton>(R.id.buttonNest)?.apply {
+            val isNested = viewModel.uiState.value?.isNested ?: false
+            isActivated = isNested
+
+            setOnClickListener {
+                val currentNested = viewModel.uiState.value?.isNested ?: false
+                viewModel.updateIsNested(!currentNested)
+                isActivated = !currentNested
+
+                // Apply nest mode visuals
+                applyNestModeVisuals(instanceId, rootView, !currentNested)
+            }
         }
     }
 
