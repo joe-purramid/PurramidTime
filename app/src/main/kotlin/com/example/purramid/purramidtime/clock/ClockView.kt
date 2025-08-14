@@ -83,6 +83,9 @@ class ClockView @JvmOverloads constructor(
 =======
     private var currentlyMovingHand: Hand? = null
     private var isDraggingHand = false
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
     // --- Drawing Tools ---
@@ -239,6 +242,7 @@ class ClockView @JvmOverloads constructor(
     }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     // --- Analog Clock Drawing ---
     private fun drawAnalogClock(canvas: Canvas) {
         // Draw clock face (circle and tick marks)
@@ -270,6 +274,8 @@ class ClockView @JvmOverloads constructor(
             color = getContrastColor(clockColor)
             strokeCap = Paint.Cap.ROUND
 =======
+=======
+>>>>>>> Stashed changes
     // Public method to check if hand dragging is in progress
     fun isHandDragging(): Boolean = isDraggingHand
 
