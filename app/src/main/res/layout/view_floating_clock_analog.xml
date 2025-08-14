@@ -6,37 +6,13 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:gravity="center_horizontal"
-    android:background="@android:color/transparent"> <FrameLayout
-        android:id="@+id/analogClockViewContainer"
-        android:layout_width="150dp"  
+    android:background="@android:color/transparent">
+
+    <com.example.purramid.purramidtime.clock.ClockView
+        android:id="@+id/analogClockView"
+        android:layout_width="150dp"
         android:layout_height="150dp"
-        android:paddingBottom="4dp"> <com.caverock.androidsvg.SVGImageView
-            android:id="@+id/clockFaceImageView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitCenter" />
-            <com.caverock.androidsvg.SVGImageView
-            android:id="@+id/hourHandImageView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitCenter"
-            app:srcCompat="@drawable/hour_hand" />
-
-        <com.caverock.androidsvg.SVGImageView
-            android:id="@+id/minuteHandImageView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitCenter"
-            app:srcCompat="@drawable/minute_hand" />
-
-        <com.caverock.androidsvg.SVGImageView
-            android:id="@+id/secondHandImageView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scaleType="fitCenter"
-            app:srcCompat="@drawable/second_hand" />
-
-    </FrameLayout>
+        android:paddingBottom="4dp" />
 
     <View
         android:layout_width="match_parent"

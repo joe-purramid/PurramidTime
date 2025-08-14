@@ -1,31 +1,35 @@
 // ClockView.kt
-package com.example.purramid.purramidtime.clock // Use your package name
+package com.example.purramid.purramidtime.clock
 
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
+import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.util.Log
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.view.isVisible
-import com.caverock.androidsvg.SVGImageView
+import androidx.core.content.ContextCompat
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.ui.PurramidPalette
 import com.example.purramid.purramidtime.util.dpToPx
+import java.time.Duration
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /**
  * A custom view that displays a clock, either analog or digital.
@@ -33,7 +37,11 @@ import kotlin.math.roundToInt
  * via `updateDisplayTime` and configuration via setter methods.
  * It reports user interactions (dragging hands) back via ClockInteractionListener.
  */
-class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
+class ClockView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
 
     // --- Listener for Interactions ---
     interface ClockInteractionListener {
@@ -48,71 +56,67 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     // --- Configuration State (Configurable via setters) ---
     private var instanceId: Int = -1
-    private var isAnalog: Boolean = false
-        set // Private setter
+    private var isAnalog: Boolean = true // Default to analog
     private var clockColor: Int = Color.WHITE
     private var is24Hour: Boolean = false
-    private var timeZoneId: ZoneId = ZoneId.systemDefault() // Needed for formatting
     private var displaySeconds: Boolean = true
+    private var isPaused: Boolean = false
+    private var timeZoneId: ZoneId = ZoneId.systemDefault()
 
     // --- State for Display ---
-    private var displayedTime: LocalTime = LocalTime.MIN // Holds the last time received
+    private var displayedTime: LocalTime = LocalTime.now()
 
-    // --- Views for Analog Mode (Set externally) ---
-    // These are the SVG views from the inflated layout (view_floating_clock_analog.xml)
-    private var clockFaceImageView: SVGImageView? = null
-    private var hourHandImageView: SVGImageView? = null
-    private var minuteHandImageView: SVGImageView? = null
-    private var secondHandImageView: SVGImageView? = null
+    // --- Drawing Properties ---
+    private var centerX: Float = 0f
+    private var centerY: Float = 0f
+    private var radius: Float = 0f
 
-    // --- Drawing and Formatting Tools ---
-    private lateinit var timeFormatter: DateTimeFormatter
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        // Set initial size, will be updated in onDraw/setters
-        textSize =
-            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 48f, resources.displayMetrics)
-    }
-    private val bounds = Rect() // Needed for digital text bounds
+    // Clock face drawable (optional)
+    private var clockFaceDrawable: Drawable? = null
 
     // --- Touch Handling State ---
+    private enum class ClockHand { HOUR, MINUTE, SECOND }
+    private var draggedHand: ClockHand? = null
     private var lastTouchAngle: Float = 0f
-    private var currentlyMovingHand: Hand? = null
+    private var dragStartTime: LocalTime? = null
 
-    private enum class Hand { HOUR, MINUTE, SECOND }
-
-    // Define the fixed colors from ClockActivity for mapping
-    private object PaletteColors {
-        val WHITE = Color.WHITE
-        val BLACK = Color.BLACK
-        val GOLDENROD = 0xFFDAA520.toInt()
-        val TEAL = 0xFF008080.toInt()
-        val LIGHT_BLUE = 0xFFADD8E6.toInt()
-        val VIOLET = 0xFFEE82EE.toInt()
+    // --- Drawing Tools ---
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 48f, resources.displayMetrics)
     }
+
+    private val handPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+    }
+
+    private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    }
+
+    private lateinit var timeFormatter: DateTimeFormatter
+    private val bounds = Rect()
 
     // --- Initialization ---
     init {
-        // Initialize formatter and paint based on default config state
+        // Initialize formatter
         updateTimeFormat()
         setPaintColors()
 
-        // Set touch listener (logic remains similar, but relies on external state)
-        setOnTouchListener(HandTouchListener())
+        // Load the clock face drawable if available
+        clockFaceDrawable = ContextCompat.getDrawable(context, R.drawable.clock_face)
     }
 
-    // --- Public Method for Updating Display ---
-    /**
-     * Updates the time displayed by the clock. Call this externally (e.g., from Service observing ViewModel).
-     * @param timeToDisplay The LocalTime to display.
-     */
-    fun updateDisplayTime(timeToDisplay: LocalTime) {
-        this.displayedTime = timeToDisplay
-        if (isAnalog) {
-            updateAnalogHands() // Update SVG rotations based on displayedTime
-        } else {
-            invalidate() // Triggers onDraw for digital based on displayedTime
-        }
+    // --- Size Management ---
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+
+        // Calculate center and radius
+        centerX = w / 2f
+        centerY = h / 2f
+        radius = min(w, h) / 2f * 0.9f // 90% of available space
     }
 
     // --- Public Configuration Methods ---
@@ -124,10 +128,7 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
     fun setClockMode(isAnalogMode: Boolean) {
         if (isAnalog != isAnalogMode) {
             isAnalog = isAnalogMode
-            updateTimeFormat() // Update format (e.g., AM/PM)
-            updateAnalogViewVisibility() // Crucial for switching modes
-            setPaintColors()
-            invalidate() // Request redraw
+            invalidate()
         }
     }
 
@@ -143,9 +144,6 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
         if (is24Hour != is24) {
             is24Hour = is24
             updateTimeFormat()
-            if (isAnalog) {
-                updateNumberVisibility() // Update SVG number visibility
-            }
             invalidate()
         }
     }
@@ -154,7 +152,6 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
         if (this.timeZoneId != zoneId) {
             this.timeZoneId = zoneId
             updateTimeFormat()
-            // No immediate time update needed here, relies on next updateDisplayTime call
             invalidate()
         }
     }
@@ -163,141 +160,274 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
         if (displaySeconds != display) {
             displaySeconds = display
             updateTimeFormat()
-            if (isAnalog) {
-                secondHandImageView?.visibility = if (display) View.VISIBLE else View.GONE
-            }
             invalidate()
         }
     }
 
-    fun loadClockFaceSVG() {
-        clockFaceImageView?.let { imageView ->
-            try {
-                // Load the appropriate clock face based on 24-hour setting
-                val svgResourceId = if (is24Hour) {
-                    // For now, use same face until clock_face24.xml is created
-                    R.drawable.clock_face
-                } else {
-                    R.drawable.clock_face
-                }
-
-                // Load SVG from resources
-                val svg = com.caverock.androidsvg.SVG.getFromResource(context.resources, svgResourceId)
-                imageView.setSVG(svg)
-
-                // Update number visibility after loading
-                updateNumberVisibility()
-
-                Log.d("ClockView", "Clock face SVG loaded successfully")
-            } catch (e: Exception) {
-                Log.e("ClockView", "Error loading clock face SVG", e)
-            }
-        }
+    fun setPaused(paused: Boolean) {
+        isPaused = paused
+        invalidate()
     }
 
     /**
-     * Sets the external SVGImageViews used for the analog display.
-     * Should be called by the Service after inflating the analog layout.
+     * Updates the time displayed by the clock. Call this externally (e.g., from Service observing ViewModel).
+     * @param timeToDisplay The LocalTime to display.
      */
-    fun setAnalogImageViews(
-        clockFace: SVGImageView?,
-        hourHand: SVGImageView?,
-        minuteHand: SVGImageView?,
-        secondHand: SVGImageView?
-    ) {
-        this.clockFaceImageView = clockFace
-        this.hourHandImageView = hourHand
-        this.minuteHandImageView = minuteHand
-        this.secondHandImageView = secondHand
-
-        // Load the clock face SVG
-        loadClockFaceSVG()
-
-        updateAnalogViewVisibility()
-        updateNumberVisibility()
-        updateAnalogColors()
-        updateAnalogHands() // Set initial hand positions based on current displayedTime
+    fun updateDisplayTime(timeToDisplay: LocalTime) {
+        this.displayedTime = timeToDisplay
+        invalidate()
     }
 
-    // --- Internal Helper Methods (Remain mostly the same) ---
+    // --- Internal Helper Methods ---
 
-    private fun setPaintColors() { // Remains the same
-        val handColor = getHandColorForBackground(clockColor)
-        textPaint.color = handColor
-
-        // Update external SVG colors if they are being used
-        if (clockFaceImageView != null) {
-            updateAnalogColors()
-        }
+    private fun setPaintColors() {
+        val contrastColor = getContrastColor(clockColor)
+        textPaint.color = contrastColor
+        handPaint.color = contrastColor
+        numberPaint.color = contrastColor
     }
 
-    /**
-     * Determines the appropriate hand color (black or white) for contrast
-     * against the predefined background colors using direct mapping.
-     */
-    private fun getHandColorForBackground(backgroundColor: Int): Int {
+    private fun getContrastColor(backgroundColor: Int): Int {
+        // Use the PurramidPalette color mapping
         return when (backgroundColor) {
-            PaletteColors.WHITE,
-            PaletteColors.GOLDENROD, // Light enough for black hands
-            PaletteColors.TEAL,        // Dark enough for white hands? Let's test - maybe black? Assume black for now.
-            PaletteColors.LIGHT_BLUE   // Light enough for black hands
-                -> Color.BLACK // Use black hands on light backgrounds
+            PurramidPalette.WHITE.colorInt,
+            PurramidPalette.GOLDENROD.colorInt,
+            PurramidPalette.LIGHT_BLUE.colorInt -> Color.BLACK
 
-            PaletteColors.BLACK,
-            PaletteColors.VIOLET       // Dark enough for white hands
-                -> Color.WHITE // Use white hands on dark backgrounds
+            PurramidPalette.BLACK.colorInt,
+            PurramidPalette.TEAL.colorInt,
+            PurramidPalette.VIOLET.colorInt -> Color.WHITE
 
             else -> {
-                // Fallback for unexpected colors (shouldn't happen with fixed palette)
-                // Calculate luminance as a safe default
-                Log.w(
-                    "ClockView",
-                    "Unexpected background color: ${Integer.toHexString(backgroundColor)}. Using luminance check."
-                )
-                if (Color.luminance(backgroundColor) > 0.5) Color.BLACK else Color.WHITE
+                // Fallback luminance calculation
+                val r = Color.red(backgroundColor) / 255.0
+                val g = Color.green(backgroundColor) / 255.0
+                val b = Color.blue(backgroundColor) / 255.0
+                val luminance = 0.299 * r + 0.587 * g + 0.114 * b
+                if (luminance > 0.5) Color.BLACK else Color.WHITE
             }
         }
     }
 
-    private fun updateTimeFormat() { // Remains the same
+    private fun updateTimeFormat() {
         val locale = Locale.getDefault()
         val basePattern = if (is24Hour) "HH:mm" else "hh:mm"
         val patternWithSeconds = if (is24Hour) "HH:mm:ss" else "hh:mm:ss"
-        timeFormatter = DateTimeFormatter
-            .ofPattern(if (displaySeconds) patternWithSeconds else basePattern, locale)
-        // .withZone(timeZoneId)
+        timeFormatter = DateTimeFormatter.ofPattern(
+            if (displaySeconds) patternWithSeconds else basePattern,
+            locale
+        )
     }
 
-    // --- Drawing Logic (Using displayedTime) ---
+    // --- Main Drawing Method ---
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        if (!isAnalog) {
-            // Only draw if digital mode is active
+
+        // Draw background
+        canvas.drawColor(clockColor)
+
+        if (isAnalog) {
+            drawAnalogClock(canvas)
+        } else {
             drawDigitalClock(canvas)
         }
-        // Analog drawing is handled by external SVGImageViews updated in updateAnalogHands()
     }
 
-    private fun drawDigitalClock(canvas: Canvas) {
-        // Format the externally provided time
-        val formattedTime = try {
-            displayedTime.format(timeFormatter.withZone(timeZoneId)) // Ensure formatter uses correct zone
-        } catch (e: Exception) {
-            Log.e("ClockView", "Error formatting time: $displayedTime", e)
-            "--:--" // Fallback display
+    // --- Analog Clock Drawing ---
+    private fun drawAnalogClock(canvas: Canvas) {
+        // Draw clock face (circle and tick marks)
+        drawClockFace(canvas)
+
+        // Draw numbers
+        drawClockNumbers(canvas)
+
+        // Draw hands
+        drawHands(canvas)
+
+        // Draw center dot
+        handPaint.style = Paint.Style.FILL
+        canvas.drawCircle(centerX, centerY, radius * 0.03f, handPaint)
+        handPaint.style = Paint.Style.STROKE
+    }
+
+    private fun drawClockFace(canvas: Canvas) {
+        // Draw outer circle
+        val circlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = radius * 0.02f
+            color = getContrastColor(clockColor)
+        }
+        canvas.drawCircle(centerX, centerY, radius, circlePaint)
+
+        // Draw tick marks
+        val tickPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = getContrastColor(clockColor)
+            strokeCap = Paint.Cap.ROUND
         }
 
-        // Adjust text size based on available width (simple example)
+        for (i in 0 until 60) {
+            val angle = i * 6f - 90f // 6 degrees per tick
+            val isHourMark = i % 5 == 0
+
+            // Set tick length and width
+            val tickLength = if (isHourMark) radius * 0.1f else radius * 0.05f
+            tickPaint.strokeWidth = if (isHourMark) radius * 0.02f else radius * 0.01f
+
+            // Calculate tick positions
+            val outerRadius = radius - radius * 0.05f
+            val innerRadius = outerRadius - tickLength
+
+            val cosAngle = cos(Math.toRadians(angle.toDouble())).toFloat()
+            val sinAngle = sin(Math.toRadians(angle.toDouble())).toFloat()
+
+            val x1 = centerX + outerRadius * cosAngle
+            val y1 = centerY + outerRadius * sinAngle
+            val x2 = centerX + innerRadius * cosAngle
+            val y2 = centerY + innerRadius * sinAngle
+
+            canvas.drawLine(x1, y1, x2, y2, tickPaint)
+        }
+    }
+
+    private fun drawClockNumbers(canvas: Canvas) {
+        numberPaint.textSize = radius * 0.15f // Scale with clock size
+
+        // Calculate text baseline offset
+        val textBounds = Rect()
+        numberPaint.getTextBounds("12", 0, 2, textBounds)
+        val textHeight = textBounds.height()
+
+        // Draw 12-hour numbers
+        for (number in 1..12) {
+            val angle = Math.toRadians((number * 30 - 90).toDouble())
+            val numberRadius = radius * 0.75f // Position numbers at 75% of radius
+
+            val x = centerX + (numberRadius * cos(angle)).toFloat()
+            val y = centerY + (numberRadius * sin(angle)).toFloat() + textHeight / 2f
+
+            canvas.drawText(number.toString(), x, y, numberPaint)
+        }
+
+        // Draw 24-hour numbers if enabled
+        if (is24Hour) {
+            numberPaint.textSize = radius * 0.10f // Smaller size for 24-hour numbers
+            val savedAlpha = numberPaint.alpha
+            numberPaint.alpha = (savedAlpha * 0.7f).toInt() // Slightly transparent
+
+            for (number in 13..24) {
+                val displayNumber = if (number == 24) "00" else number.toString()
+                val hourNumber = if (number == 24) 12 else number - 12
+                val angle = Math.toRadians((hourNumber * 30 - 90).toDouble())
+                val numberRadius = radius * 0.55f // Inner circle for 24-hour numbers
+
+                val x = centerX + (numberRadius * cos(angle)).toFloat()
+                val y = centerY + (numberRadius * sin(angle)).toFloat() + textHeight / 2f
+
+                canvas.drawText(displayNumber, x, y, numberPaint)
+            }
+
+            numberPaint.alpha = savedAlpha // Restore original alpha
+        }
+    }
+
+    private fun drawHands(canvas: Canvas) {
+        val time = displayedTime
+
+        // Calculate angles for each hand
+        val hours = if (is24Hour) time.hour else time.hour % 12
+        val minutes = time.minute
+        val seconds = time.second
+
+        // Calculate rotation angles (0° is at 12 o'clock, clockwise)
+        val hourAngle = (hours + minutes / 60f) * 30f - 90f // 30° per hour
+        val minuteAngle = (minutes + seconds / 60f) * 6f - 90f // 6° per minute
+        val secondAngle = seconds * 6f - 90f // 6° per second
+
+        // Draw hour hand
+        drawHand(
+            canvas = canvas,
+            angle = hourAngle,
+            length = radius * 0.5f, // 50% of radius
+            width = radius * 0.02f, // 2% of radius for thickness
+            paint = handPaint
+        )
+
+        // Draw minute hand
+        drawHand(
+            canvas = canvas,
+            angle = minuteAngle,
+            length = radius * 0.7f, // 70% of radius
+            width = radius * 0.015f, // 1.5% of radius for thickness
+            paint = handPaint
+        )
+
+        // Draw second hand (if enabled)
+        if (displaySeconds) {
+            val secondPaint = Paint(handPaint).apply {
+                color = Color.RED // Second hand is typically red
+            }
+            drawHand(
+                canvas = canvas,
+                angle = secondAngle,
+                length = radius * 0.8f, // 80% of radius
+                width = radius * 0.01f, // 1% of radius for thickness
+                paint = secondPaint
+            )
+        }
+    }
+
+    private fun drawHand(
+        canvas: Canvas,
+        angle: Float,
+        length: Float,
+        width: Float,
+        paint: Paint
+    ) {
+        canvas.save()
+        canvas.rotate(angle, centerX, centerY)
+
+        paint.strokeWidth = width
+
+        // Draw the main hand
+        canvas.drawLine(
+            centerX,
+            centerY,
+            centerX,
+            centerY - length,
+            paint
+        )
+
+        // Draw a tail for balance
+        val tailLength = length * 0.2f
+        canvas.drawLine(
+            centerX,
+            centerY,
+            centerX,
+            centerY + tailLength,
+            paint
+        )
+
+        canvas.restore()
+    }
+
+    // --- Digital Clock Drawing ---
+    private fun drawDigitalClock(canvas: Canvas) {
+        // Format the time
+        val formattedTime = try {
+            displayedTime.format(timeFormatter)
+        } catch (e: Exception) {
+            Log.e("ClockView", "Error formatting time: $displayedTime", e)
+            "--:--"
+        }
+
+        // Adjust text size based on available width
         val availableWidth = width - paddingLeft - paddingRight
         textPaint.textSize = getDigitalTextSize(availableWidth)
-
-        // Draw background color for the view area
-        canvas.drawColor(clockColor)
 
         // Calculate position to draw centered text
         textPaint.getTextBounds(formattedTime, 0, formattedTime.length, bounds)
         val x = width / 2f
-        val y = height / 2f - bounds.exactCenterY() // Center vertically
+        val y = height / 2f - bounds.exactCenterY()
 
         // Draw the main time string
         canvas.drawText(formattedTime, x, y, textPaint)
@@ -310,331 +440,157 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
             } catch (e: Exception) {
                 ""
             }
-            val amPmPaint = Paint(textPaint).apply { textSize *= 0.4f } // Smaller size for AM/PM
+
+            val amPmPaint = Paint(textPaint).apply {
+                textSize *= 0.4f // Smaller size for AM/PM
+            }
+
             val mainTextWidth = textPaint.measureText(formattedTime)
             val amPmTextWidth = amPmPaint.measureText(amPmString)
             val padding = context.dpToPx(4)
 
             // Position AM/PM to the right of the main time
             val amPmX = x + (mainTextWidth / 2f) + (amPmTextWidth / 2f) + padding
-            val amPmY = y // Align vertically with main time
+            val amPmY = y
 
             canvas.drawText(amPmString, amPmX, amPmY, amPmPaint)
         }
     }
 
-    // Simple text scaling for digital clock
     private fun getDigitalTextSize(availableWidth: Int): Float {
-        // Start with a base size relative to height or width
-        var textSize = min(width, height) * 0.4f // Example: 40% of smaller dimension
-        val minSize = context.dpToPx(12).toFloat() // Minimum reasonable text size
+        var textSize = min(width, height) * 0.4f
+        val minSize = context.dpToPx(12).toFloat()
 
-        // Reduce size until it fits (basic approach)
         textPaint.textSize = textSize
-        val textWidth =
-            textPaint.measureText(if (displaySeconds) "00:00:00" else "00:00") // Measure sample text
-        val maxWidth = availableWidth * 0.9f // Use 90% of width
+        val sampleText = if (displaySeconds) "00:00:00" else "00:00"
+        var textWidth = textPaint.measureText(sampleText)
+        val maxWidth = availableWidth * 0.9f
 
         while (textWidth > maxWidth && textSize > minSize) {
-            textSize *= 0.95f // Reduce size slightly
+            textSize *= 0.95f
             textPaint.textSize = textSize
-            // Re-measure (approximation, actual text might vary slightly)
-            val newWidth = textPaint.measureText(if (displaySeconds) "00:00:00" else "00:00")
-            if (newWidth <= maxWidth) break // Stop if it fits
-        }
-        return max(textSize, minSize) // Return calculated size, but not less than min
-    }
-
-    // --- Analog SVG Handlers ---
-    private fun updateAnalogViewVisibility() {
-        val visibility = if (isAnalog) View.VISIBLE else View.GONE
-        clockFaceImageView?.visibility = visibility
-        hourHandImageView?.visibility = visibility
-        minuteHandImageView?.visibility = visibility
-        secondHandImageView?.visibility =
-            if (isAnalog && displaySeconds) View.VISIBLE else View.GONE
-    }
-
-    private fun updateAnalogColors() {
-        if (!isAnalog) return
-
-        val handColor = getHandColorForBackground(clockColor) // Gets black/white based on mapping
-        val faceColor = clockColor
-
-        val handColorFilter = PorterDuffColorFilter(handColor, PorterDuff.Mode.SRC_IN)
-        val faceColorFilter = PorterDuffColorFilter(faceColor, PorterDuff.Mode.SRC_IN)
-
-        clockFaceImageView?.setColorFilter(faceColorFilter)
-        hourHandImageView?.setColorFilter(handColorFilter)
-        minuteHandImageView?.setColorFilter(handColorFilter)
-        secondHandImageView?.setColorFilter(handColorFilter)
-    }
-
-    private fun updateNumberVisibility() {
-        // Only proceed if in analog mode and the face view exists
-        if (!isAnalog || clockFaceImageView == null) return
-
-        clockFaceImageView?.svg?.let { svg ->
-            try {
-                // Attempt to find the groups by ID
-                val twelveHourGroup = svg.getElementById("twelveHourNumbers")
-                val twentyFourHourGroup = svg.getElementById("twentyFourHourNumbers")
-
-                if (twelveHourGroup == null || twentyFourHourGroup == null) {
-                    Log.w(
-                        "ClockView",
-                        "SVG number groups ('twelveHourNumbers' or 'twentyFourHourNumbers') not found in clock_face.xml"
-                    )
-                    return@let // Exit if groups aren't found
-                }
-
-                // Set visibility based on the is24Hour flag
-                twelveHourGroup.setAttribute("visibility", if (is24Hour) "hidden" else "visible")
-                twentyFourHourGroup.setAttribute(
-                    "visibility",
-                    if (is24Hour) "visible" else "hidden"
-                )
-
-                // Invalidate the SVGImageView to force redraw with updated visibility
-                clockFaceImageView?.invalidate()
-                Log.d("ClockView", "Updated SVG number visibility for 24h=$is24Hour")
-
-            } catch (e: Exception) {
-                // Catch potential errors during SVG manipulation (e.g., parsing issues)
-                Log.e(
-                    "ClockView",
-                    "Error accessing or modifying SVG elements for number visibility",
-                    e
-                )
-            }
-        } ?: Log.w("ClockView", "SVG object is null, cannot update number visibility.")
-    }
-
-    /** Updates the rotation of the external SVG hand views based on displayedTime */
-    private fun updateAnalogHands() {
-        // Only update if in analog mode and views are set
-        if (!isAnalog || hourHandImageView == null || minuteHandImageView == null || secondHandImageView == null) {
-            return
+            textWidth = textPaint.measureText(sampleText)
         }
 
-        // Use the externally provided displayedTime
-        val hour = displayedTime.hour
-        val minute = displayedTime.minute
-        val second = displayedTime.second
-        val nano = displayedTime.nano // For smoother second hand if desired
-
-        // Calculate angles (same logic as before)
-        // Hour hand moves 360 degrees in 12 hours (30 deg/hr) + fractional movement for minutes/seconds
-        val hourAngle = ((hour % 12 + minute / 60f + second / 3600f) * 30f) % 360
-        // Minute hand moves 360 degrees in 60 minutes (6 deg/min) + fractional movement for seconds
-        val minuteAngle = ((minute + second / 60f) * 6f) % 360
-        // Second hand moves 360 degrees in 60 seconds (6 deg/sec) + fractional movement for nanos
-        val secondAngle = ((second + nano / 1_000_000_000f) * 6f) % 360
-
-        // Apply rotations to the ImageViews
-        hourHandImageView?.rotation = hourAngle
-        minuteHandImageView?.rotation = minuteAngle
-        secondHandImageView?.rotation = secondAngle
+        return max(textSize, minSize)
     }
 
-    // --- Touch Handling Logic (Remains similar, but no internal pause/play) ---
-    private inner class HandTouchListener : OnTouchListener {
-
-        private var lastTouchAngle: Float = 0f
-        private var currentlyMovingHand: Hand? = null
-
-        override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-            // Early returns for null safety
-            if (event == null || !isAnalog || hourHandImageView == null ||
-                minuteHandImageView == null || interactionListener == null || instanceId == -1
-            ) {
-                return false
-            }
-
-            val centerX = width / 2f
-            val centerY = height / 2f
-            val x = event.x
-            val y = event.y
-            val radius = min(centerX, centerY) * 0.8f
-
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    val touchAngle = calculateAngle(centerX, centerY, x, y)
-                    val dist = distance(centerX, centerY, x, y)
-
-                    // Get current visual angles safely
-                    val hourAngle = hourHandImageView?.rotation ?: 0f
-                    val minuteAngle = minuteHandImageView?.rotation ?: 0f
-                    val secondAngle = secondHandImageView?.rotation ?: 0f
-                    val angleThreshold = 15f
-
-                    currentlyMovingHand = null
-
-                    // Determine which hand is touched
-                    if (displaySeconds && secondHandImageView?.isVisible == true &&
-                        abs(angleDifference(touchAngle, secondAngle)) < angleThreshold &&
-                        dist > radius * 0.4f
-                    ) {
-                        currentlyMovingHand = Hand.SECOND
-                    } else if (abs(angleDifference(touchAngle, minuteAngle)) < angleThreshold &&
-                        dist > radius * 0.3f
-                    ) {
-                        currentlyMovingHand = Hand.MINUTE
-                    } else if (abs(angleDifference(touchAngle, hourAngle)) < angleThreshold &&
-                        dist > radius * 0.2f
-                    ) {
-                        currentlyMovingHand = Hand.HOUR
-                    }
-
-                    if (currentlyMovingHand != null) {
-                        Log.d(
-                            "ClockView",
-                            "Hand drag started: $currentlyMovingHand on clock $instanceId"
-                        )
-                        lastTouchAngle = touchAngle
-                        interactionListener?.onDragStateChanged(instanceId, true)
-                        return true
-                    } else {
-                        return false
-                    }
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    if (currentlyMovingHand != null) {
-                        val currentTouchAngle = calculateAngle(centerX, centerY, x, y)
-                        val deltaAngle = angleDifference(currentTouchAngle, lastTouchAngle)
-
-                        // Apply visual rotation directly to the hand being dragged
-                        when (currentlyMovingHand) {
-                            Hand.HOUR -> hourHandImageView?.rotation =
-                                ((hourHandImageView?.rotation ?: 0f) + deltaAngle) % 360
-
-                            Hand.MINUTE -> minuteHandImageView?.rotation =
-                                ((minuteHandImageView?.rotation ?: 0f) + deltaAngle) % 360
-
-                            Hand.SECOND -> secondHandImageView?.rotation =
-                                ((secondHandImageView?.rotation ?: 0f) + deltaAngle) % 360
-
-                            null -> {} // No hand selected
-                        }
-                        lastTouchAngle = currentTouchAngle
-                        return true
-                    }
-                    return false
-                }
-
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (currentlyMovingHand != null) {
-                        Log.d(
-                            "ClockView",
-                            "Hand drag ended: $currentlyMovingHand on clock $instanceId"
-                        )
-                        val finalTime = calculateTimeFromAngles()
-                        interactionListener?.onTimeManuallySet(instanceId, finalTime)
-                        interactionListener?.onDragStateChanged(instanceId, false)
-                        currentlyMovingHand = null
-                        return true
-                    }
-                    return false
-                }
-
-                else -> false
-            }
+    // --- Touch Handling for Analog Clock ---
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        // Only handle touch in analog mode when paused
+        if (!isAnalog || !isPaused || interactionListener == null || instanceId == -1) {
+            return super.onTouchEvent(event)
         }
-    }
 
-    /**
-     * Calculates the LocalTime based on the current rotation angles of the hand ImageViews.
-     * This provides a best guess; the ViewModel might need to refine AM/PM or 24h context.
-     */
-    private fun calculateTimeFromAngles(): LocalTime {
-        // Ensure angles are positive within 0-360 range
-        val rawHourAngle = (hourHandImageView?.rotation ?: 0f).mod(360f)
-        val rawMinuteAngle = (minuteHandImageView?.rotation ?: 0f).mod(360f)
-        val rawSecondAngle = (secondHandImageView?.rotation ?: 0f).mod(360f)
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                val touchAngle = calculateAngle(centerX, centerY, event.x, event.y)
+                val distance = hypot(event.x - centerX, event.y - centerY)
 
-        // Convert angles to time components (simplified)
-        val seconds = (rawSecondAngle / 6f).roundToInt().mod(60)
-        val minutes = (rawMinuteAngle / 6f).roundToInt().mod(60)
+                // Detect which hand is being touched
+                draggedHand = detectHandTouch(event.x, event.y, distance)
 
-        // Hour calculation with AM/PM context preservation
-        val hourFrom12HourAngle = (rawHourAngle / 30f).roundToInt().mod(12)
-
-        // Determine AM/PM based on current displayed time and hand movement
-        var hour24 = when {
-            is24Hour -> {
-                // In 24-hour mode, check if we're in the second rotation (12-23)
-                val previousHour = displayedTime.hour
-                val hourDiff = hourFrom12HourAngle - (previousHour % 12)
-
-                when {
-                    // Crossed midnight backward (23 -> 0)
-                    previousHour >= 20 && hourFrom12HourAngle < 4 && hourDiff < -8 -> {
-                        hourFrom12HourAngle
-                    }
-                    // Crossed midnight forward (0 -> 23)
-                    previousHour < 4 && hourFrom12HourAngle >= 8 && hourDiff > 8 -> {
-                        if (hourFrom12HourAngle == 0) 0 else hourFrom12HourAngle + 12
-                    }
-                    // Crossed noon backward (12 -> 11)
-                    previousHour in 12..15 && hourFrom12HourAngle >= 9 && hourDiff > 6 -> {
-                        hourFrom12HourAngle
-                    }
-                    // Crossed noon forward (11 -> 12)
-                    previousHour in 9..11 && hourFrom12HourAngle < 3 && hourDiff < -6 -> {
-                        if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
-                    }
-                    // Normal case - preserve AM/PM
-                    else -> {
-                        if (previousHour >= 12) {
-                            if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
-                        } else {
-                            hourFrom12HourAngle
-                        }
-                    }
+                if (draggedHand != null) {
+                    lastTouchAngle = touchAngle
+                    dragStartTime = displayedTime
+                    interactionListener?.onDragStateChanged(instanceId, true)
+                    return true
                 }
             }
-            else -> {
-                // 12-hour mode - preserve current AM/PM unless crossing 12
-                val previousHour = displayedTime.hour
-                val wasAM = previousHour < 12
 
-                // Check if we crossed the 12 o'clock boundary
-                val previousHour12 = if (previousHour == 0) 12 else (previousHour % 12).let { if (it == 0) 12 else it }
-                val crossedNoon = (previousHour12 == 11 && hourFrom12HourAngle == 0) ||
-                        (previousHour12 == 12 && hourFrom12HourAngle == 1)
-                val crossedMidnight = (previousHour12 == 12 && hourFrom12HourAngle == 11) ||
-                        (previousHour12 == 1 && hourFrom12HourAngle == 0)
+            MotionEvent.ACTION_MOVE -> {
+                draggedHand?.let { hand ->
+                    val currentAngle = calculateAngle(centerX, centerY, event.x, event.y)
+                    val angleDelta = angleDifference(currentAngle, lastTouchAngle)
 
-                when {
-                    crossedNoon && wasAM -> if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
-                    crossedMidnight && !wasAM -> hourFrom12HourAngle
-                    wasAM -> hourFrom12HourAngle
-                    else -> if (hourFrom12HourAngle == 0) 12 else hourFrom12HourAngle + 12
+                    // Update the time based on the dragged hand
+                    val newTime = calculateNewTime(hand, angleDelta)
+                    updateDisplayTime(newTime)
+
+                    lastTouchAngle = currentAngle
+                    return true
+                }
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                draggedHand?.let {
+                    interactionListener?.onTimeManuallySet(instanceId, displayedTime)
+                    interactionListener?.onDragStateChanged(instanceId, false)
+                    draggedHand = null
+                    dragStartTime = null
+                    return true
                 }
             }
         }
 
-        hour24 = hour24.coerceIn(0, 23) // Ensure valid 0-23 range
-
-        return try {
-            LocalTime.of(hour24, minutes, seconds)
-        } catch (e: Exception) {
-            Log.e("ClockView", "Error creating LocalTime from angles: h=$hour24 m=$minutes s=$seconds", e)
-            displayedTime // Fallback to last known time
-        }
+        return super.onTouchEvent(event)
     }
 
-    // --- Touch Helper Functions (Remain the same) ---
+    private fun detectHandTouch(x: Float, y: Float, distance: Float): ClockHand? {
+        val touchAngle = calculateAngle(centerX, centerY, x, y)
+        val time = displayedTime
+
+        // Calculate current hand angles
+        val hours = if (is24Hour) time.hour else time.hour % 12
+        val hourAngle = (hours + time.minute / 60f) * 30f - 90f
+        val minuteAngle = (time.minute + time.second / 60f) * 6f - 90f
+        val secondAngle = time.second * 6f - 90f
+
+        val tolerance = 15f
+
+        // Check distance is reasonable for hand interaction
+        if (distance < radius * 0.2f || distance > radius * 0.9f) {
+            return null
+        }
+
+        // Check second hand first (if visible) as it's on top
+        if (displaySeconds && isAngleNear(touchAngle, secondAngle, tolerance)) {
+            return ClockHand.SECOND
+        }
+
+        // Check minute hand
+        if (isAngleNear(touchAngle, minuteAngle, tolerance)) {
+            return ClockHand.MINUTE
+        }
+
+        // Check hour hand
+        if (isAngleNear(touchAngle, hourAngle, tolerance)) {
+            return ClockHand.HOUR
+        }
+
+        return null
+    }
+
+    private fun calculateNewTime(hand: ClockHand, angleDelta: Float): LocalTime {
+        var newTime = displayedTime
+
+        when (hand) {
+            ClockHand.HOUR -> {
+                // Hour hand moves 0.5 degrees per minute
+                val minutesDelta = (angleDelta / 0.5f).toInt()
+                newTime = newTime.plusMinutes(minutesDelta.toLong())
+            }
+            ClockHand.MINUTE -> {
+                // Minute hand moves 6 degrees per minute
+                val minutesDelta = (angleDelta / 6f).toInt()
+                newTime = newTime.plusMinutes(minutesDelta.toLong())
+            }
+            ClockHand.SECOND -> {
+                // Second hand moves 6 degrees per second
+                val secondsDelta = (angleDelta / 6f).toInt()
+                newTime = newTime.plusSeconds(secondsDelta.toLong())
+            }
+        }
+
+        return newTime
+    }
+
+    // --- Helper Functions ---
     private fun calculateAngle(centerX: Float, centerY: Float, x: Float, y: Float): Float {
         val angleRad = atan2(y - centerY, x - centerX)
-        var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat()
+        var angleDeg = Math.toDegrees(angleRad.toDouble()).toFloat() + 90f // Adjust so 0° is at 12 o'clock
         if (angleDeg < 0) angleDeg += 360f
         return angleDeg
-    }
-
-    private fun distance(x1: Float, y1: Float, x2: Float, y2: Float): Float {
-        return hypot(x2 - x1, y2 - y1)
     }
 
     private fun angleDifference(angle1: Float, angle2: Float): Float {
@@ -643,5 +599,9 @@ class ClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
         while (diff > 180) diff -= 360
         return diff
     }
-}
 
+    private fun isAngleNear(angle1: Float, angle2: Float, tolerance: Float): Boolean {
+        val diff = abs(angleDifference(angle1, angle2))
+        return diff < tolerance
+    }
+}

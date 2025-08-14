@@ -36,65 +36,27 @@
             android:text="@string/reset"
             android:layout_marginStart="8dp" />
 
-        <ImageView
+        <!-- Settings button in bottom left corner -->
+        <ImageButton
             android:id="@+id/settingsButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginStart="16dp"
             android:src="@drawable/ic_settings"
-            android:text="@string/settings"
-            android:clickable="true"
-            android:focusable="true" />
+            android:background="@drawable/close_button_oval_background"
+            android:imageTintList="@color/icon_tint_stateful"
+            android:contentDescription="@string/settings"
+            android:layout_gravity="bottom|start"
+            android:layout_margin="16dp" />
 
-<!--        <ImageView
-            android:id="@+id/btnAdd"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_add_circle"
-            android:layout_marginEnd="24dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/add_another_clock" /> -->
-
-        <TextView
-            android:id="@+id/btnClose"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="\u274C"
-            android:textSize="24sp"
-            android:clickable="true"
-            android:focusable="true"
-            android:layout_marginStart="24dp"
-            android:layout_marginEnd="24dp"
-            android:contentDescription="@string/close" />
-
-    </LinearLayout>
-
-    <com.caverock.androidsvg.SVGImageView
-        android:id="@+id/clockFaceImageView"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:scaleType="fitCenter"
-        android:visibility="gone" />
-    <com.caverock.androidsvg.SVGImageView
-        android:id="@+id/hourHandImageView"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:src="@drawable/hour_hand"
-        android:scaleType="fitCenter"
-        android:visibility="gone" />
-    <com.caverock.androidsvg.SVGImageView
-        android:id="@+id/minuteHandImageView"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:src="@drawable/minute_hand"
-        android:scaleType="fitCenter"
-        android:visibility="gone" />
-    <com.caverock.androidsvg.SVGImageView
-        android:id="@+id/secondHandImageView"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:src="@drawable/second_hand"
-        android:scaleType="fitCenter"
-        android:visibility="gone" />
+        <!-- Close button in top right corner -->
+        <ImageButton
+            android:id="@+id/closeButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@drawable/ic_close"
+            android:background="@drawable/close_button_oval_background"
+            android:imageTintList="@color/icon_tint_stateful"
+            android:contentDescription="@string/close"
+            android:layout_gravity="top|end"
+            android:layout_margin="16dp" />
     </LinearLayout>

@@ -1,6 +1,7 @@
 // ClockAlarmActivity.kt
 package com.example.purramid.purramidtime.clock
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -18,13 +19,16 @@ import android.widget.EditText
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.TimePicker
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.data.db.ClockAlarmDao
 import com.example.purramid.purramidtime.data.db.ClockAlarmEntity
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -39,8 +43,8 @@ class ClockAlarmActivity : AppCompatActivity() {
     
     private lateinit var timePicker: TimePicker
     private lateinit var labelEditText: EditText
-    private lateinit var soundSwitch: Switch
-    private lateinit var vibrationSwitch: Switch
+    private lateinit var soundSwitch: SwitchCompat
+    private lateinit var vibrationSwitch: SwitchCompat
     private lateinit var saveButton: Button
     private lateinit var cancelButton: Button
     
@@ -296,6 +300,7 @@ class AlarmRingingActivity : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     
+    @RequiresPermission(Manifest.permission.VIBRATE)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_alarm_ringing)
@@ -331,8 +336,9 @@ class AlarmRingingActivity : AppCompatActivity() {
         mediaPlayer?.start()
     }
     
+    @RequiresPermission(Manifest.permission.VIBRATE)
     private fun startVibration() {
-        vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
         } else {
@@ -344,6 +350,7 @@ class AlarmRingingActivity : AppCompatActivity() {
         vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
     }
     
+    @RequiresPermission(Manifest.permission.VIBRATE)
     private fun stopAlarm() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
@@ -352,6 +359,7 @@ class AlarmRingingActivity : AppCompatActivity() {
         vibrator?.cancel()
     }
     
+    @RequiresPermission(Manifest.permission.VIBRATE)
     override fun onDestroy() {
         super.onDestroy()
         stopAlarm()

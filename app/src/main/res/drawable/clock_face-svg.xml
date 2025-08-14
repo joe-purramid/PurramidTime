@@ -1,4 +1,5 @@
-<svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<vector width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
   <circle cx="150" cy="150" r="140" fill="white" stroke="black" stroke-width="2" />
 
   <!-- Tick marks -->
@@ -150,4 +151,4 @@
     <text x="45" y="150">9</text>
     <text x="62" y="100">10</text>
     <text x="96" y="63">11</text>  </g>
-</svg>
+</vector>

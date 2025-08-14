@@ -16,6 +16,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.SystemClock
+import android.provider.Settings.Global.putInt
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Gravity
@@ -60,7 +61,8 @@ import kotlin.math.abs
 import kotlin.math.max
 
 @AndroidEntryPoint
-class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
+class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
+    ClockView.ClockInteractionListener {
 
     @Inject lateinit var windowManager: WindowManager
     @Inject lateinit var instanceManager: InstanceManager
@@ -1229,7 +1231,7 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner {
                 // No recovery needed, just inform user
                 Log.i(TAG, "Instance limit reached, no recovery needed")
             }
-            is ClockServiceException.InvalidInstanceId{
+            is ClockServiceException.InvalidInstanceId -> {
                 // Clean up invalid instance
                 val instanceId = exception.message?.substringAfter(": ")?.toIntOrNull()
                 if (instanceId != null) {
