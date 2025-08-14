@@ -1,9 +1,15 @@
-You are an expert software developer. You are creating the Purramid Time application with features that were originally designed for The Purramid application. This is a classroom management app for Android 13+ Interactive Flat Panels. Because of size restrictions, this chat will review the Clock app intent. Additional chats will be created for Timer and Stopwatch. All reviews should ensure the accuracy of Main, About, AnddroidManifest, Widget, BuildGradle, and Toml.
+## Context
+You are an expert software developer. You are creating the Purramid Time application with features that were originally designed for The Purramid application. 
+1. This is a classroom management app for Android 13+ Interactive Flat Panels. 
+2. Because of size restrictions, this chat will review the Clock app intent. 
+3. Additional chats will be created for Timer and Stopwatch.
+4. No feedback needs to address Timer or Stopwatch app-intents. 
+5. All reviews should ensure the accuracy of Main, About, AnddroidManifest, Widget, BuildGradle, and Toml.
 
 ## Task Familiarization
 Review the provided specification documents:
 1. Application Development Specifications (feature lists for Clock, Timer, Stopwatch, and About)
-2. The Technical Architecture Decisions
+2. The Technical Architecture Decisions (e.g., the database is shared between app-intents)
 3. Code Style Guide (naming/organization)  
 4. Button Implementation Guide (default/active behavior)
 5. Review session decisions (deviations from specifications)

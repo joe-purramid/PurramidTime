@@ -1,4 +1,5 @@
 # Purramid Time - Database Schema
+This database is shared among Clock, Stopwatch, and Timer app-intents.
 
 ## Database Overview
 

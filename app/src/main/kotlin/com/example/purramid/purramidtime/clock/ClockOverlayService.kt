@@ -177,6 +177,9 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
 
     // Memory leak prevention
     private val weakReferences = Collections.synchronizedList(mutableListOf<WeakReference<Any>>())
+    private val MAX_WEAK_REFERENCES = 50
+    private var lastCleanupTime = 0L
+    private val CLEANUP_INTERVAL_MS = 30000L // Clean every 30 seconds
 
     private fun updateActiveInstanceCountInPrefs() {
         servicePrefs.edit().putInt(KEY_ACTIVE_COUNT_FOR_ACTIVITY, clockViewModels.size).apply()
@@ -209,15 +212,6 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
             
             val loadTime = SystemClock.elapsedRealtime() - startTime
             Log.d(TAG, "Clock state restoration completed in ${loadTime}ms")
-        }
-    }
-
-    override fun onTimeManuallySet(instanceId: Int, newTime: LocalTime) {
-        Log.d(TAG, "Manual time set for clock $instanceId: $newTime")
-        clockViewModels[instanceId]?.let { viewModel ->
-            // Pause the clock and set the manual time
-            viewModel.setPaused(true)
-            viewModel.setManuallySetTime(newTime)
         }
     }
 
@@ -442,6 +436,12 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
                     setClockTimeZone(state.timeZoneId)
                     setDisplaySeconds(state.displaySeconds)
                     updateDisplayTime(state.currentTime)
+
+                    // Load analog SVG views if in analog mode
+                    if (viewModel.uiState.value?.mode == "analog") {
+                        val analogContainer = clockRootView.findViewById<FrameLayout>(R.id.clockContainer)
+                        setupAnalogClockViews(this, analogContainer)
+                    }
                 }
             }
 
@@ -451,6 +451,21 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
             
             // Get layout params from pool
             val params = getLayoutParamsFromPool()
+            val state = viewModel.uiState.value
+            if (state != null && state.windowWidth > 0 && state.windowHeight > 0) {
+                width = state.windowWidth
+                height = state.windowHeight
+                x = state.windowX
+                y = state.windowY
+            } else {
+                width = WindowManager.LayoutParams.WRAP_CONTENT
+                height = WindowManager.LayoutParams.WRAP_CONTENT
+                // Center on screen by default
+                val displayMetrics = resources.displayMetrics
+                x = displayMetrics.widthPixels / 2 - 200 // Approximate width
+                y = displayMetrics.heightPixels / 2 - 150 // Approximate height
+            }
+        }
             clockLayoutParams[instanceId] = params
             
             // Set up touch handling
@@ -464,6 +479,24 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
             
             Log.d(TAG, "Clock window created for instance $instanceId")
         }
+    }
+
+    private fun setupAnalogClockViews(clockView: ClockView, container: FrameLayout) {
+        // Inflate analog layout
+        val inflater = LayoutInflater.from(this)
+        val analogView = inflater.inflate(R.layout.view_floating_clock_analog, container, false)
+
+        // Get SVG views
+        val clockFace = analogView.findViewById<com.caverock.androidsvg.SVGImageView>(R.id.clockFaceImageView)
+        val hourHand = analogView.findViewById<com.caverock.androidsvg.SVGImageView>(R.id.hourHandImageView)
+        val minuteHand = analogView.findViewById<com.caverock.androidsvg.SVGImageView>(R.id.minuteHandImageView)
+        val secondHand = analogView.findViewById<com.caverock.androidsvg.SVGImageView>(R.id.secondHandImageView)
+
+        // Set the SVG views on ClockView
+        clockView.setAnalogImageViews(clockFace, hourHand, minuteHand, secondHand)
+
+        // Add to container
+        container.addView(analogView)
     }
 
     private fun setupControlButtons(rootView: ViewGroup, instanceId: Int, viewModel: ClockViewModel) {
@@ -567,15 +600,58 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
 
     // Listener Implementation
     override fun onTimeManuallySet(instanceId: Int, newTime: LocalTime) {
-        clockViewModels[instanceId]?.setManuallySetTime(newTime)
+        Log.d(TAG, "Manual time set for clock $instanceId: $newTime")
+
+        clockViewModels[instanceId]?.let { viewModel ->
+            // Pause the clock first
+            viewModel.setPaused(true)
+            // Set the manually adjusted time
+            viewModel.setManuallySetTime(newTime)
+
+            // Update the display immediately
+            lifecycleScope.launch {
+                val state = viewModel.uiState.value
+                if (state != null) {
+                    updateClockDisplay(instanceId, state)
+                }
+            }
+        } ?: Log.w(TAG, "ViewModel not found for clock $instanceId")
     }
 
     override fun onDragStateChanged(instanceId: Int, isDragging: Boolean) {
-        // This might be used to temporarily disable window dragging if hand dragging starts, etc.
         Log.d(TAG, "Clock $instanceId drag state changed: $isDragging")
-        // The overlay itself also needs a touch listener for window dragging.
-        // Ensure that touch events are correctly dispatched or consumed between ClockView and its parent overlay.
+
+        val params = clockLayoutParams[instanceId] ?: return
+        val clockRootView = activeClockViews[instanceId] ?: return
+
+        if (isDragging) {
+            // Disable window dragging while hand is being dragged
+            // This prevents conflicts between hand dragging and window movement
+            params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+
+            // Visual feedback for drag state
+            clockRootView.alpha = 0.9f
+
+            // Pause the clock during drag
+            clockViewModels[instanceId]?.setPaused(true)
+        } else {
+            // Re-enable window interaction
+            params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL.inv()
+
+            // Restore full opacity
+            clockRootView.alpha = 1.0f
+        }
+
+        // Apply the updated params
+        try {
+            if (clockRootView.isAttachedToWindow) {
+                windowManager.updateViewLayout(clockRootView, params)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating window flags during drag state change", e)
+        }
     }
+
 
     // --- Helper for Overlay Buttons (Play/Pause, Reset, Settings) ---
     private fun setupActionButtonsOnOverlay(instanceId: Int, rootView: ViewGroup, viewModel: ClockViewModel) {
@@ -621,6 +697,14 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
         // Scale gesture detector for pinch-to-resize
         val scaleGestureDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
+                // Check if hand dragging is in progress
+                val clockView = clockViewInstances[instanceId]
+                if (clockView != null) {
+                    // Don't start resizing if clock hands are being dragged
+                    // This check would need a method in ClockView to query drag state
+                    // For now, we'll allow resize to begin
+                }
+
                 if (!isMoving) {
                     isResizing = true
                     val params = clockLayoutParams[instanceId] ?: return false
@@ -635,8 +719,15 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
                 if (isResizing) {
                     val params = clockLayoutParams[instanceId] ?: return false
                     val scaleFactor = detector.scaleFactor
-                    val newWidth = (initialWidth * scaleFactor).toInt().coerceAtLeast(100) // Minimum 100px
-                    val newHeight = (initialHeight * scaleFactor).toInt().coerceAtLeast(100)
+
+                    // Calculate new size with constraints
+                    val minSize = dpToPx(100) // Minimum 100dp
+                    val maxSize = dpToPx(500) // Maximum 500dp
+
+                    val newWidth = (initialWidth * scaleFactor).toInt()
+                        .coerceIn(minSize, maxSize)
+                    val newHeight = (initialHeight * scaleFactor).toInt()
+                        .coerceIn(minSize, maxSize)
                     
                     params.width = newWidth
                     params.height = newHeight
@@ -667,18 +758,25 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
                 return@setOnTouchListener true
             }
 
-            // Safely get clock view instance
+            // Check if the touch is on the ClockView itself
             val clockView = clockViewInstances[instanceId]
-            if (clockView != null && clockView.dispatchTouchEvent(event) == true &&
-                event.action != MotionEvent.ACTION_UP) {
-                return@setOnTouchListener true
+            if (clockView != null) {
+                // Convert touch coordinates to ClockView's coordinate space
+                val location = IntArray(2)
+                clockView.getLocationOnScreen(location)
+                val clockX = event.rawX - location[0]
+                val clockY = event.rawY - location[1]
+
+                // Check if touch is within ClockView bounds
+                if (clockX >= 0 && clockX <= clockView.width &&
+                    clockY >= 0 && clockY <= clockView.height) {
+                    // Let ClockView handle its own touch events for hand dragging
+                    // The service will be notified via the listener callbacks
+                    return@setOnTouchListener false
+                }
             }
 
-            // Allow ClockView to handle its own touch events first (for hand dragging)
-            if (clockViewInstances[instanceId]?.dispatchTouchEvent(event) == true && event.action != MotionEvent.ACTION_UP) {
-                return@setOnTouchListener true
-            }
-
+            // Handle window dragging
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = params.x
@@ -689,32 +787,28 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
                     isResizing = false
                     true
                 }
+
                 MotionEvent.ACTION_MOVE -> {
-                    // If resizing, don't handle move events for dragging
                     if (isResizing) {
                         return@setOnTouchListener true
                     }
-                    
+
                     val deltaX = event.rawX - initialTouchX
                     val deltaY = event.rawY - initialTouchY
-                    
+
                     // Check if movement exceeds threshold
                     if (!isMoving && (abs(deltaX) > touchSlop || abs(deltaY) > touchSlop)) {
                         isMoving = true
                     }
-                    
+
                     if (isMoving) {
-                        val newX = initialX + deltaX.toInt()
-                        val newY = initialY + deltaY.toInt()
-                        
-                        // Constrain to screen bounds
-                        val displayMetrics = DisplayMetrics().also { windowManager.defaultDisplay.getMetrics(it) }
+                        val displayMetrics = resources.displayMetrics
                         val maxX = displayMetrics.widthPixels - params.width
                         val maxY = displayMetrics.heightPixels - params.height
-                        
-                        params.x = newX.coerceIn(0, maxX)
-                        params.y = newY.coerceIn(0, maxY)
-                        
+
+                        params.x = (initialX + deltaX.toInt()).coerceIn(0, maxX)
+                        params.y = (initialY + deltaY.toInt()).coerceIn(0, maxY)
+
                         try {
                             if (view.isAttachedToWindow) {
                                 windowManager.updateViewLayout(view, params)
@@ -723,36 +817,29 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
                             Log.e(TAG, "Error moving window $instanceId", e)
                         }
                     }
-                    true // Consume move
-                }
-                MotionEvent.ACTION_POINTER_DOWN -> {
-                    // Second finger down - could be start of pinch
-                    if (event.pointerCount == 2) {
-                        val distance = getDistance(event, 0, 1)
-                        initialDistance = distance
-                    }
                     true
                 }
-                MotionEvent.ACTION_POINTER_UP -> {
-                    // Finger lifted - end any ongoing gestures
-                    if (event.pointerCount == 1) {
-                        isResizing = false
-                    }
-                    true
-                }
-                MotionEvent.ACTION_UP -> {
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     if (isMoving) {
+                        // Save final position
                         clockViewModels[instanceId]?.updateWindowPosition(params.x, params.y)
                     }
                     isMoving = false
                     isResizing = false
                     true
                 }
+
                 else -> false
             }
         }
     }
-    
+
+    // Helper method for dp to px conversion
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
+    }
+
     private fun getDistance(event: MotionEvent, pointerIndex1: Int, pointerIndex2: Int): Float {
         val x1 = event.getX(pointerIndex1)
         val y1 = event.getY(pointerIndex1)
@@ -989,42 +1076,70 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
         // Cancel all coroutine jobs
         stateObserverJobs.values.forEach { it.cancel() }
         stateObserverJobs.clear()
-        
+
+        // Cancel shared ticker
+        sharedTickerJob?.cancel()
+        sharedTickerJob = null
+
         // Remove all window views
-        activeClockViews.values.forEach { view ->
+        activeClockViews.values.forEach { (instanceId, view) ->
             try {
                 if (view.isAttachedToWindow) {
                     windowManager.removeView(view)
                 }
+                // Clear references immediately after removal
+                activeClockViews.remove(instanceId)
+                clockViewInstances.remove(instanceId)
             } catch (e: Exception) {
-                Log.e(TAG, "Error removing view during cleanup", e)
+                Log.e(TAG, "Error removing view during cleanup for instance $instanceId", e)
             }
         }
         activeClockViews.clear()
-        
-        // Clear ViewModels
+
+        // Clear ViewModels and their states
+        clockViewModels.values.forEach { viewModel ->
+            try {
+                viewModel.onCleared() // Explicitly call cleanup
+            } catch (e: Exception) {
+                Log.e(TAG, "Error clearing ViewModel", e)
+            }
+        }
         clockViewModels.clear()
-        
-        // Clear collections
-        clockViewInstances.clear()
+
+        // Clear layout params
         clockLayoutParams.clear()
-        
-        // Clear object pools
-        layoutParamsPool.clear()
-        bundlePool.clear()
-        
+
+        // Clear object pools with size limit
+        layoutParamsPool.synchronized {
+            while (size > 5) { // Keep only 5 for potential reuse
+                removeAt(0)
+            }
+        }
+
+        bundlePool.synchronized {
+            clear() // Clear bundle pool completely
+        }
+
         // Clear weak references
-        weakReferences.clear()
-        
+        weakReferences.synchronized {
+            clear()
+        }
+
+        // Clear material cache for TimeZoneGlobeActivity
+        materialCache.clear()
+
         // Clear ViewModelStore
         _viewModelStore.clear()
-        
-        // Performance metrics cleanup
-        performanceMetrics.checkMemoryUsage()
-        
+
+        // Force garbage collection hint
+        System.gc()
+
+        // Log memory status
+        performanceMetrics.logMemoryStatus()
+
         Log.d(TAG, "Resource cleanup completed")
     }
-    
+
     private fun cleanupClockInstance(instanceId: Int) {
         Log.d(TAG, "Cleaning up clock instance: $instanceId")
         
@@ -1064,12 +1179,37 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
     
     // Weak reference management
     private fun addWeakReference(obj: Any) {
+        val currentTime = SystemClock.elapsedRealtime()
+
         weakReferences.synchronized {
-            add(WeakReference(obj))
-            // Clean up null references periodically
-            if (size > 100) {
-                removeAll { it.get() == null }
+            // Periodic cleanup based on time
+            if (currentTime - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+                cleanupWeakReferences()
+                lastCleanupTime = currentTime
             }
+
+            // Add new reference
+            add(WeakReference(obj))
+
+            // Enforce maximum size
+            if (size > MAX_WEAK_REFERENCES) {
+                // Remove null references first
+                removeAll { it.get() == null }
+
+                // If still over limit, remove oldest entries
+                while (size > MAX_WEAK_REFERENCES) {
+                    removeAt(0)
+                }
+            }
+        }
+    }
+
+    private fun cleanupWeakReferences() {
+        weakReferences.synchronized {
+            val beforeSize = size
+            removeAll { it.get() == null }
+            val afterSize = size
+            Log.d(TAG, "Weak reference cleanup: removed ${beforeSize - afterSize} null references, ${afterSize} remaining")
         }
     }
 
@@ -1085,7 +1225,9 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
         private var totalUpdateTime = 0L
         private var maxUpdateTime = 0L
         private var minUpdateTime = Long.MAX_VALUE
-        
+        private var lastMemoryCheck = 0L
+        private val MEMORY_CHECK_INTERVAL_MS = 60000L // Check every minute
+
         fun startSession() {
             sessionStartTime = SystemClock.elapsedRealtime()
             Log.d(TAG, "Performance monitoring started")
@@ -1110,16 +1252,53 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
         }
         
         fun checkMemoryUsage() {
+            val currentTime = SystemClock.elapsedRealtime()
+            if (currentTime - lastMemoryCheck < MEMORY_CHECK_INTERVAL_MS) {
+                return
+            }
+            lastMemoryCheck = currentTime
+
             val runtime = Runtime.getRuntime()
             val usedMemory = runtime.totalMemory() - runtime.freeMemory()
             val memoryUsage = usedMemory.toFloat() / runtime.maxMemory()
             
             if (memoryUsage > MEMORY_WARNING_THRESHOLD) {
                 Log.w(TAG, "High memory usage: ${(memoryUsage * 100).toInt()}%")
+                Log.w(TAG, "Used: ${usedMemory / 1024 / 1024}MB, Max: ${maxMemory / 1024 / 1024}MB")
+
                 // Trigger garbage collection if needed
                 if (memoryUsage > 0.9f) {
+                    Log.w(TAG, "Critical memory usage - triggering cleanup")
+                    cleanupWeakReferences()
                     System.gc()
                 }
+            }
+        }
+
+        fun logMemoryStatus() {
+            val runtime = Runtime.getRuntime()
+            val usedMemory = runtime.totalMemory() - runtime.freeMemory()
+            val maxMemory = runtime.maxMemory()
+            Log.d(TAG, "Memory status - Used: ${usedMemory / 1024 / 1024}MB, Max: ${maxMemory / 1024 / 1024}MB")
+        }
+    }
+
+    // Enhanced bundle pool management
+    private fun getBundleFromPool(): Bundle {
+        return bundlePool.synchronized {
+            if (isNotEmpty()) {
+                removeAt(0).apply { clear() } // Clear bundle before reuse
+            } else {
+                null
+            }
+        } ?: Bundle()
+    }
+
+    private fun returnBundleToPool(bundle: Bundle) {
+        bundle.clear() // Clear before returning to pool
+        bundlePool.synchronized {
+            if (size < 10) { // Limit pool size
+                add(bundle)
             }
         }
     }
