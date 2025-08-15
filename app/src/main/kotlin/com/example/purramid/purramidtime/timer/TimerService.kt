@@ -1,5 +1,5 @@
-// TimersService.kt
-package com.example.purramid.purramidtime.timers
+// TimerService.kt
+package com.example.purramid.purramidtime.timer
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -37,7 +37,7 @@ import androidx.lifecycle.*
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.timers.viewmodel.TimerViewModel
+import com.example.purramid.purramidtime.timer.viewmodel.TimerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -49,14 +49,14 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 // Service Actions
-const val ACTION_START_STOPWATCH = "com.example.purramid.timers.ACTION_START_STOPWATCH"
-const val ACTION_START_COUNTDOWN = "com.example.purramid.timers.ACTION_START_COUNTDOWN"
-const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.timers.ACTION_STOP_TIMER_SERVICE"
+const val ACTION_START_STOPWATCH = "com.example.purramid.timer.ACTION_START_STOPWATCH"
+const val ACTION_START_COUNTDOWN = "com.example.purramid.timer.ACTION_START_COUNTDOWN"
+const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.timer.ACTION_STOP_TIMER_SERVICE"
 const val EXTRA_TIMER_ID = TimerViewModel.KEY_TIMER_ID
-const val EXTRA_DURATION_MS = "com.example.purramid.timers.EXTRA_DURATION_MS"
+const val EXTRA_DURATION_MS = "com.example.purramid.timer.EXTRA_DURATION_MS"
 
 @AndroidEntryPoint
-class TimersService : LifecycleService() {
+class TimerService : LifecycleService() {
 
     @Inject lateinit var windowManager: WindowManager
     @Inject lateinit var instanceManager: InstanceManager
@@ -107,10 +107,10 @@ class TimersService : LifecycleService() {
     private var lastCountdownMillis = -1L
 
     companion object {
-        private const val TAG = "TimersService"
+        private const val TAG = "TimerService"
         private const val NOTIFICATION_ID = 5
-        private const val CHANNEL_ID = "TimersServiceChannel"
-        const val PREFS_NAME_FOR_ACTIVITY = "timers_prefs"
+        private const val CHANNEL_ID = "TimerServiceChannel"
+        const val PREFS_NAME_FOR_ACTIVITY = "timer_prefs"
     }
 
     override fun onCreate() {
@@ -128,7 +128,7 @@ class TimersService : LifecycleService() {
         // Handle instance management
         if (intentTimerId <= 0 && action != ACTION_STOP_TIMER_SERVICE) {
             // Request new instance ID from InstanceManager
-            val instanceId = instanceManager.getNextInstanceId(InstanceManager.TIMERS)
+            val instanceId = instanceManager.getNextInstanceId(InstanceManager.TIMER)
             if (instanceId == null) {
                 Log.e(TAG, "No available instance slots for Timer")
                 stopSelf()
@@ -138,7 +138,7 @@ class TimersService : LifecycleService() {
             Log.d(TAG, "Allocated new instanceId: $timerId")
         } else if (intentTimerId > 0) {
             // Register existing instance with InstanceManager
-            if (!instanceManager.registerExistingInstance(InstanceManager.TIMERS, intentTimerId)) {
+            if (!instanceManager.registerExistingInstance(InstanceManager.TIMER, intentTimerId)) {
                 Log.w(TAG, "Failed to register existing instance $intentTimerId")
             }
             this.timerId = intentTimerId
@@ -147,6 +147,7 @@ class TimersService : LifecycleService() {
         // Initialize ViewModel if needed (first start or ID change)
         if (!::viewModel.isInitialized || this.timerId != intentTimerId) {
             viewModel = ViewModelProvider(this)[TimerViewModel::class.java]
+            viewModel.setTimerId(timerId)
             Log.d(TAG, "ViewModel initialized for timerId: $timerId")
             observeViewModelState()
         }
@@ -228,7 +229,7 @@ class TimersService : LifecycleService() {
                 layoutParams = createDefaultLayoutParams()
                 applyStateToLayoutParams(currentState, layoutParams!!)
 
-                val inflater = LayoutInflater.from(this@TimersService)
+                val inflater = LayoutInflater.from(this@TimerService)
                 overlayView = inflater.inflate(requiredLayoutId, null)
                 currentInflatedLayoutId = requiredLayoutId
 
@@ -484,8 +485,8 @@ class TimersService : LifecycleService() {
     }
 
     private fun openSettings() {
-        val intent = Intent(this, TimersActivity::class.java).apply {
-            action = TimersActivity.ACTION_SHOW_TIMER_SETTINGS
+        val intent = Intent(this, TimerActivity::class.java).apply {
+            action = TimerActivity.ACTION_SHOW_TIMER_SETTINGS
             putExtra(EXTRA_TIMER_ID, timerId)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
@@ -546,7 +547,7 @@ class TimersService : LifecycleService() {
 
     private fun stopService() {
         if (timerId > 0) {
-            instanceManager.releaseInstanceId(InstanceManager.TIMERS, timerId)
+            instanceManager.releaseInstanceId(InstanceManager.TIMER, timerId)
             viewModel.deleteState()
         }
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -573,9 +574,9 @@ class TimersService : LifecycleService() {
         try {
             startForeground(NOTIFICATION_ID, notification)
             isForeground = true
-            Log.d(TAG, "TimersService started in foreground.")
+            Log.d(TAG, "TimerService started in foreground.")
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting foreground service for Timers", e)
+            Log.e(TAG, "Error starting foreground service for Timer", e)
         }
     }
 

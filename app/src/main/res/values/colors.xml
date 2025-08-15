@@ -16,4 +16,10 @@
 
     <color name="alarm_background">#FF5252</color>
     <color name="dismiss_button_color">#4CAF50</color>
+
+    <!-- Timer specific colors -->
+    <color name="timer_active_digit">#1976D2</color>
+    <color name="timer_normal_digit">#757575</color>
+    <color name="timer_arrow_color">#424242</color>
+    <color name="timer_active_color">#1976D2</color>
 </resources>

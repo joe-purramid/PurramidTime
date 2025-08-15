@@ -8,8 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purramid.purramidtime.data.db.TimerDao
 import com.example.purramid.purramidtime.data.db.TimerStateEntity
-import com.example.purramid.purramidtime.timers.TimerState
-import com.example.purramid.purramidtime.timers.TimerType
+import com.example.purramid.purramidtime.timer.MusicUrlManager
+import com.example.purramid.purramidtime.timer.TimerState
+import com.example.purramid.purramidtime.timer.TimerType
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -60,7 +61,11 @@ class TimerViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     if (entity != null) {
                         Log.d(TAG, "Loaded state from DB for timer $id")
-                        _uiState.value = mapEntityToState(entity)
+                        val state = mapEntityToState(entity)
+                        // Override with global recent URLs
+                        _uiState.value = state.copy(
+                            recentMusicUrls = musicUrlManager.getRecentUrls()
+                        )
                         if (_uiState.value.isRunning) {
                             startTicker()
                         }
@@ -174,7 +179,16 @@ class TimerViewModel @Inject constructor(
     private fun handleCountdownFinish() {
         stopTicker()
         viewModelScope.launch(Dispatchers.Main) {
-            _uiState.update { it.copy(isRunning = false, currentMillis = 0) }
+            _uiState.update {
+                it.copy(
+                    isRunning = false,
+                    currentMillis = 0
+                    // Un-nest the timer when countdown finishes
+                    isNested = if (it.type == TimerType.COUNTDOWN && it.isNested) false else it.isNested,
+                    nestedX = if (it.type == TimerType.COUNTDOWN && it.isNested) -1 else it.nestedX,
+                    nestedY = if (it.type == TimerType.COUNTDOWN && it.isNested) -1 else it.nestedY
+                )
+            }
             // Sound playing is handled by the Service observing this state change
             Log.d(TAG, "Timer $timerId finished.")
             saveState(_uiState.value)
@@ -274,20 +288,15 @@ class TimerViewModel @Inject constructor(
     fun setMusicUrl(url: String?) {
         if (_uiState.value.musicUrl == url) return
 
-        // Update recent URLs list
-        val recentUrls = _uiState.value.recentMusicUrls.toMutableList()
+        // Add to global recent URLs
         url?.let {
-            recentUrls.remove(it) // Remove if already exists
-            recentUrls.add(0, it) // Add to beginning
-            if (recentUrls.size > 3) {
-                recentUrls.removeAt(3) // Keep only last 3
-            }
+            musicUrlManager.addRecentUrl(it)
         }
 
         _uiState.update {
             it.copy(
                 musicUrl = url,
-                recentMusicUrls = recentUrls
+                recentMusicUrls = musicUrlManager.getRecentUrls()
             )
         }
         saveState(_uiState.value)

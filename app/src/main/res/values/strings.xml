@@ -407,6 +407,20 @@
     <string name="setting_add_another_timer">Add Another Timer</string>
     <string name="max_timers_reached_snackbar">Placeholder</string>
 
+    <!-- Timer Notifications -->
+    <string name="timer_notification_title">Timer Running</string>
+    <string name="timer_notification_content">Timer is active in the background</string>
+    <string name="timer_notification_channel_name">Timer Service</string>
+
+    <!-- Timer Error Messages -->
+    <string name="invalid_duration">Invalid duration entered</string>
+    <string name="max_duration_exceeded">Maximum duration is 99:59:59</string>
+    <string name="clipboard_empty">Nothing to paste from clipboard</string>
+    <string name="invalid_music_url">This is not a valid music URL. Please provide an updated URL to play.</string>
+    <string name="selected">Selected</string>
+    <string name="sound_none">None</string>
+    <string name="sound_music">Music URL</string>
+
 
     <!-- `` ABOUT THIS APP `` -->
     <string name="version_number">Placeholder</string>

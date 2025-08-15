@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!-- Default padding -->
+	<dimen name="default_padding">16dp</dimen>
+	<dimen name="large_screen_padding">32dp</dimen>
+
+	<!-- Timer specific dimensions -->
+	<dimen name="timer_duration_text_size">48sp</dimen>
+	<dimen name="timer_arrow_size">24sp</dimen>
+	<dimen name="timer_arrow_padding">16dp</dimen>
+	<dimen name="nested_timer_width">75dp</dimen>
+	<dimen name="nested_timer_height">75dp</dimen>
+	<dimen name="nested_timer_padding">20dp</dimen>
+	<dimen name="nested_timer_stack_spacing">10dp</dimen>
+</resources>

@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<vector width="100" height="30" viewBox="0 0 100 30">
-  <text
-    x="50%"
-    y="50%"
-    dominant-baseline="middle"
-    text-anchor="middle"
-    font-family="sans-serif"
-    font-size="20"
-    fill="green">
-    TODO
-  </text>
-</vector>
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+  <solid android:color="@android:color/white"/>
+  <corners android:radius="12dp"/>
+  <stroke android:width="1dp" android:color="#E0E0E0"/>
+  <padding
+      android:left="8dp"
+      android:right="8dp"
+      android:top="8dp"
+      android:bottom="8dp"/>
+</shape>

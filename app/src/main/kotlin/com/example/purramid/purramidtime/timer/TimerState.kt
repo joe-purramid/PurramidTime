@@ -1,5 +1,5 @@
 // TimerState.kt
-package com.example.purramid.purramidtime.timers
+package com.example.purramid.purramidtime.timer
 
 import com.example.purramid.purramidtime.ui.PurramidPalette
 import java.util.UUID

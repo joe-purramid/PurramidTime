@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<vector width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  <!-- Minute hand (black, long, thick) -->
-  <line x1="100" y1="100" x2="100" y2="40" stroke="black" stroke-width="4" stroke-linecap="round"/>
-</vector>
