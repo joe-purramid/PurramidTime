@@ -179,13 +179,13 @@ class TimeZoneRepositoryImpl @Inject constructor(
     }
 
     // --- Logic to populate Room DB from CSV only once ---
-    private suspend fun populateCityDbFromCsvIfNeeded() {
+    private suspend fun populateCityDbFromCsvIfNeeded(): Result<Unit> {
         // Quick check without lock first
-        if (cityDbPopulated) return
+        if (cityDbPopulated) return Result.success(Unit)
 
-        cityDbMutex.withLock {
+        return cityDbMutex.withLock {
             // Double check after lock acquired
-            if (cityDbPopulated) return@withLock
+            if (cityDbPopulated) return@withLock Result.success(Unit)
 
             try {
                 val count = cityDao.getCount()
@@ -200,19 +200,22 @@ class TimeZoneRepositoryImpl @Inject constructor(
                         Log.i(TAG, "Successfully inserted ${citiesToInsert.size} cities into Room DB.")
                     } else {
                         Log.w(TAG, "No valid cities found in CSV to insert.")
+                        return@withLock Result.failure(Exception("No valid cities found in CSV"))
                     }
                     // Mark as populated only if the whole process succeeded without exceptions
                     cityDbPopulated = true
-
                 } else {
                     // DB already has data from a previous session
                     Log.d(TAG, "City database already populated ($count entries).")
                     cityDbPopulated = true // Mark as populated
                 }
+                Result.success(Unit)
             } catch (e: IOException) {
                 Log.e(TAG, "IOException during city DB population check/process", e)
+                Result.failure(e)
             } catch (e: Exception) {
                 Log.e(TAG, "Error during city DB population check/process", e)
+                Result.failure(e)
             }
         }
     }

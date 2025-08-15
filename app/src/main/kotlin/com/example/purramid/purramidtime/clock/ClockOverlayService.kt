@@ -28,6 +28,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageButton
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
@@ -322,26 +323,23 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
         rootView.findViewById<ImageButton>(R.id.buttonPlayPause)?.apply {
             setImageResource(if (state.isPaused) R.drawable.ic_play else R.drawable.ic_pause)
             isActivated = state.isPaused
-            imageTintList = android.content.res.ColorStateList.valueOf(
-                if (state.isPaused) 0xFF1976D2.toInt() else 0xFF757575.toInt()
-            )
+            imageTintList = ContextCompat.getColorStateList(this@ClockOverlayService, R.color.button_tint_state_list)
         }
 
         // Update settings button activation if settings are open
         rootView.findViewById<ImageButton>(R.id.buttonSettings)?.apply {
-            val settingsOpen = false // TODO: Track this state
-            isActivated = settingsOpen
-            imageTintList = android.content.res.ColorStateList.valueOf(
-                if (settingsOpen) 0xFF1976D2.toInt() else 0xFF757575.toInt()
-            )
+            imageTintList = ContextCompat.getColorStateList(this@ClockOverlayService, R.color.button_tint_state_list)
+        }
+
+        // Update settings button
+        rootView.findViewById<ImageButton>(R.id.buttonSettings)?.apply {
+            imageTintList = ContextCompat.getColorStateList(this@ClockOverlayService, R.color.button_tint_state_list)
         }
 
         // Update nest button state if present
         rootView.findViewById<ImageButton>(R.id.buttonNest)?.apply {
             isActivated = state.isNested
-            imageTintList = android.content.res.ColorStateList.valueOf(
-                if (state.isNested) 0xFF1976D2.toInt() else 0xFF757575.toInt()
-            )
+            imageTintList = ContextCompat.getColorStateList(this@ClockOverlayService, R.color.button_tint_state_list)
         }
 
         // Apply nest mode visuals if state changed
@@ -754,6 +752,7 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
 
         val nestedClocks = clockViewModels.entries
             .filter { it.value.uiState.value?.isNested == true }
+            .sortedBy { it.key } // Sort by instance ID (older instances have lower IDs)
             .map { it.key }
             .toList()
 
@@ -771,6 +770,7 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
             val clockRootView = activeClockViews[instanceId] ?: return@forEachIndexed
             val params = clockLayoutParams[instanceId] ?: return@forEachIndexed
 
+            // Stack from top to bottom with newest (highest instance ID) at bottom
             val yOffset = index * (clockHeight + spacing)
             val targetY = startY + yOffset
 

@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import com.example.purramid.purramidtime.ui.PurramidPalette
 import com.example.purramid.purramidtime.util.dpToPx
+import java.time.Duration
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -37,6 +38,10 @@ class ClockView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
+
+    // Add throttling variables
+    private var lastUpdateTime = 0L
+    private val UPDATE_THROTTLE_MS = 16L // ~60 FPS max
 
     // --- Listener for Interactions ---
     interface ClockInteractionListener {
@@ -492,6 +497,12 @@ class ClockView @JvmOverloads constructor(
 
             MotionEvent.ACTION_MOVE -> {
                 draggedHand?.let { hand ->
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastUpdateTime < UPDATE_THROTTLE_MS) {
+                        return true
+                    }
+                    lastUpdateTime = currentTime
+
                     val currentAngle = calculateAngle(centerX, centerY, event.x, event.y)
                     val angleDelta = angleDifference(currentAngle, lastTouchAngle)
 

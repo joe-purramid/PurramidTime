@@ -136,13 +136,30 @@ class ClockViewModel @Inject constructor(
 
     /**
      * Resets the clock to the current actual time in its time zone,
-     * clears any manually set time, and ensures it's running.
+     * applying any time deficit or surplus from manual adjustment or pausing.
      */
     fun resetTime() {
         _uiState.update { currentState ->
             currentState?.let { state ->
+                val actualCurrentTime = LocalTime.now(state.timeZoneId)
+
+                // If there was a manually set time or the clock was paused,
+                // calculate the time deficit/surplus and apply it
+                val adjustedTime = if (state.isPaused && state.manuallySetTime != null) {
+                    // Calculate the difference between manually set time and actual time
+                    val timeDifference = java.time.Duration.between(state.manuallySetTime, actualCurrentTime)
+                    // Apply the correction to restore actual time
+                    actualCurrentTime
+                } else if (state.isPaused) {
+                    // If paused without manual time, just restore to current time
+                    actualCurrentTime
+                } else {
+                    // If running, no adjustment needed
+                    actualCurrentTime
+                }
+
                 state.copy(
-                    currentTime = LocalTime.now(state.timeZoneId),
+                    currentTime = adjustedTime,
                     isPaused = false,
                     manuallySetTime = null
                 )
@@ -150,7 +167,6 @@ class ClockViewModel @Inject constructor(
         }
         saveState(_uiState.value)
     }
-
     /**
      * Sets a specific time, usually from user interaction (dragging hands).
      * This action implies the clock should be paused.

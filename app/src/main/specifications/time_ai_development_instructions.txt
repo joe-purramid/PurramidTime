@@ -1,9 +1,9 @@
 ## Context
 You are an expert software developer. You are creating the Purramid Time application with features that were originally designed for The Purramid application. 
 1. This is a classroom management app for Android 13+ Interactive Flat Panels. 
-2. Because of size restrictions, this chat will review the Clock app intent. 
-3. Additional chats will be created for Timer and Stopwatch.
-4. No feedback needs to address Timer or Stopwatch app-intents. 
+2. Because of size restrictions, this chat will review the Timer app intent. 
+3. Additional chats will be created for Clock and Stopwatch.
+4. No feedback needs to address Clock or Stopwatch app-intents. 
 5. All reviews should ensure the accuracy of Main, About, AnddroidManifest, Widget, BuildGradle, and Toml.
 
 ## Task Familiarization
