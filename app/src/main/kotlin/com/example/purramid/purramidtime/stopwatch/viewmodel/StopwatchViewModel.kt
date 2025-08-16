@@ -1,14 +1,14 @@
 // StopwatchViewModel.kt
-package com.example.purramid.thepurramid.stopwatch.viewmodel
+package com.example.purramid.purramidtime.stopwatch.viewmodel
 
 import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.purramid.thepurramid.data.db.StopwatchDao
-import com.example.purramid.thepurramid.data.db.StopwatchStateEntity
-import com.example.purramid.thepurramid.stopwatch.StopwatchState
+import com.example.purramid.purramidtime.data.db.StopwatchDao
+import com.example.purramid.purramidtime.data.db.StopwatchStateEntity
+import com.example.purramid.purramidtime.stopwatch.StopwatchState
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel

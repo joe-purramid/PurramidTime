@@ -49,11 +49,9 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 // Service Actions
-const val ACTION_START_STOPWATCH = "com.example.purramid.timer.ACTION_START_STOPWATCH"
-const val ACTION_START_COUNTDOWN = "com.example.purramid.timer.ACTION_START_COUNTDOWN"
-const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.timer.ACTION_STOP_TIMER_SERVICE"
+const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.purramidtime.timer.ACTION_STOP_TIMER_SERVICE"
 const val EXTRA_TIMER_ID = TimerViewModel.KEY_TIMER_ID
-const val EXTRA_DURATION_MS = "com.example.purramid.timer.EXTRA_DURATION_MS"
+const val EXTRA_DURATION_MS = "com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS"
 
 @AndroidEntryPoint
 class TimerService : LifecycleService() {
@@ -81,11 +79,6 @@ class TimerService : LifecycleService() {
     // Countdown Specific
     private var centisecondsTextView: TextView? = null
     private var resetButtonCountdown: ImageView? = null
-    // Stopwatch Specific
-    private var lapResetButtonStopwatch: Button? = null
-    private var lapTimesLayout: LinearLayout? = null
-    private var lapTimeTextViews = mutableListOf<TextView>()
-    private var noLapsTextView: TextView? = null
 
     // Touch handling
     private var initialX: Int = 0
@@ -154,18 +147,13 @@ class TimerService : LifecycleService() {
 
         // Handle actions
         when (action) {
-            ACTION_START_STOPWATCH -> {
-                viewModel.setTimerType(TimerType.STOPWATCH)
-                startForegroundServiceIfNeeded()
-                lifecycleScope.launch { addOverlayViewIfNeeded() }
-            }
-            ACTION_START_COUNTDOWN -> {
-                val duration = intent.getLongExtra(EXTRA_DURATION_MS, 60000L)
-                viewModel.setTimerType(TimerType.COUNTDOWN)
+            ACTION_START_TIMER -> {
+                val duration = intent.getLongExtra(EXTRA_DURATION_MS, 0L)
                 viewModel.setInitialDuration(duration)
                 startForegroundServiceIfNeeded()
                 lifecycleScope.launch { addOverlayViewIfNeeded() }
             }
+
             ACTION_STOP_TIMER_SERVICE -> {
                 stopService()
             }
@@ -178,10 +166,6 @@ class TimerService : LifecycleService() {
         stateObserverJob = lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
                 Log.d(TAG, "Collecting State: Type=${state.type}, Running=${state.isRunning}, Millis=${state.currentMillis}")
-                val requiredLayoutId = when (state.type) {
-                    TimerType.STOPWATCH -> R.layout.view_floating_timer_stopwatch
-                    TimerType.COUNTDOWN -> R.layout.view_floating_timer_countdown
-                }
                 if (overlayView == null || currentInflatedLayoutId != requiredLayoutId) {
                     Log.d(TAG, "State requires layout change. Current: $currentInflatedLayoutId, Required: $requiredLayoutId")
                     addOverlayViewIfNeeded()
@@ -216,20 +200,13 @@ class TimerService : LifecycleService() {
     private suspend fun addOverlayViewIfNeeded() {
         withContext(Dispatchers.Main) {
             val currentState = viewModel.uiState.value
-            val requiredLayoutId = when (currentState.type) {
-                TimerType.STOPWATCH -> R.layout.view_floating_timer_stopwatch
-                TimerType.COUNTDOWN -> R.layout.view_floating_timer_countdown
-            }
-
-            if (overlayView != null && currentInflatedLayoutId != requiredLayoutId) {
-                removeOverlayView()
-            }
+            val requiredLayoutId = R.layout.view_floating_timer_countdown
 
             if (overlayView == null) {
                 layoutParams = createDefaultLayoutParams()
                 applyStateToLayoutParams(currentState, layoutParams!!)
 
-                val inflater = LayoutInflater.from(this@TimerService)
+                val inflater = LayoutInflater.from(this@TimersService)
                 overlayView = inflater.inflate(requiredLayoutId, null)
                 currentInflatedLayoutId = requiredLayoutId
 
@@ -241,7 +218,7 @@ class TimerService : LifecycleService() {
                     if (!isViewAdded) {
                         windowManager.addView(overlayView, layoutParams)
                         isViewAdded = true
-                        Log.d(TAG, "Timer overlay view added (Layout ID: $requiredLayoutId).")
+                        Log.d(TAG, "Timer overlay view added.")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error adding timer overlay view", e)
@@ -275,18 +252,7 @@ class TimerService : LifecycleService() {
         playPauseButton = overlayView?.findViewById(R.id.playPauseButton)
         settingsButton = overlayView?.findViewById(R.id.settingsButton)
         closeButton = overlayView?.findViewById(R.id.closeButton)
-        centisecondsTextView = overlayView?.findViewById(R.id.centisecondsTextView)
         resetButtonCountdown = overlayView?.findViewById(R.id.resetButton)
-        lapResetButtonStopwatch = overlayView?.findViewById(R.id.lapResetButton)
-        lapTimesLayout = overlayView?.findViewById(R.id.lapTimesLayout)
-        noLapsTextView = overlayView?.findViewById(R.id.noLapsTextView)
-        lapTimeTextViews.clear()
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime1TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime2TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime3TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime4TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime5TextView) ?: TextView(this))
-        lapTimeTextViews.removeAll { it.id == View.NO_ID }
     }
 
     private fun setupListeners() {
@@ -296,15 +262,6 @@ class TimerService : LifecycleService() {
         }
         closeButton?.setOnClickListener { stopService() }
         settingsButton?.setOnClickListener { openSettings() }
-        lapResetButtonStopwatch?.setOnClickListener {
-            if (viewModel.uiState.value.isRunning) {
-                playButtonSound()
-                viewModel.addLap()
-            } else {
-                playButtonSound()
-                viewModel.resetTimer()
-            }
-        }
         resetButtonCountdown?.setOnClickListener {
             playButtonSound()
             viewModel.resetTimer()
@@ -313,15 +270,6 @@ class TimerService : LifecycleService() {
 
     private fun updateOverlayViews(state: TimerState) {
         if (overlayView == null || !isViewAdded) return
-
-        val requiredLayoutId = when (state.type) {
-            TimerType.STOPWATCH -> R.layout.view_floating_timer_stopwatch
-            TimerType.COUNTDOWN -> R.layout.view_floating_timer_countdown
-        }
-        if (currentInflatedLayoutId != requiredLayoutId) {
-            Log.w(TAG, "Timer state update received, but layout mismatch. Waiting for re-inflation.")
-            return
-        }
 
         // Apply nested state if needed
         applyNestedState(state)
@@ -335,15 +283,11 @@ class TimerService : LifecycleService() {
             Color.WHITE
         }
 
-        val showCenti = state.showCentiseconds
-        val timeStr = formatTime(state.currentMillis, showCenti)
-
-        digitalTimeTextView?.text = timeStr.substringBeforeLast('.')
-        digitalTimeTextView?.setTextColor(textColor)
+        val timeStr = formatTime(state.currentMillis, showCentiseconds)
 
         centisecondsTextView?.let {
-            it.text = if (showCenti && timeStr.contains('.')) ".${timeStr.substringAfterLast('.')}" else ""
-            it.visibility = if (showCenti && state.type == TimerType.COUNTDOWN) View.VISIBLE else View.GONE
+            it.text = if (state.showCentiseconds && timeStr.contains('.')) ".${timeStr.substringAfterLast('.')}" else ""
+            it.visibility = if (state.showCentiseconds) View.VISIBLE else View.GONE
             it.setTextColor(textColor)
         }
 
@@ -353,40 +297,8 @@ class TimerService : LifecycleService() {
 
         closeButton?.setTextColor(textColor)
 
-        if (state.type == TimerType.STOPWATCH) {
-            lapResetButtonStopwatch?.setTextColor(textColor)
-            lapResetButtonStopwatch?.text = getString(if (state.isRunning) R.string.lap else R.string.reset)
-            lapResetButtonStopwatch?.isEnabled = state.isRunning || state.currentMillis > 0L
-
-            // Disable lap button if max laps reached
-            if (state.isRunning && state.laps.size >= 10) {
-                lapResetButtonStopwatch?.isEnabled = false
-            }
-
-            // Only show lap times if enabled in settings
-            val hasLaps = state.laps.isNotEmpty() && state.showLapTimes
-            lapTimesLayout?.visibility = if (hasLaps) View.VISIBLE else View.GONE
-            noLapsTextView?.visibility = if (state.showLapTimes && !hasLaps) View.VISIBLE else View.GONE
-            noLapsTextView?.setTextColor(textColor)
-
-            if (hasLaps) {
-                val reversedLaps = state.laps.reversed()
-                lapTimeTextViews.forEachIndexed { index, textView ->
-                    if (index < reversedLaps.size) {
-                        textView.text = "${state.laps.size - index}. ${formatTime(reversedLaps[index], true)}"
-                        textView.visibility = View.VISIBLE
-                        textView.setTextColor(textColor)
-                    } else {
-                        textView.visibility = View.GONE
-                    }
-                }
-            }
-        }
-
-        if (state.type == TimerType.COUNTDOWN) {
             resetButtonCountdown?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
             resetButtonCountdown?.isEnabled = !state.isRunning && (state.currentMillis != state.initialDurationMillis || state.currentMillis == 0L)
-        }
     }
 
     private fun applyStateToLayoutParams(state: TimerState, params: WindowManager.LayoutParams) {
@@ -453,15 +365,10 @@ class TimerService : LifecycleService() {
         isViewAdded = false
         currentInflatedLayoutId = 0
         digitalTimeTextView = null
-        centisecondsTextView = null
         playPauseButton = null
-        lapResetButtonStopwatch = null
         resetButtonCountdown = null
         settingsButton = null
         closeButton = null
-        lapTimesLayout = null
-        lapTimeTextViews.clear()
-        noLapsTextView = null
     }
 
     private fun formatTime(millis: Long, includeCentiseconds: Boolean): String {
@@ -588,7 +495,7 @@ class TimerService : LifecycleService() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.timer_notification_title))
             .setContentText(getString(R.string.timer_notification_content))
-            .setSmallIcon(R.drawable.ic_timer)
+            .setSmallIcon(R.drawable.ic_timer_notification)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
@@ -657,31 +564,14 @@ class TimerService : LifecycleService() {
             // Hide control buttons for nested view
             playPauseButton?.visibility = View.GONE
             resetButtonCountdown?.visibility = View.GONE
-            lapResetButtonStopwatch?.visibility = View.GONE
             settingsButton?.visibility = View.GONE
-            lapTimesLayout?.visibility = View.GONE
-            noLapsTextView?.visibility = View.GONE
 
             // Keep only time display and close button visible
             digitalTimeTextView?.textSize = 20f
-            centisecondsTextView?.textSize = 12f
         } else {
             // Restore normal view
             playPauseButton?.visibility = View.VISIBLE
             settingsButton?.visibility = View.VISIBLE
-
-            if (viewModel.uiState.value.type == TimerType.COUNTDOWN) {
-                resetButtonCountdown?.visibility = View.VISIBLE
-            } else {
-                lapResetButtonStopwatch?.visibility = View.VISIBLE
-                if (viewModel.uiState.value.showLapTimes) {
-                    if (viewModel.uiState.value.laps.isNotEmpty()) {
-                        lapTimesLayout?.visibility = View.VISIBLE
-                    } else {
-                        noLapsTextView?.visibility = View.VISIBLE
-                    }
-                }
-            }
 
             digitalTimeTextView?.textSize = 36f
             centisecondsTextView?.textSize = 20f
@@ -694,30 +584,6 @@ class TimerService : LifecycleService() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating nested state layout", e)
             }
-        }
-    }
-
-    private fun playButtonSound() {
-        val state = viewModel.uiState.value
-        if (state.soundsEnabled && state.type == TimerType.STOPWATCH) {
-            // Play a short beep sound
-            playBeepSound()
-        }
-    }
-
-    private fun playBeepSound() {
-        try {
-            // Use ToneGenerator for simple beep
-            val toneGen = ToneGenerator(
-                AudioManager.STREAM_NOTIFICATION,
-                100
-            )
-            toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
-            Handler(Looper.getMainLooper()).postDelayed({
-                toneGen.release()
-            }, 200)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error playing beep sound", e)
         }
     }
 

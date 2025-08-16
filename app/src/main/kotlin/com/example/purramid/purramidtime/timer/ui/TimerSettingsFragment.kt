@@ -23,6 +23,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.databinding.FragmentTimerSettingsBinding
 import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.timer.ACTION_START_TIMER
+import com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS
 import com.example.purramid.purramidtime.timer.TimerType
 import com.example.purramid.purramidtime.timer.TimerService
 import com.example.purramid.purramidtime.timer.viewmodel.TimerViewModel
@@ -123,68 +125,16 @@ class TimerSettingsFragment : DialogFragment() {
             handleAddAnotherTimer()
         }
 
-        binding.radioGroupTimerType.setOnCheckedChangeListener { _, checkedId ->
-            if (blockListeners) return@setOnCheckedChangeListener
-            val newType = when (checkedId) {
-                R.id.radioStopwatch -> TimerType.STOPWATCH
-                R.id.radioCountdown -> TimerType.COUNTDOWN
-                else -> viewModel.uiState.value.type
-            }
-            if (newType == TimerType.STOPWATCH && viewModel.uiState.value.type == TimerType.COUNTDOWN) {
-                saveDurationFromInput()
-            }
-            viewModel.setTimerType(newType)
-        }
-
-        // Duration input listeners
-        val durationTextWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (blockListeners || viewModel.uiState.value.type != TimerType.COUNTDOWN) return
-            }
-        }
-        binding.editTextHours.addTextChangedListener(durationTextWatcher)
-        binding.editTextMinutes.addTextChangedListener(durationTextWatcher)
-        binding.editTextSeconds.addTextChangedListener(durationTextWatcher)
-
-        val durationFocusListener = View.OnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus && !blockListeners && viewModel.uiState.value.type == TimerType.COUNTDOWN) {
-                saveDurationFromInput()
-            }
-        }
-        binding.editTextHours.onFocusChangeListener = durationFocusListener
-        binding.editTextMinutes.onFocusChangeListener = durationFocusListener
-        binding.editTextSeconds.onFocusChangeListener = durationFocusListener
-
         binding.switchPlaySoundOnEnd.setOnCheckedChangeListener { _, isChecked ->
             if (blockListeners) return@setOnCheckedChangeListener
             viewModel.setPlaySoundOnEnd(isChecked)
         }
 
-        binding.switchShowCentiseconds.setOnCheckedChangeListener { _, isChecked ->
-            if (blockListeners) return@setOnCheckedChangeListener
-            viewModel.setShowCentiseconds(isChecked)
-        }
-
-        // Stopwatch specific
-        binding.switchLapTime.setOnCheckedChangeListener { _, isChecked ->
-            if (blockListeners) return@setOnCheckedChangeListener
-            viewModel.setShowLapTimes(isChecked)
-        }
-
-        binding.switchSounds.setOnCheckedChangeListener { _, isChecked ->
-            if (blockListeners) return@setOnCheckedChangeListener
-            viewModel.setSoundsEnabled(isChecked)
-        }
-
-        // Countdown specific
         binding.switchNestTimer.setOnCheckedChangeListener { _, isChecked ->
             if (blockListeners) return@setOnCheckedChangeListener
             viewModel.setNested(isChecked)
         }
 
-        // Set Countdown duration
         binding.layoutSetCountdown.setOnClickListener {
             showSetCountdownDialog()
         }
@@ -197,45 +147,20 @@ class TimerSettingsFragment : DialogFragment() {
                     Log.d(TAG, "Observed state: $state")
                     blockListeners = true
 
-                    // Update Timer Type RadioGroup
-                    val radioIdToCheck = when (state.type) {
-                        TimerType.STOPWATCH -> R.id.radioStopwatch
-                        TimerType.COUNTDOWN -> R.id.radioCountdown
-                    }
-                    if (binding.radioGroupTimerType.checkedRadioButtonId != radioIdToCheck) {
-                        binding.radioGroupTimerType.check(radioIdToCheck)
-                    }
+                    // Update duration display
+                    val durationStr = formatDuration(state.initialDurationMillis)
+                    binding.textViewCurrentDuration.text = durationStr
 
-                    // Update visibility based on timer type
-                    binding.layoutCountdownSettings.isVisible = state.type == TimerType.COUNTDOWN
-                    binding.layoutStopwatchSettings.isVisible = state.type == TimerType.STOPWATCH
-                    binding.switchNestTimer.isVisible = state.type == TimerType.COUNTDOWN
-
-                    // Update Countdown specific UI
-                    if (state.type == TimerType.COUNTDOWN) {
-                        // Update duration display
-                        val durationStr = formatDuration(state.initialDurationMillis)
-                        binding.textViewCurrentDuration.text = durationStr
-
-                        binding.switchPlaySoundOnEnd.isChecked = state.playSoundOnEnd
-                        binding.switchNestTimer.isChecked = state.isNested
-                    }
-
-                    // Update Stopwatch specific UI
-                    if (state.type == TimerType.STOPWATCH) {
-                        binding.switchLapTime.isChecked = state.showLapTimes
-                        binding.switchSounds.isChecked = state.soundsEnabled
-                    }
-
-                    // Update Common Settings
-                    binding.switchShowCentiseconds.isChecked = state.showCentiseconds
+                    // Update simple switches (if keeping them)
+                    binding.switchPlaySoundOnEnd.isChecked = state.playSoundOnEnd
+                    binding.switchNestTimer.isChecked = state.isNested
 
                     // Update color palette selection
                     selectedTimerColor = state.overlayColor
                     updateTimerColorSelectionInUI(selectedTimerColor)
 
                     // Update Add Another button state
-                    val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMERS)
+                    val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
                     binding.layoutAddAnother.isEnabled = activeCount < 4
                     binding.iconAddAnother.alpha = if (activeCount < 4) 1.0f else 0.5f
 
@@ -244,7 +169,6 @@ class TimerSettingsFragment : DialogFragment() {
             }
         }
     }
-
     private fun populateDurationFields(totalMillis: Long) {
         val hours = TimeUnit.MILLISECONDS.toHours(totalMillis)
         val minutes = TimeUnit.MILLISECONDS.toMinutes(totalMillis) % 60
@@ -288,7 +212,7 @@ class TimerSettingsFragment : DialogFragment() {
     }
 
     private fun handleAddAnotherTimer() {
-        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMERS)
+        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
         if (activeCount >= 4) {
             Toast.makeText(
                 requireContext(),
@@ -300,19 +224,12 @@ class TimerSettingsFragment : DialogFragment() {
 
         // Launch new timer with current settings
         val currentState = viewModel.uiState.value
-        val intent = Intent(requireContext(), TimersService::class.java).apply {
-            action = if (currentState.type == TimerType.COUNTDOWN) {
-                com.example.purramid.purramidtime.timers.ACTION_START_COUNTDOWN
-            } else {
-                com.example.purramid.purramidtime.timers.ACTION_START_STOPWATCH
-            }
-            if (currentState.type == TimerType.COUNTDOWN) {
-                putExtra(com.example.purramid.purramidtime.timers.EXTRA_DURATION_MS, currentState.initialDurationMillis)
-            }
+        val intent = Intent(requireContext(), TimerService::class.java).apply {
+            action = ACTION_START_TIMER  // Changed from conditional action
+            putExtra(EXTRA_DURATION_MS, currentState.initialDurationMillis)
         }
         ContextCompat.startForegroundService(requireContext(), intent)
 
-        // Dismiss settings
         dismiss()
     }
 

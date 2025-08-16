@@ -22,7 +22,7 @@ class StopwatchActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "StopwatchActivity"
-        const val ACTION_SHOW_STOPWATCH_SETTINGS = "com.example.purramid.stopwatch.ACTION_SHOW_STOPWATCH_SETTINGS"
+        const val ACTION_SHOW_STOPWATCH_SETTINGS = "com.example.purramid.purramidtime.stopwatch.ACTION_SHOW_STOPWATCH_SETTINGS"
     }
 
     private var currentStopwatchId: Int = 0

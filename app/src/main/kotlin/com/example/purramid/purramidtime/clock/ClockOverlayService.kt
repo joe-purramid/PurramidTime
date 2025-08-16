@@ -82,8 +82,8 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
 
     companion object {
         // Actions
-        const val ACTION_START_CLOCK_SERVICE = "com.example.purramid.clock.ACTION_START_SERVICE"
-        const val ACTION_STOP_CLOCK_SERVICE = "com.example.purramid.clock.ACTION_STOP_SERVICE"
+        const val ACTION_START_CLOCK_SERVICE = "com.example.purramid.purramidtime.clock.ACTION_START_SERVICE"
+        const val ACTION_STOP_CLOCK_SERVICE = "com.example.purramid.purramidtime.clock.ACTION_STOP_SERVICE"
         const val ACTION_ADD_NEW_CLOCK = "com.example.purramid.purramidtime.ACTION_ADD_NEW_CLOCK"
         const val ACTION_UPDATE_CLOCK_SETTING = "com.example.purramid.purramidtime.ACTION_UPDATE_CLOCK_SETTING"
         const val ACTION_NEST_CLOCK = "com.example.purramid.purramidtime.ACTION_NEST_CLOCK"
@@ -877,7 +877,7 @@ class ClockOverlayService : LifecycleService(), ViewModelStoreOwner,
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText("Floating clock(s) active")
-            .setSmallIcon(R.drawable.ic_clock)
+            .setSmallIcon(R.drawable.ic_clock_notification)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()

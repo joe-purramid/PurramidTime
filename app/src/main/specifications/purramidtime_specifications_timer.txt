@@ -47,10 +47,6 @@ Timer is the second PurramidTime app-intent
 	(5.1) Default icon state uses ic_close.xml.
 	(5.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
 (6) All timers use a digital clock face HH:MM:SS
-    (6.1) Hundredths will be abbreviated as cs (centiseconds) in the instructions, but all user-facing strings say Hundredths.
-    (6.2) If Hundredths is toggled on, time displays as HH:MM:SS.cs
-        (6.2.1) Hundredths appear 0.6f the size of the other numbers.
-        (6.2.2) Hundredths are separated from seconds with a period not a colon.
 
 ``BUTTONS``
 (7) Below the timer clock is two buttons:

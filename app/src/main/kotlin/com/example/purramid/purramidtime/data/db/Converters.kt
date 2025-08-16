@@ -105,21 +105,4 @@ class Converters {
             }
         }
     }
-
-    // --- TIMER ---
-    @TypeConverter
-    fun fromTimerType(value: TimerType?): String? {
-        return value?.name
-    }
-
-    @TypeConverter
-    fun toTimerType(value: String?): TimerType? {
-        return try {
-            value?.let { TimerType.valueOf(it) }
-        } catch (e: IllegalArgumentException) {
-            Log.e("Converters", "Invalid TimerType string: $value", e)
-            null
-        }
-    }
-
 }

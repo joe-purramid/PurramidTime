@@ -37,7 +37,6 @@ import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.stopwatch.viewmodel.StopwatchViewModel
-import com.example.purramid.thepurramid.stopwatch.viewmodel.StopwatchViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -95,9 +94,9 @@ class StopwatchService : LifecycleService() {
         private const val CHANNEL_ID = "StopwatchServiceChannel"
         const val PREFS_NAME_FOR_ACTIVITY = "stopwatch_prefs"
 
-        const val ACTION_START_STOPWATCH = "com.example.purramid.stopwatch.ACTION_START_STOPWATCH"
-        const val ACTION_STOP_STOPWATCH_SERVICE = "com.example.purramid.stopwatch.ACTION_STOP_STOPWATCH_SERVICE"
-        const val EXTRA_STOPWATCH_ID = "com.example.purramid.stopwatch.EXTRA_STOPWATCH_ID"
+        const val ACTION_START_STOPWATCH = "com.example.purramid.purramidtime.stopwatch.ACTION_START_STOPWATCH"
+        const val ACTION_STOP_STOPWATCH_SERVICE = "com.example.purramid.purramidtime.stopwatch.ACTION_STOP_STOPWATCH_SERVICE"
+        const val EXTRA_STOPWATCH_ID = "com.example.purramid.purramidtime.stopwatch.EXTRA_STOPWATCH_ID"
     }
 
     override fun onCreate() {
@@ -500,7 +499,7 @@ class StopwatchService : LifecycleService() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.stopwatch_notification_title))
             .setContentText(getString(R.string.stopwatch_notification_content))
-            .setSmallIcon(R.drawable.ic_stopwatch)
+            .setSmallIcon(R.drawable.ic_stopwatch_notification)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()

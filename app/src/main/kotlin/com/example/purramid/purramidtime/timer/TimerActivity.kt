@@ -9,7 +9,9 @@ import androidx.core.content.ContextCompat
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.databinding.ActivityTimerBinding
 import com.example.purramid.purramidtime.instance.InstanceManager
-import com.example.purramid.purramidtime.timers.ui.TimerSettingsFragment
+import com.example.purramid.purramidtime.timer.ACTION_START_TIMER
+import com.example.purramid.purramidtime.timer.EXTRA_TIMER_ID
+import com.example.purramid.purramidtime.timer.ui.TimerSettingsFragment
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -21,8 +23,17 @@ class TimerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTimerBinding
 
     companion object {
-        private const val TAG = "TimerActivity"
-        const val ACTION_SHOW_TIMER_SETTINGS = "com.example.purramid.purramidtime.timer.ACTION_SHOW_TIMER_SETTINGS"
+        private const val TAG = "TimerService"
+        private const val NOTIFICATION_ID = 5
+        private const val CHANNEL_ID = "TimerServiceChannel"
+        const val PREFS_NAME_FOR_ACTIVITY = "timer_prefs"
+        const val MAX_TIMER_INSTANCES = 4
+
+        // Service Actions
+        const val ACTION_START_TIMER = "com.example.purramid.purramidtime.timer.ACTION_START_TIMER"
+        const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.purramidtime.timer.ACTION_STOP_TIMER_SERVICE"
+        const val EXTRA_TIMER_ID = "com.example.purramid.purramidtime.timer.EXTRA_TIMER_ID"
+        const val EXTRA_DURATION_MS = "com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS"
     }
 
     private var currentTimerId: Int = 0
@@ -47,7 +58,7 @@ class TimerActivity : AppCompatActivity() {
             // Default action: launch a new timer service instance
             if (canCreateNewInstance()) {
                 Log.d(TAG, "Launching timer service")
-                startTimerService(currentTimerId, TimerType.STOPWATCH)
+                startTimerService(currentTimerId)
                 finish()
             }
         }
@@ -79,10 +90,6 @@ class TimerActivity : AppCompatActivity() {
         Log.d(TAG, "Requesting start for TimerService, ID: $timerId, Type: $type")
         val serviceIntent = Intent(this, TimerService::class.java).apply {
             action = if (type == TimerType.COUNTDOWN) {
-                ACTION_START_COUNTDOWN
-            } else {
-                ACTION_START_STOPWATCH
-            }
             if (timerId != 0) {
                 putExtra(EXTRA_TIMER_ID, timerId)
             }

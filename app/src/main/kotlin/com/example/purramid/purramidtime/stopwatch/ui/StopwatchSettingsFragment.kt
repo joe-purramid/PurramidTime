@@ -1,5 +1,5 @@
 // StopwatchSettingsFragment.kt
-package com.example.purramid.thepurramid.stopwatch.ui
+package com.example.purramid.purramidtime.stopwatch.ui
 
 import android.content.Intent
 import android.graphics.Color
@@ -19,13 +19,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.instance.InstanceManager
-import com.example.purramid.thepurramid.R
-import com.example.purramid.thepurramid.databinding.FragmentStopwatchSettingsBinding
-import com.example.purramid.thepurramid.instance.InstanceManager
-import com.example.purramid.thepurramid.stopwatch.StopwatchService
-import com.example.purramid.thepurramid.stopwatch.viewmodel.StopwatchViewModel
-import com.example.purramid.thepurramid.ui.PurramidPalette
-import com.example.purramid.thepurramid.util.dpToPx
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.databinding.FragmentStopwatchSettingsBinding
+import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.stopwatch.StopwatchService
+import com.example.purramid.purramidtime.stopwatch.viewmodel.StopwatchViewModel
+import com.example.purramid.purramidtime.ui.PurramidPalette
+import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
