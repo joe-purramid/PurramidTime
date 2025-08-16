@@ -33,9 +33,9 @@ import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.stopwatch.viewmodel.StopwatchViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +53,6 @@ class StopwatchService : LifecycleService() {
     @Inject lateinit var windowManager: WindowManager
     @Inject lateinit var instanceManager: InstanceManager
     @Inject lateinit var notificationManager: NotificationManager
-    @Inject lateinit var stopwatchCoordinator: StopwatchCoordinator
 
     private lateinit var viewModel: StopwatchViewModel
 
@@ -103,6 +102,28 @@ class StopwatchService : LifecycleService() {
         super.onCreate()
         Log.d(TAG, "onCreate")
         createNotificationChannel()
+
+        // Clean up orphaned instances on service start
+        lifecycleScope.launch(Dispatchers.IO) {
+            cleanupOrphanedInstances()
+        }
+    }
+
+    private suspend fun cleanupOrphanedInstances() {
+        // Get all instances from database
+        val allDbInstances = stopwatchDao.getAllInstanceIds()
+
+        // Get active instances from InstanceManager
+        val activeInstances = instanceManager.getActiveInstanceIds(InstanceManager.STOPWATCH)
+
+        // Find orphaned instances (in DB but not active)
+        val orphanedInstances = allDbInstances.filter { it !in activeInstances && it != 1 }
+
+        // Clean up orphaned instances, keeping instance 1 as the default
+        orphanedInstances.forEach { instanceId ->
+            Log.d(TAG, "Cleaning up orphaned instance: $instanceId")
+            stopwatchDao.deleteById(instanceId)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -114,7 +135,7 @@ class StopwatchService : LifecycleService() {
         // Handle instance management
         if (intentStopwatchId <= 0 && action != ACTION_STOP_STOPWATCH_SERVICE) {
             // Request new instance ID from InstanceManager
-            val instanceId = instanceManager.getNextInstanceId(InstanceManager.TIMER)
+            val instanceId = instanceManager.getNextInstanceId(InstanceManager.STOPWATCH)
             if (instanceId == null) {
                 Log.e(TAG, "No available instance slots for Stopwatch")
                 stopSelf()
@@ -124,7 +145,7 @@ class StopwatchService : LifecycleService() {
             Log.d(TAG, "Allocated new instanceId: $stopwatchId")
         } else if (intentStopwatchId > 0) {
             // Register existing instance with InstanceManager
-            if (!instanceManager.registerExistingInstance(InstanceManager.TIMER, intentStopwatchId)) {
+            if (!instanceManager.registerExistingInstance(InstanceManager.STOPWATCH, intentStopwatchId)) {
                 Log.w(TAG, "Failed to register existing instance $intentStopwatchId")
             }
             this.stopwatchId = intentStopwatchId
@@ -249,9 +270,6 @@ class StopwatchService : LifecycleService() {
 
     private fun updateOverlayViews(state: StopwatchState) {
         if (overlayView == null || !isViewAdded) return
-
-        // Apply nested state if needed
-        applyNestedState(state)
 
         overlayView?.setBackgroundColor(state.overlayColor)
 
@@ -458,9 +476,22 @@ class StopwatchService : LifecycleService() {
 
     private fun stopService() {
         if (stopwatchId > 0) {
-            instanceManager.releaseInstanceId(InstanceManager.TIMERS, stopwatchId)
-            viewModel.deleteState()
+            instanceManager.releaseInstanceId(InstanceManager.STOPWATCH, stopwatchId)
+
+            // Check if this is the last instance
+            val remainingInstances = instanceManager.getActiveInstanceCount(InstanceManager.STOPWATCH)
+
+            if (remainingInstances == 0) {
+                // Last instance - persist state for future use
+                Log.d(TAG, "Last stopwatch instance - preserving state")
+                // State is already saved via ViewModel
+            } else {
+                // Not the last instance - clean up from database
+                Log.d(TAG, "Cleaning up stopwatch instance $stopwatchId from database")
+                viewModel.deleteState()
+            }
         }
+
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -522,83 +553,6 @@ class StopwatchService : LifecycleService() {
             dp.toFloat(),
             resources.displayMetrics
         ).toInt()
-    }
-
-    private fun applyNestedState(state: StopwatchState) {
-        if (state.isNested) {
-            layoutParams?.apply {
-                width = dpToPx(75)
-                height = dpToPx(75)
-
-                // If position not yet set, use default top-right
-                if (state.nestedX == -1 || state.nestedY == -1) {
-                    // Calculate top-right position with padding
-                    x = resources.displayMetrics.widthPixels - width - dpToPx(20)
-                    y = dpToPx(20)
-
-                    // Stack if other nested stopwatches exist
-                    lifecycleScope.launch {
-                        val stackPosition = stopwatchCoordinator.getNestedStopwatchStackPosition(stopwatchId)
-                        withContext(Dispatchers.Main) {
-                            layoutParams?.let { params ->
-                                params.y = dpToPx(20) + (stackPosition * (params.height + dpToPx(10)))
-
-                                // Save the calculated position
-                                viewModel.updateNestedPosition(params.x, params.y)
-
-                                // Update view if already added
-                                if (isViewAdded && overlayView != null) {
-                                    try {
-                                        windowManager.updateViewLayout(overlayView, params)
-                                    } catch (e: Exception) {
-                                        Log.e(TAG, "Error updating nested position", e)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    x = state.nestedX
-                    y = state.nestedY
-                }
-
-                gravity = Gravity.TOP or Gravity.START
-            }
-
-            // Hide control buttons for nested view
-            playPauseButton?.visibility = View.GONE
-            lapResetButton?.visibility = View.GONE
-            settingsButton?.visibility = View.GONE
-            lapTimesLayout?.visibility = View.GONE
-            noLapsTextView?.visibility = View.GONE
-
-            // Keep only time display and close button visible
-            digitalTimeTextView?.textSize = 20f
-        } else {
-            // Restore normal view
-            playPauseButton?.visibility = View.VISIBLE
-            settingsButton?.visibility = View.VISIBLE
-            lapResetButton?.visibility = View.VISIBLE
-
-            if (viewModel.uiState.value.showLapTimes) {
-                if (viewModel.uiState.value.laps.isNotEmpty()) {
-                    lapTimesLayout?.visibility = View.VISIBLE
-                } else {
-                    noLapsTextView?.visibility = View.VISIBLE
-                }
-            }
-
-            digitalTimeTextView?.textSize = 36f
-        }
-
-        // Update layout if needed
-        if (isViewAdded && overlayView != null) {
-            try {
-                windowManager.updateViewLayout(overlayView, layoutParams)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error updating nested state layout", e)
-            }
-        }
     }
 
     private fun playButtonSound() {

@@ -59,7 +59,7 @@ class StopwatchActivity : AppCompatActivity() {
             return true
         }
 
-        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
+        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.STOPWATCH)
         if (activeCount >= 4) {
             // Show Snackbar with the maximum reached message
             Snackbar.make(

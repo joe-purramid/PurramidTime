@@ -17,15 +17,13 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.instance.InstanceManager
-import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.databinding.FragmentStopwatchSettingsBinding
 import com.example.purramid.purramidtime.instance.InstanceManager
+import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.stopwatch.StopwatchService
 import com.example.purramid.purramidtime.stopwatch.viewmodel.StopwatchViewModel
 import com.example.purramid.purramidtime.ui.PurramidPalette
-import com.example.purramid.purramidtime.util.dpToPx
+import com.example.purramid.purramidtime.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -134,11 +132,6 @@ class StopwatchSettingsFragment : DialogFragment() {
             if (blockListeners) return@setOnCheckedChangeListener
             viewModel.setSoundsEnabled(isChecked)
         }
-
-        binding.switchNestStopwatch.setOnCheckedChangeListener { _, isChecked ->
-            if (blockListeners) return@setOnCheckedChangeListener
-            viewModel.setNested(isChecked)
-        }
     }
 
     private fun observeViewModel() {
@@ -152,14 +145,13 @@ class StopwatchSettingsFragment : DialogFragment() {
                     binding.switchShowCentiseconds.isChecked = state.showCentiseconds
                     binding.switchLapTime.isChecked = state.showLapTimes
                     binding.switchSounds.isChecked = state.soundsEnabled
-                    binding.switchNestStopwatch.isChecked = state.isNested
 
                     // Update color palette selection
                     selectedStopwatchColor = state.overlayColor
                     updateStopwatchColorSelectionInUI(selectedStopwatchColor)
 
                     // Update Add Another button state
-                    val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
+                    val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.STOPWATCH)
                     binding.layoutAddAnother.isEnabled = activeCount < 4
                     binding.iconAddAnother.alpha = if (activeCount < 4) 1.0f else 0.5f
 
@@ -170,7 +162,7 @@ class StopwatchSettingsFragment : DialogFragment() {
     }
 
     private fun handleAddAnotherStopwatch() {
-        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
+        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.STOPWATCH)
         if (activeCount >= 4) {
             Toast.makeText(
                 requireContext(),

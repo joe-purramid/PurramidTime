@@ -12,12 +12,6 @@
         android:gravity="center_horizontal"
         android:orientation="vertical">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
             <TextView
                 android:id="@+id/digitalTimeTextView"
                 android:layout_width="wrap_content"
@@ -80,6 +74,51 @@
                     android:visibility="gone" />
 
                 <TextView
+                    android:id="@+id/lapTime6TextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textSize="16sp"
+                    tools:text="6. 00:00:00.00"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/lapTime7TextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textSize="16sp"
+                    tools:text="7. 00:00:00.00"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/lapTime8TextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textSize="16sp"
+                    tools:text="8. 00:00:00.00"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/lapTime9TextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textSize="16sp"
+                    tools:text="9. 00:00:00.00"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/lapTime10TextView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textSize="16sp"
+                    tools:text="10. 00:00:00.00"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/noLapsTextView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -114,8 +153,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:minWidth="48dp"
-                android:text="@string/lap"
-                android:visibility="visible" />
+                android:text="@string/reset"
+                android:textColor="@color/button_tint_state_list" />
 
             <ImageView
                 android:id="@+id/settingsButton"

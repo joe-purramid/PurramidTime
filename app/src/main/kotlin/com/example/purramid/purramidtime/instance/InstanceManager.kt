@@ -3,12 +3,12 @@
 package com.example.purramid.purramidtime.instance
 
 import android.content.Context
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
 import java.util.concurrent.ConcurrentHashMap
-import androidx.core.content.edit
 
 @Singleton
 class InstanceManager @Inject constructor(

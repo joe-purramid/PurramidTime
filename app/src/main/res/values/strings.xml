@@ -378,18 +378,28 @@
     <string name="country_north_korea">North Korea</string>
 
 
+    <!-- `` STOPWATCH APP `` -->
+    <string name="stopwatch">Stopwatch</string>
+    <string name="hundredths">Hundredths</string>
+    <string name="lap">Lap Times</string>
+    <string name="no_laps_recorded">No laps recorded</string>
+    <string name="sounds">Stopwatch sounds</string>
+    <string name="stopwatch_notification_title">Stopwatch Running</string>
+    <string name="stopwatch_notification_content">Stopwatch is active in the background</string>
+    <string name="stopwatch_notification_channel_name">Stopwatch Service</string>
+    <string name="stopwatch_settings_title">Stopwatch Settings</string>
+    <string name="max_stopwatches_reached_snackbar">Maximum of 4 stopwatches reached</string>
+    <string name="add_another_stopwatch">Add Another</string>
 
     <!-- `` TIMER APP `` -->
     <string name="timer_settings_title">Timer Settings</string>
     <string name="timer_mode">Timer Type</string>
-    <string name="stopwatch">Stopwatch</string>
     <string name="countdown">Countdown</string>
     <string name="set_time">Set Time</string>
     <string name="set_duration_label">Set Duration</string>
     <string name="hours_short">Hours</string>
     <string name="minutes_short">Minutes</string>
     <string name="seconds_short">Seconds</string>
-    <string name="hundredths">Hundredths</string>
     <string name="set_countdown">Set Countdown</string>
     <string name="add_1_hour">Add 1 Hour</string>
     <string name="add_5_minutes">Add 5 Minutes</string>

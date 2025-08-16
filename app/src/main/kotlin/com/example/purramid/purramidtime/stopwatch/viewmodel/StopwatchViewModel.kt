@@ -183,20 +183,6 @@ class StopwatchViewModel @Inject constructor(
         saveState(_uiState.value)
     }
 
-    // --- New Feature Methods ---
-    fun setNested(nested: Boolean) {
-        if (_uiState.value.isNested == nested) return
-        _uiState.update {
-            it.copy(
-                isNested = nested,
-                // Reset nested position when toggling off
-                nestedX = if (nested) it.nestedX else -1,
-                nestedY = if (nested) it.nestedY else -1
-            )
-        }
-        saveState(_uiState.value)
-    }
-
     fun updateNestedPosition(x: Int, y: Int) {
         if (_uiState.value.nestedX == x && _uiState.value.nestedY == y) return
         _uiState.update { it.copy(nestedX = x, nestedY = y) }
@@ -347,6 +333,24 @@ class StopwatchViewModel @Inject constructor(
     }
 
     // --- Cleanup ---
+    fun shouldCleanupOnClose(): Boolean {
+        // This could be called by the service to determine cleanup behavior
+        return stopwatchDao.getActiveInstanceCount() > 1
+    }
+
+    fun cleanupIfNotLast() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val activeCount = stopwatchDao.getActiveInstanceCount()
+            if (activeCount > 1) {
+                // Not the last instance, clean up
+                deleteState()
+            } else {
+                // Last instance, just save current state
+                saveState(_uiState.value)
+            }
+        }
+    }
+
     override fun onCleared() {
         Log.d(TAG, "ViewModel cleared for stopwatchId: $stopwatchId")
         stopTicker()

@@ -10,10 +10,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
-import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
-import android.media.ToneGenerator
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -27,9 +25,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.ColorUtils
@@ -200,7 +196,7 @@ class TimerService : LifecycleService() {
     private suspend fun addOverlayViewIfNeeded() {
         withContext(Dispatchers.Main) {
             val currentState = viewModel.uiState.value
-            val requiredLayoutId = R.layout.view_floating_timer_countdown
+            val requiredLayoutId = R.layout.view_floating_timer
 
             if (overlayView == null) {
                 layoutParams = createDefaultLayoutParams()
