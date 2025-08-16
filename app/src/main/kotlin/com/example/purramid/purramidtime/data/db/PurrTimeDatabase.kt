@@ -13,7 +13,7 @@ import java.util.UUID
 
 /**
  * The Room database for Purramid Time Tools application.
- * This contains tables for Clock, Randomizers, Screen Mask, Spotlight, Timers, and Traffic Light features.
+ * This contains tables for Clock, Stopwatch, and Timer features.
  */
 @Database(
     entities = [

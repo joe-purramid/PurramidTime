@@ -1,5 +1,5 @@
 // TimerCoordinator.kt
-package com.example.purramid.purramidtime.timers
+package com.example.purramid.purramidtime.timer
 
 import android.content.Context
 import com.example.purramid.purramidtime.data.db.TimerDao

@@ -1,4 +1,4 @@
-// src/main/kotlin/com/example/purramid/com.example.purramid.purramidtime/timers/TimersActivity.kt
+// src/main/kotlin/com/example/purramid/com.example.purramid.purramidtime/timer/TimerActivity.kt
 package com.example.purramid.purramidtime.timer
 
 import android.content.Intent
@@ -7,7 +7,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.databinding.ActivityTimersBinding
+import com.example.purramid.purramidtime.databinding.ActivityTimerBinding
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.timers.ui.TimerSettingsFragment
 import com.google.android.material.snackbar.Snackbar
@@ -18,18 +18,18 @@ import javax.inject.Inject
 class TimerActivity : AppCompatActivity() {
 
     @Inject lateinit var instanceManager: InstanceManager
-    private lateinit var binding: ActivityTimersBinding
+    private lateinit var binding: ActivityTimerBinding
 
     companion object {
-        private const val TAG = "TimersActivity"
-        const val ACTION_SHOW_TIMER_SETTINGS = "com.example.purramid.timers.ACTION_SHOW_TIMER_SETTINGS"
+        private const val TAG = "TimerActivity"
+        const val ACTION_SHOW_TIMER_SETTINGS = "com.example.purramid.purramidtime.timer.ACTION_SHOW_TIMER_SETTINGS"
     }
 
     private var currentTimerId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityTimersBinding.inflate(layoutInflater)
+        binding = ActivityTimerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         Log.d(TAG, "onCreate - Intent Action: ${intent.action}")
@@ -59,7 +59,7 @@ class TimerActivity : AppCompatActivity() {
             return true
         }
 
-        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMERS)
+        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
         if (activeCount >= 4) {
             // Show Snackbar with the maximum reached message
             Snackbar.make(
@@ -77,7 +77,7 @@ class TimerActivity : AppCompatActivity() {
 
     private fun startTimerService(timerId: Int, type: TimerType, durationMs: Long? = null) {
         Log.d(TAG, "Requesting start for TimerService, ID: $timerId, Type: $type")
-        val serviceIntent = Intent(this, TimersService::class.java).apply {
+        val serviceIntent = Intent(this, TimerService::class.java).apply {
             action = if (type == TimerType.COUNTDOWN) {
                 ACTION_START_COUNTDOWN
             } else {

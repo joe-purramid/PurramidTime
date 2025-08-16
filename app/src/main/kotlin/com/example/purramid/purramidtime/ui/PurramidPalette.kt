@@ -18,7 +18,7 @@ object PurramidPalette {
     val VIOLET = NamedColor("Violet", 0xFFEE82EE.toInt())
 
     /**
-     * The list of colors available in the general palette pickers (e.g., for Clock, Timers).
+     * The list of colors available in the general palette pickers (e.g., for Clock, Timer).
      */
     val appStandardPalette: List<NamedColor> = listOf(
         WHITE,

@@ -17,6 +17,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.thepurramid.R
 import com.example.purramid.thepurramid.databinding.FragmentStopwatchSettingsBinding
 import com.example.purramid.thepurramid.instance.InstanceManager
@@ -157,7 +159,7 @@ class StopwatchSettingsFragment : DialogFragment() {
                     updateStopwatchColorSelectionInUI(selectedStopwatchColor)
 
                     // Update Add Another button state
-                    val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMERS)
+                    val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
                     binding.layoutAddAnother.isEnabled = activeCount < 4
                     binding.iconAddAnother.alpha = if (activeCount < 4) 1.0f else 0.5f
 
@@ -168,7 +170,7 @@ class StopwatchSettingsFragment : DialogFragment() {
     }
 
     private fun handleAddAnotherStopwatch() {
-        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMERS)
+        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
         if (activeCount >= 4) {
             Toast.makeText(
                 requireContext(),

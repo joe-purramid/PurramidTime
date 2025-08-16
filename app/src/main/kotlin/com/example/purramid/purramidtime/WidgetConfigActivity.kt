@@ -46,11 +46,8 @@ class WidgetConfigActivity : Activity() {
 
         val options = listOf(
             WidgetConfigData("Clock", R.mipmap.tp_clock_launcher, Intent(this, ClockActivity::class.java)),
-            WidgetConfigData("Randomizers", R.mipmap.tp_randomizers_launcher, Intent(this, RandomizersActivity::class.java)),
-            WidgetConfigData("Screen Mask", R.mipmap.tp_screen_mask_launcher, Intent(this, ScreenMaskActivity::class.java)),
-            WidgetConfigData("Spotlight", R.mipmap.tp_spotlight_launcher, Intent(this, SpotlightActivity::class.java)),
-            WidgetConfigData("Timers", R.mipmap.tp_timers_launcher, Intent(this, TimersActivity::class.java)),
-            WidgetConfigData("Traffic Light", R.mipmap.tp_traffic_light_launcher, Intent(this, TrafficLightActivity::class.java))
+            WidgetConfigData("Screen Mask", R.mipmap.tp_stopwatch_launcher, Intent(this, StopwatchActivity::class.java)),
+            WidgetConfigData("Timer", R.mipmap.tp_timer_launcher, Intent(this, TimersActivity::class.java)),
         )
 
         // Dynamically create buttons for each option

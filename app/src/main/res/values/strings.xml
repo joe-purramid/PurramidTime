@@ -379,7 +379,7 @@
 
 
 
-    <!-- `` TIMERS APP `` -->
+    <!-- `` TIMER APP `` -->
     <string name="timer_settings_title">Timer Settings</string>
     <string name="timer_mode">Timer Type</string>
     <string name="stopwatch">Stopwatch</string>

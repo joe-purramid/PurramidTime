@@ -17,4 +17,4 @@ annotation class StopwatchPrefs
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class TimersPrefs // For TimersService SharedPreferences
+annotation class TimerPrefs // For TimerService SharedPreferences

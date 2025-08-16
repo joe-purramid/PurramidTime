@@ -1,5 +1,5 @@
 // CountdownDurationPickerView.kt
-package com.example.purramid.purramidtime.timers.ui
+package com.example.purramid.purramidtime.timer.ui
 
 import android.animation.ValueAnimator
 import android.content.Context

@@ -191,9 +191,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 ),
                 AppIntent(
-                    title = getString(R.string.timers_title),
+                    title = getString(R.string.timer_title),
                     iconResId = R.mipmap.tp_timer_launcher,
-                    id = "timers",
+                    id = "timer",
                     action = { context ->
                         val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
                         if (activeCount > 0) {

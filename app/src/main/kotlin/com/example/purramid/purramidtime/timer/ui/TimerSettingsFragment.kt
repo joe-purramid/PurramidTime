@@ -1,5 +1,5 @@
 // TimerSettingsFragment.kt
-package com.example.purramid.purramidtime.timers.ui
+package com.example.purramid.purramidtime.timer.ui
 
 import android.content.Intent
 import android.graphics.Color
@@ -21,11 +21,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.databinding.FragmentTimersSettingsBinding
+import com.example.purramid.purramidtime.databinding.FragmentTimerSettingsBinding
 import com.example.purramid.purramidtime.instance.InstanceManager
-import com.example.purramid.purramidtime.timers.TimerType
-import com.example.purramid.purramidtime.timers.TimersService
-import com.example.purramid.purramidtime.timers.viewmodel.TimerViewModel
+import com.example.purramid.purramidtime.timer.TimerType
+import com.example.purramid.purramidtime.timer.TimerService
+import com.example.purramid.purramidtime.timer.viewmodel.TimerViewModel
 import com.example.purramid.purramidtime.ui.PurramidPalette
 import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint

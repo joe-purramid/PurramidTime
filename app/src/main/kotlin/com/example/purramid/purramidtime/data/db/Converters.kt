@@ -106,7 +106,7 @@ class Converters {
         }
     }
 
-    // --- TIMERS ---
+    // --- TIMER ---
     @TypeConverter
     fun fromTimerType(value: TimerType?): String? {
         return value?.name

@@ -1,5 +1,5 @@
 // TimerViewModel.kt
-package com.example.purramid.purramidtime.timers.viewmodel
+package com.example.purramid.purramidtime.timer.viewmodel
 
 import android.os.SystemClock
 import android.util.Log

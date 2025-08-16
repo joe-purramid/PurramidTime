@@ -37,6 +37,7 @@ import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.stopwatch.viewmodel.StopwatchViewModel
+import com.example.purramid.thepurramid.stopwatch.viewmodel.StopwatchViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -114,7 +115,7 @@ class StopwatchService : LifecycleService() {
         // Handle instance management
         if (intentStopwatchId <= 0 && action != ACTION_STOP_STOPWATCH_SERVICE) {
             // Request new instance ID from InstanceManager
-            val instanceId = instanceManager.getNextInstanceId(InstanceManager.TIMERS)
+            val instanceId = instanceManager.getNextInstanceId(InstanceManager.TIMER)
             if (instanceId == null) {
                 Log.e(TAG, "No available instance slots for Stopwatch")
                 stopSelf()
@@ -124,7 +125,7 @@ class StopwatchService : LifecycleService() {
             Log.d(TAG, "Allocated new instanceId: $stopwatchId")
         } else if (intentStopwatchId > 0) {
             // Register existing instance with InstanceManager
-            if (!instanceManager.registerExistingInstance(InstanceManager.TIMERS, intentStopwatchId)) {
+            if (!instanceManager.registerExistingInstance(InstanceManager.TIMER, intentStopwatchId)) {
                 Log.w(TAG, "Failed to register existing instance $intentStopwatchId")
             }
             this.stopwatchId = intentStopwatchId

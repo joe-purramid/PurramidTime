@@ -1,5 +1,5 @@
 // MusicUrlDialog.kt
-package com.example.purramid.purramidtime.timers.ui
+package com.example.purramid.purramidtime.timer.ui
 
 import android.app.Dialog
 import android.content.ClipboardManager
