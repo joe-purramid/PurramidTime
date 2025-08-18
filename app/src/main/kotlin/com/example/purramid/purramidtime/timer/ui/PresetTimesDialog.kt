@@ -176,7 +176,7 @@ class PresetTimesDialog : DialogFragment() {
     
     private fun addStarButton() {
         val starView = ImageView(context).apply {
-            setImageResource(R.drawable.ic_star)
+            setImageResource(R.drawable.ic_favorite)
             setColorFilter(ContextCompat.getColor(requireContext(), R.color.icon_inactive))
             scaleType = ImageView.ScaleType.CENTER
             
@@ -228,7 +228,7 @@ class PresetTimesDialog : DialogFragment() {
     private fun showDeleteMode(container: View, deleteIcon: ImageView) {
         // Show star with yellow fill
         deleteIcon.visibility = View.VISIBLE
-        deleteIcon.setImageResource(R.drawable.ic_star)
+        deleteIcon.setImageResource(R.drawable.ic_favorite)
         deleteIcon.setColorFilter(Color.YELLOW)
         
         // Add visual feedback
