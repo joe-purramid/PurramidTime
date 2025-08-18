@@ -25,7 +25,6 @@ import com.example.purramid.purramidtime.databinding.FragmentTimerSettingsBindin
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.timer.ACTION_START_TIMER
 import com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS
-import com.example.purramid.purramidtime.timer.TimerType
 import com.example.purramid.purramidtime.timer.TimerService
 import com.example.purramid.purramidtime.timer.viewmodel.TimerViewModel
 import com.example.purramid.purramidtime.ui.PurramidPalette
@@ -120,23 +119,25 @@ class TimerSettingsFragment : DialogFragment() {
         binding.buttonCloseSettings.setOnClickListener {
             dismiss()
         }
-
         binding.layoutAddAnother.setOnClickListener {
             handleAddAnotherTimer()
         }
-
         binding.switchPlaySoundOnEnd.setOnCheckedChangeListener { _, isChecked ->
             if (blockListeners) return@setOnCheckedChangeListener
             viewModel.setPlaySoundOnEnd(isChecked)
         }
-
+        binding.layoutSetSound.setOnClickListener {
+            showSoundPicker()
+        }
         binding.switchNestTimer.setOnCheckedChangeListener { _, isChecked ->
             if (blockListeners) return@setOnCheckedChangeListener
             viewModel.setNested(isChecked)
         }
-
         binding.layoutSetCountdown.setOnClickListener {
             showSetCountdownDialog()
+        }
+        binding.buttonPresetTimes.setOnClickListener {
+            showPresetTimesDialog()
         }
     }
 
@@ -163,6 +164,13 @@ class TimerSettingsFragment : DialogFragment() {
                     val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
                     binding.layoutAddAnother.isEnabled = activeCount < 4
                     binding.iconAddAnother.alpha = if (activeCount < 4) 1.0f else 0.5f
+
+                    // Update preset button visibility based on timer type
+                    binding.buttonPresetTimes.visibility = if (state.type == TimerType.COUNTDOWN) {
+                        View.VISIBLE
+                    } else {
+                        View.GONE
+                    }
 
                     blockListeners = false
                 }
@@ -261,6 +269,25 @@ class TimerSettingsFragment : DialogFragment() {
         SetCountdownDialog.newInstance(currentDuration) { newDuration ->
             viewModel.setInitialDuration(newDuration)
         }.show(childFragmentManager, "SetCountdownDialog")
+    }
+
+    private fun showPresetTimesDialog() {
+        val currentState = viewModel.uiState.value
+        PresetTimesDialog.newInstance(
+            currentDurationMillis = currentState.initialDurationMillis,
+            currentBackgroundColor = currentState.overlayColor,
+            onPresetSelected = { durationMillis ->
+                viewModel.loadPresetFromManager(durationMillis)
+            },
+            onPresetSaved = {
+                viewModel.refreshPresetTimes()
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.preset_saved),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        ).show(childFragmentManager, "PresetTimesDialog")
     }
 
     private fun formatDuration(millis: Long): String {

@@ -9,8 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.purramid.purramidtime.data.db.TimerDao
 import com.example.purramid.purramidtime.data.db.TimerStateEntity
 import com.example.purramid.purramidtime.timer.MusicUrlManager
+import com.example.purramid.purramidtime.timer.PresetTime
+import com.example.purramid.purramidtime.timer.PresetTimesManager
 import com.example.purramid.purramidtime.timer.TimerState
-import com.example.purramid.purramidtime.timer.TimerType
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,6 +24,8 @@ import javax.inject.Inject
 class TimerViewModel @Inject constructor(
     private val timerDao: TimerDao,
     private val savedStateHandle: SavedStateHandle
+    private val musicUrlManager: MusicUrlManager,
+    private val presetTimesManager: PresetTimesManager
 ) : ViewModel() {
 
     companion object {
@@ -65,6 +68,7 @@ class TimerViewModel @Inject constructor(
                         // Override with global recent URLs
                         _uiState.value = state.copy(
                             recentMusicUrls = musicUrlManager.getRecentUrls()
+                            presetTimes = presetTimesManager.getPresetTimes()
                         )
                         if (_uiState.value.isRunning) {
                             startTicker()
@@ -74,6 +78,7 @@ class TimerViewModel @Inject constructor(
                         val defaultState = TimerState(
                             timerId = id,
                             uuid = UUID.randomUUID()
+                            presetTimes = presetTimesManager.getPresetTimes()
                         )
                         _uiState.value = defaultState
                         saveState(defaultState)
@@ -85,6 +90,7 @@ class TimerViewModel @Inject constructor(
                     val defaultState = TimerState(
                         timerId = id,
                         uuid = UUID.randomUUID()
+                        presetTimes = presetTimesManager.getPresetTimes()
                     )
                     _uiState.value = defaultState
                 }
@@ -149,16 +155,13 @@ class TimerViewModel @Inject constructor(
         tickerJob = viewModelScope.launch(Dispatchers.Default) {
             while (isActive && _uiState.value.isRunning) {
                 val elapsed = SystemClock.elapsedRealtime() - startTime
-                val newMillis = when (_uiState.value.type) {
-                    TimerType.STOPWATCH -> initialMillis + elapsed
-                    TimerType.COUNTDOWN -> (initialMillis - elapsed).coerceAtLeast(0L)
-                }
+                val newMillis = (initialMillis - elapsed).coerceAtLeast(0L)  // Always countdown
 
                 withContext(Dispatchers.Main.immediate) {
                     _uiState.update { it.copy(currentMillis = newMillis) }
                 }
 
-                if (_uiState.value.type == TimerType.COUNTDOWN && newMillis <= 0L) {
+                if (newMillis <= 0L) {
                     handleCountdownFinish()
                     break
                 }
@@ -203,29 +206,9 @@ class TimerViewModel @Inject constructor(
         }
     }
 
-    fun setShowCentiseconds(show: Boolean) {
-        if (_uiState.value.showCentiseconds == show) return
-        _uiState.update { it.copy(showCentiseconds = show) }
-        saveState(_uiState.value)
-    }
-
     fun setPlaySoundOnEnd(play: Boolean) {
         if (_uiState.value.playSoundOnEnd == play) return
         _uiState.update { it.copy(playSoundOnEnd = play) }
-        saveState(_uiState.value)
-    }
-
-    fun setTimerType(type: TimerType) {
-        if (_uiState.value.type == type) return
-        stopTicker()
-        _uiState.update {
-            it.copy(
-                type = type,
-                isRunning = false,
-                currentMillis = if (type == TimerType.COUNTDOWN) it.initialDurationMillis else 0L,
-                laps = emptyList()
-            )
-        }
         saveState(_uiState.value)
     }
 
@@ -247,7 +230,6 @@ class TimerViewModel @Inject constructor(
         saveState(_uiState.value)
     }
 
-    // --- New Feature Methods ---
     fun setNested(nested: Boolean) {
         if (_uiState.value.isNested == nested) return
         _uiState.update {
@@ -273,12 +255,6 @@ class TimerViewModel @Inject constructor(
         saveState(_uiState.value)
     }
 
-    fun setShowLapTimes(show: Boolean) {
-        if (_uiState.value.showLapTimes == show) return
-        _uiState.update { it.copy(showLapTimes = show) }
-        saveState(_uiState.value)
-    }
-
     fun setSelectedSound(uri: String?) {
         if (_uiState.value.selectedSoundUri == uri) return
         _uiState.update { it.copy(selectedSoundUri = uri) }
@@ -299,6 +275,52 @@ class TimerViewModel @Inject constructor(
                 recentMusicUrls = musicUrlManager.getRecentUrls()
             )
         }
+        saveState(_uiState.value)
+    }
+
+    // --- Preset Times Methods ---
+    fun loadPresetFromManager(durationMillis: Long) {
+        // When a preset is selected, update the timer duration
+        setInitialDuration(durationMillis)
+    }
+
+    fun saveCurrentAsPreset() {
+        val currentState = _uiState.value
+        if (currentState.initialDurationMillis > 0) {
+            val success = presetTimesManager.addPresetTime(
+                currentState.initialDurationMillis,
+                currentState.overlayColor
+            )
+            if (success) {
+                // Reload preset times
+                _uiState.update {
+                    it.copy(presetTimes = presetTimesManager.getPresetTimes())
+                }
+                saveState(_uiState.value)
+            }
+        }
+    }
+
+    fun removePreset(presetId: String) {
+        presetTimesManager.removePresetTime(presetId)
+        // Reload preset times
+        _uiState.update {
+            it.copy(presetTimes = presetTimesManager.getPresetTimes())
+        }
+        saveState(_uiState.value)
+    }
+
+    fun refreshPresetTimes() {
+        // Refresh preset times from manager (useful after dialog operations)
+        _uiState.update {
+            it.copy(presetTimes = presetTimesManager.getPresetTimes())
+        }
+        saveState(_uiState.value)
+    }
+
+    fun setShowPresetButton(show: Boolean) {
+        if (_uiState.value.showPresetButton == show) return
+        _uiState.update { it.copy(showPresetButton = show) }
         saveState(_uiState.value)
     }
 
@@ -358,16 +380,9 @@ class TimerViewModel @Inject constructor(
                 Log.e(TAG, "Invalid UUID in entity, generating new one", e)
                 UUID.randomUUID()
             },
-            type = try {
-                TimerType.valueOf(entity.type)
-            } catch (e: Exception) {
-                TimerType.STOPWATCH
-            },
             initialDurationMillis = entity.initialDurationMillis,
             currentMillis = entity.currentMillis,
             isRunning = entity.isRunning,
-            laps = lapsList,
-            showCentiseconds = entity.showCentiseconds,
             playSoundOnEnd = entity.playSoundOnEnd,
             overlayColor = entity.overlayColor,
             windowX = entity.windowX,
@@ -377,11 +392,11 @@ class TimerViewModel @Inject constructor(
             isNested = entity.isNested,
             nestedX = entity.nestedX,
             nestedY = entity.nestedY,
-            soundsEnabled = entity.soundsEnabled,
             selectedSoundUri = entity.selectedSoundUri,
             musicUrl = entity.musicUrl,
             recentMusicUrls = recentUrlsList,
-            showLapTimes = entity.showLapTimes
+            presetTimes = presetTimesList,
+            showPresetButton = entity.showPresetButton
         )
     }
 
@@ -392,12 +407,9 @@ class TimerViewModel @Inject constructor(
         return TimerStateEntity(
             timerId = state.timerId,
             uuid = state.uuid.toString(),
-            type = state.type.name,
             initialDurationMillis = state.initialDurationMillis,
             currentMillis = state.currentMillis,
             isRunning = state.isRunning,
-            lapsJson = lapsJson,
-            showCentiseconds = state.showCentiseconds,
             playSoundOnEnd = state.playSoundOnEnd,
             overlayColor = state.overlayColor,
             windowX = state.windowX,
@@ -407,11 +419,11 @@ class TimerViewModel @Inject constructor(
             isNested = state.isNested,
             nestedX = state.nestedX,
             nestedY = state.nestedY,
-            soundsEnabled = state.soundsEnabled,
             selectedSoundUri = state.selectedSoundUri,
             musicUrl = state.musicUrl,
             recentMusicUrlsJson = recentUrlsJson,
-            showLapTimes = state.showLapTimes
+            presetTimesJson = presetTimesJson,
+            showPresetButton = state.showPresetButton
         )
     }
 

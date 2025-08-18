@@ -28,4 +28,8 @@ data class TimerState(
     val selectedSoundUri: String? = null, // For countdown finish sound
     val musicUrl: String? = null, // For custom music URL
     val recentMusicUrls: List<String> = emptyList(), // Last 3 music URLs
+
+    // Preset times feature
+    val presetTimes: List<PresetTime> = emptyList(), // User's saved preset times
+    val showPresetButton: Boolean = true // Whether to show the preset button in UI
 )

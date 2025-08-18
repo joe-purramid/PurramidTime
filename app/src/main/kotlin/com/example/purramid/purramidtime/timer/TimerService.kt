@@ -72,7 +72,7 @@ class TimerService : LifecycleService() {
     private var playPauseButton: ImageView? = null
     private var settingsButton: ImageView? = null
     private var closeButton: TextView? = null
-    // Countdown Specific
+    private var presetButton: ImageView? = null
     private var centisecondsTextView: TextView? = null
     private var resetButtonCountdown: ImageView? = null
 
@@ -249,6 +249,7 @@ class TimerService : LifecycleService() {
         settingsButton = overlayView?.findViewById(R.id.settingsButton)
         closeButton = overlayView?.findViewById(R.id.closeButton)
         resetButtonCountdown = overlayView?.findViewById(R.id.resetButton)
+        presetButton = overlayView?.findViewById(R.id.presetButton)
     }
 
     private fun setupListeners() {
@@ -262,6 +263,20 @@ class TimerService : LifecycleService() {
             playButtonSound()
             viewModel.resetTimer()
         }
+        presetButton?.setOnClickListener {
+            playButtonSound()
+            showPresetTimesPopup()
+        }
+    }
+
+    private fun showPresetTimesPopup() {
+        // Create a popup window or start an activity to show preset times
+        val intent = Intent(this, TimerActivity::class.java).apply {
+            action = "com.example.purramid.purramidtime.timer.ACTION_SHOW_PRESETS"
+            putExtra(EXTRA_TIMER_ID, timerId)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
     }
 
     private fun updateOverlayViews(state: TimerState) {
@@ -293,8 +308,15 @@ class TimerService : LifecycleService() {
 
         closeButton?.setTextColor(textColor)
 
-            resetButtonCountdown?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
-            resetButtonCountdown?.isEnabled = !state.isRunning && (state.currentMillis != state.initialDurationMillis || state.currentMillis == 0L)
+        resetButtonCountdown?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
+        resetButtonCountdown?.isEnabled = !state.isRunning && (state.currentMillis != state.initialDurationMillis || state.currentMillis == 0L)
+
+        presetButton?.visibility = if (state.type == TimerType.COUNTDOWN && state.showPresetButton && !state.isNested) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        presetButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
     }
 
     private fun applyStateToLayoutParams(state: TimerState, params: WindowManager.LayoutParams) {
@@ -561,6 +583,7 @@ class TimerService : LifecycleService() {
             playPauseButton?.visibility = View.GONE
             resetButtonCountdown?.visibility = View.GONE
             settingsButton?.visibility = View.GONE
+            presetButton?.visibility = View.GONE
 
             // Keep only time display and close button visible
             digitalTimeTextView?.textSize = 20f

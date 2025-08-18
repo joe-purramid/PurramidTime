@@ -3,7 +3,6 @@ package com.example.purramid.purramidtime.data.db
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.example.purramid.purramidtime.timer.TimerType
 import com.example.purramid.purramidtime.ui.PurramidPalette
 import java.util.UUID
 
@@ -31,4 +30,8 @@ data class TimerStateEntity(
     val selectedSoundUri: String? = null,
     val musicUrl: String? = null,
     val recentMusicUrlsJson: String = "[]",
+
+    // Preset times fields
+    val presetTimesJson: String = "[]", // JSON array of preset times
+    val showPresetButton: Boolean = true
 )
