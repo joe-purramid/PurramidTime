@@ -208,3 +208,53 @@ Timer is the second PurramidTime app-intent
 
 
 (12) TODO: Is "Enable Overlay" implemented correctly? It should be an auto-prompt and not a button.
+
+(13) ``PRESET TIME``
+	(13.1) A Preset Time icon appears in the bottom right corner of the User Interface
+		(13.1) Default icon state uses ic_lap.xml.
+		(13.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+	(13.2) When a user touches the Preset Time button
+		(13.2.1) its icon changes from (13.1) Default to (13.2) Active.
+		(13.2.2) time is not paused if it is actively counting
+	(13.3) When activated, a preset window opens with a smooth transition animation, originating from the preset button overtop the timer.
+		(13.3.1) The preset time button remains active while the window is open.
+	(13.4) The top of the window includes 
+		(13.4.1) the string "Preset Times"
+		(13.4.2) a rule (line) that separates the header from the icons below
+			(13.4.2.1) the rule does not connect with the edges of the window
+	(13.5) Beneath the header rule are times saved by the user
+		(13.5.1) If the user has not saved any times, a single Star outline (ic_favorite.xml)
+			(13.5.1.1) The star fill turns yellow when a touch-event occurs
+			(13.5.1.2) It returns to its empty fill state when the touch-event ends
+		(13.5.2) If the user has saved a time, a small rectangle with numerals appears
+			(13.5.2.1) the numerals reflect the time saved
+			(13.5.2.2) the shape fill matches the background color of the saved timer
+			(13.5.2.3) the numeral color is white or black based on the rules established for background color
+			(13.5.2.4) numerals are accessible to screen readers
+		(13.5.3) A maximum of eight timers can be saved
+			(13.5.3.1) They are shown in rows of four
+			(13.5.3.2) They are ordered from top left to top right and then bottom left to bottom right
+			(13.5.3.3) They are ordered by lowest saved value at the top left and moving sequentially
+			(13.5.3.4) The star always appears last in the list
+				(13.5.3.4.1) After eight timers are saved, the star no longer appears.
+	(13.6) When a timer is saved
+		(13.6.1) A saved timer is universal. It appears in every timer instance open and is saved in preferences on app close.
+		(13.6.2) The new small timer appears properly ordered within the list
+		(13.6.3) The preset time window closes
+	(13.7) If the user taps a saved time:
+		(13.7.1) when time is paused: 
+			(13.7.1.1) the set time changes to the preset time
+			(13.7.1.2) time remains paused
+		(13.7.2) when time is running:
+			(13.7.2.1) the set time changes to the preset time
+			(13.7.2.2) time begins counting from the set time
+	(13.8) If the user taps a star icon while time is running, the set countdown time is saved to preset time, not the current time.
+	(13.9) If the user taps-and-holds an icon for a long-press:
+		(13.9.1) The small timer is replaced by a star icon with a yellow fill
+		(13.9.2) Tapping this star deletes the saved timer
+		(13.9.3) The order of saved timers adjusts accordingly
+		(13.9.4) The star icon appears at the end of the list if it was not already present
+	(13.10) If the user taps outside of the preset time window:
+		(13.10.1) The window closes
+		(13.10.2) the icon returns to its default state.
+		

@@ -22,6 +22,13 @@
   - Add an "initialize()" method to set the instance ID after creation
   - Remove the HiltViewModelFactory usage
  
+- **Reviewed**: 18 August 2025
+- **Architecture**: TimerService, TimerActivity, Room Database
+- **Key Decisions**:
+  - Add an icon to the bottom right of the timer layout
+  - Use the ic_lap.xml vector image
+  - Following new specifications for pre-set time
+  - Saved pre-sets are universal and persist across sessions
 
   
   
