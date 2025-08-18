@@ -18,9 +18,11 @@ import com.example.purramid.purramidtime.databinding.DialogPresetTimesBinding
 import com.example.purramid.purramidtime.timer.PresetTime
 import com.example.purramid.purramidtime.timer.PresetTimesManager
 import com.example.purramid.purramidtime.util.dpToPx
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class PresetTimesDialog : DialogFragment() {
     
     private var _binding: DialogPresetTimesBinding? = null
@@ -60,7 +62,12 @@ class PresetTimesDialog : DialogFragment() {
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
+        arguments?.let {
+            currentDurationMillis = it.getLong(ARG_DURATION_MILLIS, 0L)
+            currentBackgroundColor = it.getInt(ARG_BACKGROUND_COLOR, Color.WHITE)
+        }
+
         setupUI()
         loadPresetTimes()
         
@@ -245,24 +252,33 @@ class PresetTimesDialog : DialogFragment() {
             else -> String.format("%d:%02d", minutes, seconds)
         }
     }
-    
+
+    fun setCallbacks(
+        onPresetSelected: (Long) -> Unit,
+        onPresetSaved: () -> Unit
+    ) {
+        this.onPresetSelectedListener = onPresetSelected
+        this.onPresetSavedListener = onPresetSaved
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
     
     companion object {
+        private const val ARG_DURATION_MILLIS = "duration_millis"
+        private const val ARG_BACKGROUND_COLOR = "background_color"
+
         fun newInstance(
             currentDurationMillis: Long,
             currentBackgroundColor: Int,
-            onPresetSelected: (Long) -> Unit,
-            onPresetSaved: () -> Unit
         ): PresetTimesDialog {
             return PresetTimesDialog().apply {
-                this.currentDurationMillis = currentDurationMillis
-                this.currentBackgroundColor = currentBackgroundColor
-                this.onPresetSelectedListener = onPresetSelected
-                this.onPresetSavedListener = onPresetSaved
+                arguments = Bundle().apply {
+                    putLong(ARG_DURATION_MILLIS, currentDurationMillis)
+                    putInt(ARG_BACKGROUND_COLOR, currentBackgroundColor)
+                }
             }
         }
     }

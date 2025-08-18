@@ -23,7 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class TimerViewModel @Inject constructor(
     private val timerDao: TimerDao,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
     private val musicUrlManager: MusicUrlManager,
     private val presetTimesManager: PresetTimesManager
 ) : ViewModel() {
@@ -32,7 +32,6 @@ class TimerViewModel @Inject constructor(
         const val KEY_TIMER_ID = "timerId"
         private const val TAG = "TimerViewModel"
         private const val TICK_INTERVAL_MS = 50L
-        private const val MAX_LAPS = 10 // As per specification
     }
 
     // Initialize timerId - will be set by setTimerId() from Service
@@ -64,7 +63,7 @@ class TimerViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     if (entity != null) {
                         Log.d(TAG, "Loaded state from DB for timer $id")
-                        val state = mapEntityToState(entity)
+                        val state = mapEntityToState(TimerStateEntity)
                         // Override with global recent URLs
                         _uiState.value = state.copy(
                             recentMusicUrls = musicUrlManager.getRecentUrls()
@@ -102,7 +101,7 @@ class TimerViewModel @Inject constructor(
 
     fun togglePlayPause() {
         val currentState = _uiState.value
-        if (currentState.type == TimerType.COUNTDOWN && currentState.currentMillis <= 0L) {
+        if (currentState.currentMillis <= 0L) {
             return // Don't start countdown if already finished
         }
 
@@ -122,31 +121,13 @@ class TimerViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 isRunning = false,
-                currentMillis = if (it.type == TimerType.COUNTDOWN) it.initialDurationMillis else 0L,
-                laps = emptyList()
+                currentMillis = it.initialDurationMillis
             )
         }
         saveState(_uiState.value)
     }
 
-    fun addLap() {
-        val currentState = _uiState.value
-        if (currentState.type != TimerType.STOPWATCH || !currentState.isRunning) return
-
-        // Check max laps limit from specification
-        if (currentState.laps.size >= MAX_LAPS) {
-            Log.d(TAG, "Maximum number of laps ($MAX_LAPS) reached")
-            return
-        }
-
-        val currentLaps = currentState.laps.toMutableList()
-        currentLaps.add(currentState.currentMillis)
-        _uiState.update { it.copy(laps = currentLaps) }
-        saveState(_uiState.value)
-    }
-
     // --- Ticker Logic ---
-
     private fun startTicker() {
         if (tickerJob?.isActive == true) return
         val startTime = SystemClock.elapsedRealtime()
@@ -155,7 +136,7 @@ class TimerViewModel @Inject constructor(
         tickerJob = viewModelScope.launch(Dispatchers.Default) {
             while (isActive && _uiState.value.isRunning) {
                 val elapsed = SystemClock.elapsedRealtime() - startTime
-                val newMillis = (initialMillis - elapsed).coerceAtLeast(0L)  // Always countdown
+                val newMillis = (initialMillis - elapsed).coerceAtLeast(0L)
 
                 withContext(Dispatchers.Main.immediate) {
                     _uiState.update { it.copy(currentMillis = newMillis) }
@@ -185,14 +166,13 @@ class TimerViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isRunning = false,
-                    currentMillis = 0
-                    // Un-nest the timer when countdown finishes
-                    isNested = if (it.type == TimerType.COUNTDOWN && it.isNested) false else it.isNested,
-                    nestedX = if (it.type == TimerType.COUNTDOWN && it.isNested) -1 else it.nestedX,
-                    nestedY = if (it.type == TimerType.COUNTDOWN && it.isNested) -1 else it.nestedY
+                    currentMillis = 0,
+                    // Always un-nest when countdown finishes
+                    isNested = false,
+                    nestedX = -1,
+                    nestedY = -1
                 )
             }
-            // Sound playing is handled by the Service observing this state change
             Log.d(TAG, "Timer $timerId finished.")
             saveState(_uiState.value)
         }
@@ -200,7 +180,7 @@ class TimerViewModel @Inject constructor(
 
     // --- Settings Updates ---
     fun setInitialDuration(durationMillis: Long) {
-        if (_uiState.value.type == TimerType.COUNTDOWN && !_uiState.value.isRunning) {
+        if (!_uiState.value.isRunning) {
             _uiState.update { it.copy(initialDurationMillis = durationMillis, currentMillis = durationMillis) }
             saveState(_uiState.value)
         }
@@ -356,14 +336,6 @@ class TimerViewModel @Inject constructor(
 
     // --- Mappers ---
     private fun mapEntityToState(entity: TimerStateEntity): TimerState {
-        val lapsList = try {
-            val typeToken = object : TypeToken<List<Long>>() {}.type
-            gson.fromJson<List<Long>>(entity.lapsJson, typeToken) ?: emptyList()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse laps JSON, using empty list.", e)
-            emptyList()
-        }
-
         val recentUrlsList = try {
             val typeToken = object : TypeToken<List<String>>() {}.type
             gson.fromJson<List<String>>(entity.recentMusicUrlsJson, typeToken) ?: emptyList()
@@ -401,7 +373,6 @@ class TimerViewModel @Inject constructor(
     }
 
     private fun mapStateToEntity(state: TimerState): TimerStateEntity {
-        val lapsJson = gson.toJson(state.laps)
         val recentUrlsJson = gson.toJson(state.recentMusicUrls)
 
         return TimerStateEntity(

@@ -294,14 +294,6 @@ class TimerService : LifecycleService() {
             Color.WHITE
         }
 
-        val timeStr = formatTime(state.currentMillis, showCentiseconds)
-
-        centisecondsTextView?.let {
-            it.text = if (state.showCentiseconds && timeStr.contains('.')) ".${timeStr.substringAfterLast('.')}" else ""
-            it.visibility = if (state.showCentiseconds) View.VISIBLE else View.GONE
-            it.setTextColor(textColor)
-        }
-
         playPauseButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
         playPauseButton?.setImageResource(if (state.isRunning) R.drawable.ic_pause else R.drawable.ic_play)
         playPauseButton?.contentDescription = getString(if (state.isRunning) R.string.pause else R.string.play)
@@ -311,7 +303,7 @@ class TimerService : LifecycleService() {
         resetButtonCountdown?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
         resetButtonCountdown?.isEnabled = !state.isRunning && (state.currentMillis != state.initialDurationMillis || state.currentMillis == 0L)
 
-        presetButton?.visibility = if (state.type == TimerType.COUNTDOWN && state.showPresetButton && !state.isNested) {
+        presetButton?.visibility = if (state.showPresetButton && !state.isNested) {
             View.VISIBLE
         } else {
             View.GONE

@@ -12,7 +12,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
@@ -29,6 +28,7 @@ import com.example.purramid.purramidtime.timer.TimerService
 import com.example.purramid.purramidtime.timer.viewmodel.TimerViewModel
 import com.example.purramid.purramidtime.ui.PurramidPalette
 import com.example.purramid.purramidtime.util.dpToPx
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
@@ -200,14 +200,22 @@ class TimerSettingsFragment : DialogFragment() {
 
         if (hours < 0 || minutes < 0 || seconds < 0 || minutes >= 60 || seconds >= 60) {
             Log.w(TAG, "Invalid duration input.")
-            Toast.makeText(requireContext(), getString(R.string.invalid_duration), Toast.LENGTH_SHORT).show()
+            Snackbar.make(
+                binding.layoutSetCountdown,
+                getString(R.string.invalid_duration),
+                Snackbar.LENGTH_SHORT
+            ).show()
             populateDurationFields(viewModel.uiState.value.initialDurationMillis)
             return
         }
 
         // Check max time limit (99:59:59)
         if (hours > 99) {
-            Toast.makeText(requireContext(), getString(R.string.max_duration_exceeded), Toast.LENGTH_SHORT).show()
+            Snackbar.make(
+                binding.layoutSetCountdown,
+                getString(R.string.max_duration_exceeded),
+                Snackbar.LENGTH_SHORT
+            ).show()
             binding.editTextHours.setText("99")
             return
         }
@@ -222,10 +230,10 @@ class TimerSettingsFragment : DialogFragment() {
     private fun handleAddAnotherTimer() {
         val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
         if (activeCount >= 4) {
-            Toast.makeText(
-                requireContext(),
+            Snackbar.make(
+                binding.layoutAddAnother,
                 getString(R.string.max_timers_reached_snackbar),
-                Toast.LENGTH_LONG
+                Snackbar.LENGTH_LONG
             ).show()
             return
         }
@@ -273,21 +281,26 @@ class TimerSettingsFragment : DialogFragment() {
 
     private fun showPresetTimesDialog() {
         val currentState = viewModel.uiState.value
-        PresetTimesDialog.newInstance(
+        val dialog = PresetTimesDialog.newInstance(
             currentDurationMillis = currentState.initialDurationMillis,
-            currentBackgroundColor = currentState.overlayColor,
+            currentBackgroundColor = currentState.overlayColor
+        )
+
+        dialog.setCallbacks(
             onPresetSelected = { durationMillis ->
                 viewModel.loadPresetFromManager(durationMillis)
             },
             onPresetSaved = {
                 viewModel.refreshPresetTimes()
-                Toast.makeText(
-                    requireContext(),
+                Snackbar.make(
+                    binding.root,
                     getString(R.string.preset_saved),
-                    Toast.LENGTH_SHORT
+                    Snackbar.LENGTH_SHORT
                 ).show()
             }
-        ).show(childFragmentManager, "PresetTimesDialog")
+        )
+
+        dialog.show(childFragmentManager, "PresetTimesDialog")
     }
 
     private fun formatDuration(millis: Long): String {

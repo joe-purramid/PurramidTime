@@ -21,15 +21,6 @@
             android:textSize="36sp"
             tools:text="00:00:00" />
 
-        <TextView
-            android:id="@+id/centisecondsTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textSize="20sp"
-            android:visibility="gone"
-            tools:text=".00" />
-
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -58,6 +49,20 @@
                 android:focusable="true"
                 android:scaleType="centerInside"
                 android:src="@drawable/ic_reset" />
+
+            <ImageView
+                android:id="@+id/presetButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="@string/preset_times"
+                android:focusable="true"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_favorite"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <ImageView
                 android:id="@+id/settingsButton"

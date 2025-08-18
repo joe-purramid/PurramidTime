@@ -28,10 +28,13 @@ class TimerActivity : AppCompatActivity() {
         private const val CHANNEL_ID = "TimerServiceChannel"
         const val PREFS_NAME_FOR_ACTIVITY = "timer_prefs"
         const val MAX_TIMER_INSTANCES = 4
+        private val requiredLayoutId: Int
+            get() = R.layout.view_floating_timer
 
         // Service Actions
         const val ACTION_START_TIMER = "com.example.purramid.purramidtime.timer.ACTION_START_TIMER"
         const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.purramidtime.timer.ACTION_STOP_TIMER_SERVICE"
+        const val ACTION_SHOW_TIMER_SETTINGS = "com.example.purramid.purramidtime.timer.ACTION_SHOW_TIMER_SETTINGS"
         const val EXTRA_TIMER_ID = "com.example.purramid.purramidtime.timer.EXTRA_TIMER_ID"
         const val EXTRA_DURATION_MS = "com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS"
     }
@@ -86,11 +89,10 @@ class TimerActivity : AppCompatActivity() {
         return true
     }
 
-    private fun startTimerService(timerId: Int, type: TimerType, durationMs: Long? = null) {
-        Log.d(TAG, "Requesting start for TimerService, ID: $timerId, Type: $type")
+    private fun startTimerService(timerId: Int, durationMs: Long? = null) {
         val serviceIntent = Intent(this, TimerService::class.java).apply {
-            action = if (type == TimerType.COUNTDOWN) {
-            if (timerId != 0) {
+            action = ACTION_START_TIMER
+                if (timerId != 0) {
                 putExtra(EXTRA_TIMER_ID, timerId)
             }
             durationMs?.let { putExtra(EXTRA_DURATION_MS, it) }
