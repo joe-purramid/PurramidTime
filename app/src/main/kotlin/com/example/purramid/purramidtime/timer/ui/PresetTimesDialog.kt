@@ -1,6 +1,7 @@
 // PresetTimesDialog.kt
 package com.example.purramid.purramidtime.timer.ui
 
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -21,6 +22,7 @@ import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import androidx.core.graphics.drawable.toDrawable
 
 @AndroidEntryPoint
 class PresetTimesDialog : DialogFragment() {
@@ -40,7 +42,7 @@ class PresetTimesDialog : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return super.onCreateDialog(savedInstanceState).apply {
             window?.apply {
-                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
                 // Position near the preset button
                 setGravity(Gravity.BOTTOM or Gravity.END)
                 attributes?.apply {
@@ -60,6 +62,7 @@ class PresetTimesDialog : DialogFragment() {
         return binding.root
     }
     
+    @SuppressLint("ClickableViewAccessibility")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -108,6 +111,7 @@ class PresetTimesDialog : DialogFragment() {
         }
     }
     
+    @SuppressLint("UseGetLayoutInflater")
     private fun addPresetTimeView(preset: PresetTime) {
         val itemView = LayoutInflater.from(context).inflate(
             R.layout.item_preset_time,
@@ -242,6 +246,7 @@ class PresetTimesDialog : DialogFragment() {
         container.alpha = 0.7f
     }
     
+    @SuppressLint("DefaultLocale")
     private fun formatTime(millis: Long): String {
         val hours = TimeUnit.MILLISECONDS.toHours(millis)
         val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60

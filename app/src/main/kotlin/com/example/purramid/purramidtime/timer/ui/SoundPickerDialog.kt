@@ -1,6 +1,7 @@
 // SoundPickerDialog.kt
 package com.example.purramid.purramidtime.timer.ui
 
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.media.RingtoneManager
 import android.net.Uri
@@ -151,6 +152,7 @@ class SoundPickerDialog : DialogFragment() {
         
         private var items = listOf<SoundItem>()
         
+        @SuppressLint("NotifyDataSetChanged")
         fun submitList(list: List<SoundItem>) {
             items = list
             notifyDataSetChanged()

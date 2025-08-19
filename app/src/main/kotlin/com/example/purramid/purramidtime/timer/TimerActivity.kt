@@ -54,7 +54,7 @@ class TimerActivity : AppCompatActivity() {
             if (currentTimerId != 0) {
                 showSettingsFragment(currentTimerId)
             } else {
-                Log.e(TAG, "Cannot show settings, invalid timerId: $currentTimerId")
+                Log.e(TAG, "Cannot show settings, invalid timerId: ${0}")
                 finish()
             }
         } else {
@@ -92,8 +92,8 @@ class TimerActivity : AppCompatActivity() {
     private fun startTimerService(timerId: Int, durationMs: Long? = null) {
         val serviceIntent = Intent(this, TimerService::class.java).apply {
             action = ACTION_START_TIMER
-                if (timerId != 0) {
-                putExtra(EXTRA_TIMER_ID, timerId)
+            if (timerId != 0) {
+            putExtra(EXTRA_TIMER_ID, timerId)
             }
             durationMs?.let { putExtra(EXTRA_DURATION_MS, it) }
         }

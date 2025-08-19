@@ -140,9 +140,6 @@ data class TimerStateEntity(
     @ColumnInfo(name = "is_running")
     val isRunning: Boolean = false,
     
-    @ColumnInfo(name = "show_centiseconds")
-    val showCentiseconds: Boolean = true,
-    
     @ColumnInfo(name = "play_sound_on_end")
     val playSoundOnEnd: Boolean = true, // Alert when countdown reaches zero
     

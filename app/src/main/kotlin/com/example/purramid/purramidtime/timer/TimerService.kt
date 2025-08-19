@@ -45,6 +45,7 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 // Service Actions
+const val ACTION_START_TIMER = "com.example.purramid.purramidtime.timer.ACTION_START_TIMER"
 const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.purramidtime.timer.ACTION_STOP_TIMER_SERVICE"
 const val EXTRA_TIMER_ID = TimerViewModel.KEY_TIMER_ID
 const val EXTRA_DURATION_MS = "com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS"
@@ -56,8 +57,7 @@ class TimerService : LifecycleService() {
     @Inject lateinit var instanceManager: InstanceManager
     @Inject lateinit var notificationManager: NotificationManager
     @Inject lateinit var timerCoordinator: TimerCoordinator
-
-    private lateinit var viewModel: TimerViewModel
+    @Inject lateinit var timerRepository: TimerRepository
 
     private var overlayView: View? = null
     private var timerId: Int = 0
@@ -73,7 +73,6 @@ class TimerService : LifecycleService() {
     private var settingsButton: ImageView? = null
     private var closeButton: TextView? = null
     private var presetButton: ImageView? = null
-    private var centisecondsTextView: TextView? = null
     private var resetButtonCountdown: ImageView? = null
 
     // Touch handling
@@ -100,6 +99,7 @@ class TimerService : LifecycleService() {
         private const val NOTIFICATION_ID = 5
         private const val CHANNEL_ID = "TimerServiceChannel"
         const val PREFS_NAME_FOR_ACTIVITY = "timer_prefs"
+        private val requiredLayoutId: Int = R.layout.view_floating_timer  // Add this line
     }
 
     override fun onCreate() {
@@ -133,19 +133,23 @@ class TimerService : LifecycleService() {
             this.timerId = intentTimerId
         }
 
-        // Initialize ViewModel if needed (first start or ID change)
-        if (!::viewModel.isInitialized || this.timerId != intentTimerId) {
-            viewModel = ViewModelProvider(this)[TimerViewModel::class.java]
-            viewModel.setTimerId(timerId)
-            Log.d(TAG, "ViewModel initialized for timerId: $timerId")
-            observeViewModelState()
+        // Initialize repository state if needed
+        if (timerId > 0) {
+            lifecycleScope.launch {
+                timerRepository.initializeTimer(timerId)
+                observeTimerState()
+            }
         }
 
         // Handle actions
         when (action) {
             ACTION_START_TIMER -> {
                 val duration = intent.getLongExtra(EXTRA_DURATION_MS, 0L)
-                viewModel.setInitialDuration(duration)
+                lifecycleScope.launch {
+                    if (duration > 0) {
+                        timerRepository.setInitialDuration(timerId, duration)
+                    }
+                }
                 startForegroundServiceIfNeeded()
                 lifecycleScope.launch { addOverlayViewIfNeeded() }
             }
@@ -157,11 +161,12 @@ class TimerService : LifecycleService() {
         return START_STICKY
     }
 
-    private fun observeViewModelState() {
+    private fun observeTimerState() {
         stateObserverJob?.cancel()
         stateObserverJob = lifecycleScope.launch {
-            viewModel.uiState.collectLatest { state ->
-                Log.d(TAG, "Collecting State: Type=${state.type}, Running=${state.isRunning}, Millis=${state.currentMillis}")
+            timerRepository.getTimerStateFlow(timerId).collectLatest { state ->
+                Log.d(TAG, "Collecting State: Running=${state.isRunning}, Millis=${state.currentMillis}")
+
                 if (overlayView == null || currentInflatedLayoutId != requiredLayoutId) {
                     Log.d(TAG, "State requires layout change. Current: $currentInflatedLayoutId, Required: $requiredLayoutId")
                     addOverlayViewIfNeeded()
@@ -171,38 +176,35 @@ class TimerService : LifecycleService() {
                 updateLayoutParamsIfNeeded(state)
 
                 // Handle countdown finish sound
-                if (state.type == TimerType.COUNTDOWN) {
-                    // Reset flag when countdown restarts
-                    if (state.currentMillis > 0 && lastCountdownMillis == 0L) {
-                        hasPlayedFinishSound = false
-                    }
-
-                    // Play sound when countdown reaches zero
-                    if (state.currentMillis == 0L &&
-                        !state.isRunning &&
-                        state.playSoundOnEnd &&
-                        !hasPlayedFinishSound) {
-                        playFinishSound(state)
-                        hasPlayedFinishSound = true
-                    }
-
-                    lastCountdownMillis = state.currentMillis
+                // Reset flag when countdown restarts
+                if (state.currentMillis > 0 && lastCountdownMillis == 0L) {
+                    hasPlayedFinishSound = false
                 }
+
+                // Play sound when countdown reaches zero
+                if (state.currentMillis == 0L &&
+                    !state.isRunning &&
+                    state.playSoundOnEnd &&
+                    !hasPlayedFinishSound) {
+                    playFinishSound(state)
+                    hasPlayedFinishSound = true
+                }
+
+                lastCountdownMillis = state.currentMillis
             }
         }
-        Log.d(TAG, "Started observing ViewModel state for timer $timerId")
+        Log.d(TAG, "Started observing timer state for timer $timerId")
     }
 
-    private suspend fun addOverlayViewIfNeeded() {
+    private suspend fun addOverlayViewIfNeeded() = withContext(Dispatchers.Main) {
         withContext(Dispatchers.Main) {
-            val currentState = viewModel.uiState.value
-            val requiredLayoutId = R.layout.view_floating_timer
+            val currentState = timerRepository.getCurrentState(timerId)
 
             if (overlayView == null) {
                 layoutParams = createDefaultLayoutParams()
                 applyStateToLayoutParams(currentState, layoutParams!!)
 
-                val inflater = LayoutInflater.from(this@TimersService)
+                val inflater = LayoutInflater.from(this@TimerService)
                 overlayView = inflater.inflate(requiredLayoutId, null)
                 currentInflatedLayoutId = requiredLayoutId
 
@@ -254,17 +256,18 @@ class TimerService : LifecycleService() {
 
     private fun setupListeners() {
         playPauseButton?.setOnClickListener {
-            playButtonSound()
-            viewModel.togglePlayPause()
+            lifecycleScope.launch {
+                timerRepository.togglePlayPause(timerId)
+            }
         }
         closeButton?.setOnClickListener { stopService() }
         settingsButton?.setOnClickListener { openSettings() }
         resetButtonCountdown?.setOnClickListener {
-            playButtonSound()
-            viewModel.resetTimer()
+            lifecycleScope.launch {
+                timerRepository.resetTimer(timerId)
+            }
         }
         presetButton?.setOnClickListener {
-            playButtonSound()
             showPresetTimesPopup()
         }
     }
@@ -293,6 +296,10 @@ class TimerService : LifecycleService() {
         } else {
             Color.WHITE
         }
+
+        // Update time display
+        digitalTimeTextView?.text = formatTime(state.currentMillis)
+        digitalTimeTextView?.setTextColor(textColor)
 
         playPauseButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
         playPauseButton?.setImageResource(if (state.isRunning) R.drawable.ic_pause else R.drawable.ic_play)
@@ -381,23 +388,16 @@ class TimerService : LifecycleService() {
         closeButton = null
     }
 
-    private fun formatTime(millis: Long, includeCentiseconds: Boolean): String {
+    private fun formatTime(millis: Long): String {
         val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(millis)
         val hours = TimeUnit.MILLISECONDS.toHours(millis)
         val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
         val seconds = totalSeconds % 60
-        val centi = (millis % 1000) / 10
 
-        val timeString = when {
+        return when {
             hours > 0 -> String.format("%d:%02d:%02d", hours, minutes, seconds)
             minutes > 0 -> String.format("%02d:%02d", minutes, seconds)
             else -> String.format("%02d", seconds)
-        }
-
-        return if (includeCentiseconds) {
-            String.format("%s.%02d", timeString, centi)
-        } else {
-            timeString
         }
     }
 
@@ -447,7 +447,9 @@ class TimerService : LifecycleService() {
                     }
                     MotionEvent.ACTION_UP -> {
                         if (isMoving) {
-                            viewModel.updateWindowPosition(params.x, params.y)
+                            lifecycleScope.launch {
+                                timerRepository.updateWindowPosition(timerId, params.x, params.y)
+                            }
                             isMoving = false
                         }
                         return@setOnTouchListener isMoving
@@ -465,7 +467,9 @@ class TimerService : LifecycleService() {
     private fun stopService() {
         if (timerId > 0) {
             instanceManager.releaseInstanceId(InstanceManager.TIMER, timerId)
-            viewModel.deleteState()
+            lifecycleScope.launch {
+                timerRepository.deleteTimer(timerId)
+            }
         }
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -550,7 +554,7 @@ class TimerService : LifecycleService() {
                                 params.y = dpToPx(20) + (stackPosition * (params.height + dpToPx(10)))
 
                                 // Save the calculated position
-                                viewModel.updateNestedPosition(params.x, params.y)
+                                timerRepository.updateNestedPosition(timerId, params.x, params.y)
 
                                 // Update view if already added
                                 if (isViewAdded && overlayView != null) {
@@ -583,9 +587,9 @@ class TimerService : LifecycleService() {
             // Restore normal view
             playPauseButton?.visibility = View.VISIBLE
             settingsButton?.visibility = View.VISIBLE
+            resetButtonCountdown?.visibility = View.VISIBLE
 
             digitalTimeTextView?.textSize = 36f
-            centisecondsTextView?.textSize = 20f
         }
 
         // Update layout if needed
@@ -634,7 +638,7 @@ class TimerService : LifecycleService() {
                     }
                     setOnErrorListener { _, _, _ ->
                         Log.e(TAG, "Error playing music URL: $url")
-                        withContext(Dispatchers.Main) {
+                        lifecycleScope.launch(Dispatchers.Main) {
                             playDefaultSound() // Fallback
                         }
                         release()

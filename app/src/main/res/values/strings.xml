@@ -43,6 +43,7 @@
     <string name="save">Save</string>
     <string name="close">Close</string>
     <string name="back">Back</string>
+    <string name="set">Set</string>
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
     <string name="edit">Edit</string>
@@ -404,32 +405,45 @@
     <string name="add_1_hour">Add 1 Hour</string>
     <string name="add_5_minutes">Add 5 Minutes</string>
     <string name="add_30_seconds">Add 30 Seconds</string>
+
+    <!-- Sound Picker -->
     <string name="streaming_music">Streaming Music</string>
     <string name="music_url">Music URL</string>
     <string name="recent_urls">Resent URLs</string>
-    <string name="enter_url_hint">Enter Music Web URL here</string>
+    <string name="enter_url_hint">Enter Music URL here</string>
     <string name="play_music">Play music</string>
     <string name="play_sound_on_finish">Placeholder</string>
     <string name="nest_timer">Nest Timer</string>
-    <string name="lap">Lap Times</string>
-    <string name="no_laps_recorded">No laps recorded</string>
-    <string name="sounds">Stopwatch sounds</string>
     <string name="setting_add_another_timer">Add Another Timer</string>
     <string name="max_timers_reached_snackbar">Placeholder</string>
+    <string name="sound_none">None</string>
+    <string name="sound_music">Music (URL)</string>
+    <string name="notification_sound">Notification Sound</string>
+    <string name="select_sound">Select Sound</string>
+
+    <!-- Preset Time -->
+    <string name="preset_saved">Preset time saved</string>
+    <string name="preset_times">Preset Times</string>
+    <string name="add_preset">Add Preset</string>
+    <string name="max_presets_reached">Maximum number of presets reached</string>
+    <string name="preset_already_exists">This time is already saved as a preset</string>
+    <string name="delete_preset">Delete Preset</string>
+    <string name="select_preset_time">Select Preset Time</string>
+    <string name="no_presets_saved">No preset times saved yet</string>
+    <string name="tap_star_to_save">Tap the star to save current time</string>
 
     <!-- Timer Notifications -->
     <string name="timer_notification_title">Timer Running</string>
     <string name="timer_notification_content">Timer is active in the background</string>
     <string name="timer_notification_channel_name">Timer Service</string>
+    <string name="selected">Selected</string>
 
     <!-- Timer Error Messages -->
     <string name="invalid_duration">Invalid duration entered</string>
     <string name="max_duration_exceeded">Maximum duration is 99:59:59</string>
     <string name="clipboard_empty">Nothing to paste from clipboard</string>
+    <string name="enter_url_first">Please enter a URL first</string>
     <string name="invalid_music_url">This is not a valid music URL. Please provide an updated URL to play.</string>
-    <string name="selected">Selected</string>
-    <string name="sound_none">None</string>
-    <string name="sound_music">Music URL</string>
 
 
     <!-- `` ABOUT THIS APP `` -->

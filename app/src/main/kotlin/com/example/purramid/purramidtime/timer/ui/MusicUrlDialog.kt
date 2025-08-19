@@ -1,6 +1,7 @@
 // MusicUrlDialog.kt
 package com.example.purramid.purramidtime.timer.ui
 
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.ClipboardManager
 import android.content.Context
@@ -109,6 +110,7 @@ class MusicUrlDialog : DialogFragment() {
         }
     }
     
+    @SuppressLint("UseGetLayoutInflater")
     private fun populateRecentUrls() {
         binding.recentUrlsContainer.removeAllViews()
         
@@ -183,7 +185,7 @@ class MusicUrlDialog : DialogFragment() {
                     
                     setOnPreparedListener {
                         start()
-                        isPlaying = true
+                        this@MusicUrlDialog.isPlaying = true
                         lifecycleScope.launch(Dispatchers.Main) {
                             updatePlayButtonState(true, loading = false)
                         }

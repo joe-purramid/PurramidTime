@@ -2,6 +2,7 @@
 package com.example.purramid.purramidtime.timer.ui
 
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -74,6 +75,7 @@ class CountdownDurationPickerView @JvmOverloads constructor(
         setMeasuredDimension(width, height)
     }
     
+    @SuppressLint("DefaultLocale")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
@@ -112,9 +114,7 @@ class CountdownDurationPickerView @JvmOverloads constructor(
                 canvas.drawText(digit.toString(), currentX, baselineY, textPaint)
                 
                 // Draw arrows for digits
-                if (digit != ':') {
-                    drawArrows(canvas, currentX, baselineY, digitIndex)
-                }
+                drawArrows(canvas, currentX, baselineY, digitIndex)
                 
                 currentX += digitWidth
             }
@@ -133,6 +133,7 @@ class CountdownDurationPickerView @JvmOverloads constructor(
         canvas.drawText("▼", x, downArrowY, arrowPaint)
     }
     
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         return gestureDetector.onTouchEvent(event) || super.onTouchEvent(event)
     }

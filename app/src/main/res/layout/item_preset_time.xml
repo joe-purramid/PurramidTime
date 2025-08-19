@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="60dp"
+    android:layout_height="40dp">
+
+    <View
+        android:id="@+id/presetContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/rounded_background" />
+
+    <TextView
+        android:id="@+id/presetTimeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textSize="14sp"
+        android:fontFamily="monospace" />
+
+    <ImageView
+        android:id="@+id/deleteIcon"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_gravity="top|end"
+        android:src="@drawable/ic_favorite"
+        android:visibility="gone"
+        android:padding="2dp" />
+
+</FrameLayout>

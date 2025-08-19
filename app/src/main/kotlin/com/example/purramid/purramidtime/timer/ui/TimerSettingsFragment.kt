@@ -39,7 +39,7 @@ class TimerSettingsFragment : DialogFragment() {
 
     @Inject lateinit var instanceManager: InstanceManager
 
-    private var _binding: FragmentTimersSettingsBinding? = null
+    private var _binding: FragmentTimerSettingsBinding? = null
     private val binding get() = _binding!!
 
     private val viewModel: TimerViewModel by activityViewModels()
@@ -52,7 +52,7 @@ class TimerSettingsFragment : DialogFragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentTimersSettingsBinding.inflate(inflater, container, false)
+        _binding = FragmentTimerSettingsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -126,8 +126,10 @@ class TimerSettingsFragment : DialogFragment() {
             if (blockListeners) return@setOnCheckedChangeListener
             viewModel.setPlaySoundOnEnd(isChecked)
         }
-        binding.layoutSetSound.setOnClickListener {
-            showSoundPicker()
+        binding.iconSoundDropdown.setOnClickListener {
+            if (binding.switchPlaySoundOnEnd.isChecked) {
+                showSoundPicker()
+            }
         }
         binding.switchNestTimer.setOnCheckedChangeListener { _, isChecked ->
             if (blockListeners) return@setOnCheckedChangeListener
@@ -135,9 +137,6 @@ class TimerSettingsFragment : DialogFragment() {
         }
         binding.layoutSetCountdown.setOnClickListener {
             showSetCountdownDialog()
-        }
-        binding.buttonPresetTimes.setOnClickListener {
-            showPresetTimesDialog()
         }
     }
 
@@ -165,68 +164,11 @@ class TimerSettingsFragment : DialogFragment() {
                     binding.layoutAddAnother.isEnabled = activeCount < 4
                     binding.iconAddAnother.alpha = if (activeCount < 4) 1.0f else 0.5f
 
-                    // Update preset button visibility based on timer type
-                    binding.buttonPresetTimes.visibility = if (state.type == TimerType.COUNTDOWN) {
-                        View.VISIBLE
-                    } else {
-                        View.GONE
-                    }
-
                     blockListeners = false
                 }
             }
         }
     }
-    private fun populateDurationFields(totalMillis: Long) {
-        val hours = TimeUnit.MILLISECONDS.toHours(totalMillis)
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(totalMillis) % 60
-        val seconds = TimeUnit.MILLISECONDS.toSeconds(totalMillis) % 60
-
-        if (binding.editTextHours.text.toString() != hours.toString()) {
-            binding.editTextHours.setText(hours.toString())
-        }
-        if (binding.editTextMinutes.text.toString() != minutes.toString()) {
-            binding.editTextMinutes.setText(minutes.toString())
-        }
-        if (binding.editTextSeconds.text.toString() != seconds.toString()) {
-            binding.editTextSeconds.setText(seconds.toString())
-        }
-    }
-
-    private fun saveDurationFromInput() {
-        val hours = binding.editTextHours.text.toString().toLongOrNull() ?: 0L
-        val minutes = binding.editTextMinutes.text.toString().toLongOrNull() ?: 0L
-        val seconds = binding.editTextSeconds.text.toString().toLongOrNull() ?: 0L
-
-        if (hours < 0 || minutes < 0 || seconds < 0 || minutes >= 60 || seconds >= 60) {
-            Log.w(TAG, "Invalid duration input.")
-            Snackbar.make(
-                binding.layoutSetCountdown,
-                getString(R.string.invalid_duration),
-                Snackbar.LENGTH_SHORT
-            ).show()
-            populateDurationFields(viewModel.uiState.value.initialDurationMillis)
-            return
-        }
-
-        // Check max time limit (99:59:59)
-        if (hours > 99) {
-            Snackbar.make(
-                binding.layoutSetCountdown,
-                getString(R.string.max_duration_exceeded),
-                Snackbar.LENGTH_SHORT
-            ).show()
-            binding.editTextHours.setText("99")
-            return
-        }
-
-        val totalMillis = TimeUnit.HOURS.toMillis(hours) +
-                TimeUnit.MINUTES.toMillis(minutes) +
-                TimeUnit.SECONDS.toMillis(seconds)
-        viewModel.setInitialDuration(totalMillis)
-        Log.d(TAG, "Saved duration: $totalMillis ms")
-    }
-
     private fun handleAddAnotherTimer() {
         val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
         if (activeCount >= 4) {

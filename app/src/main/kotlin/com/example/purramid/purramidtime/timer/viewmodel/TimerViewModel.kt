@@ -63,10 +63,10 @@ class TimerViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     if (entity != null) {
                         Log.d(TAG, "Loaded state from DB for timer $id")
-                        val state = mapEntityToState(TimerStateEntity)
+                        val state = mapEntityToState(entity)
                         // Override with global recent URLs
                         _uiState.value = state.copy(
-                            recentMusicUrls = musicUrlManager.getRecentUrls()
+                            recentMusicUrls = musicUrlManager.getRecentUrls(),
                             presetTimes = presetTimesManager.getPresetTimes()
                         )
                         if (_uiState.value.isRunning) {
@@ -76,7 +76,8 @@ class TimerViewModel @Inject constructor(
                         Log.d(TAG, "No saved state for timer $id, using defaults.")
                         val defaultState = TimerState(
                             timerId = id,
-                            uuid = UUID.randomUUID()
+                            uuid = UUID.randomUUID(),
+                            recentMusicUrls = musicUrlManager.getRecentUrls(),
                             presetTimes = presetTimesManager.getPresetTimes()
                         )
                         _uiState.value = defaultState
@@ -88,7 +89,8 @@ class TimerViewModel @Inject constructor(
                 withContext(Dispatchers.Main) {
                     val defaultState = TimerState(
                         timerId = id,
-                        uuid = UUID.randomUUID()
+                        uuid = UUID.randomUUID(),
+                        recentMusicUrls = musicUrlManager.getRecentUrls(),
                         presetTimes = presetTimesManager.getPresetTimes()
                     )
                     _uiState.value = defaultState
@@ -229,12 +231,6 @@ class TimerViewModel @Inject constructor(
         saveState(_uiState.value)
     }
 
-    fun setSoundsEnabled(enabled: Boolean) {
-        if (_uiState.value.soundsEnabled == enabled) return
-        _uiState.update { it.copy(soundsEnabled = enabled) }
-        saveState(_uiState.value)
-    }
-
     fun setSelectedSound(uri: String?) {
         if (_uiState.value.selectedSoundUri == uri) return
         _uiState.update { it.copy(selectedSoundUri = uri) }
@@ -284,10 +280,7 @@ class TimerViewModel @Inject constructor(
     fun removePreset(presetId: String) {
         presetTimesManager.removePresetTime(presetId)
         // Reload preset times
-        _uiState.update {
-            it.copy(presetTimes = presetTimesManager.getPresetTimes())
-        }
-        saveState(_uiState.value)
+        refreshPresetTimes()
     }
 
     fun refreshPresetTimes() {
@@ -367,7 +360,7 @@ class TimerViewModel @Inject constructor(
             selectedSoundUri = entity.selectedSoundUri,
             musicUrl = entity.musicUrl,
             recentMusicUrls = recentUrlsList,
-            presetTimes = presetTimesList,
+            presetTimes = presetTimesManager.getPresetTimes(),
             showPresetButton = entity.showPresetButton
         )
     }
@@ -393,7 +386,6 @@ class TimerViewModel @Inject constructor(
             selectedSoundUri = state.selectedSoundUri,
             musicUrl = state.musicUrl,
             recentMusicUrlsJson = recentUrlsJson,
-            presetTimesJson = presetTimesJson,
             showPresetButton = state.showPresetButton
         )
     }
