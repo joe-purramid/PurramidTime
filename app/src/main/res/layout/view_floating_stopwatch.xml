@@ -128,8 +128,6 @@
 
             </LinearLayout>
 
-        </LinearLayout>
-
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -188,5 +186,4 @@
         android:text="\u274C"
         android:textColor="@android:color/white"
         android:textSize="16sp" />
-
 </FrameLayout>
