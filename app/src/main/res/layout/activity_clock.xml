@@ -43,7 +43,7 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_settings"
             android:background="@drawable/close_button_oval_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:imageTintList="@color/button_tint_state_list"
             android:contentDescription="@string/settings"
             android:layout_gravity="bottom|start"
             android:layout_margin="16dp" />
@@ -55,7 +55,7 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_close"
             android:background="@drawable/close_button_oval_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:imageTintList="@color/button_tint_state_list"
             android:contentDescription="@string/close"
             android:layout_gravity="top|end"
             android:layout_margin="16dp" />
