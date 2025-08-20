@@ -12,6 +12,9 @@ import android.widget.LinearLayout
 import android.widget.RemoteViews
 import android.widget.Toast
 import androidx.core.view.setPadding
+import com.example.purramid.purramidtime.clock.ClockActivity
+import com.example.purramid.purramidtime.stopwatch.StopwatchActivity
+import com.example.purramid.purramidtime.timer.TimerActivity
 
 class WidgetConfigActivity : Activity() {
 
@@ -47,7 +50,7 @@ class WidgetConfigActivity : Activity() {
         val options = listOf(
             WidgetConfigData("Clock", R.mipmap.tp_clock_launcher, Intent(this, ClockActivity::class.java)),
             WidgetConfigData("Screen Mask", R.mipmap.tp_stopwatch_launcher, Intent(this, StopwatchActivity::class.java)),
-            WidgetConfigData("Timer", R.mipmap.tp_timer_launcher, Intent(this, TimersActivity::class.java)),
+            WidgetConfigData("Timer", R.mipmap.tp_timer_launcher, Intent(this, TimerActivity::class.java)),
         )
 
         // Dynamically create buttons for each option

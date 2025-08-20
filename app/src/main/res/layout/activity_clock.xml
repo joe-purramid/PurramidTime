@@ -1,40 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center">
+    android:layout_height="match_parent">
 
-    <com.example.purramid.purramidtime.clock.ClockView
-        android:id="@+id/clockView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
+    <!-- Main clock content -->
     <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp">
+        android:id="@+id/clockContentLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
-            android:id="@+id/playButton"
+        <com.example.purramid.purramidtime.clock.ClockView
+            android:id="@+id/clockView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/play" />
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
 
-        <Button
-            android:id="@+id/pauseButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/pause"
-            android:layout_marginStart="8dp" />
+            <ImageButton
+                android:id="@+id/playButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_pause"
+                android:background="@drawable/control_buttons_background"
+                app:tint="@color/button_tint_state_list"
+                android:contentDescription="@string/play"
+                android:layout_marginStart="8dp" />
 
-        <Button
-            android:id="@+id/resetButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/reset"
-            android:layout_marginStart="8dp" />
+            <ImageButton
+                android:id="@+id/pauseButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_pause"
+                android:background="@drawable/control_buttons_background"
+                app:tint="@color/button_tint_state_list"
+                android:contentDescription="@string/pause"
+                android:layout_marginStart="8dp" />
+
+            <ImageButton
+                android:id="@+id/resetButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_pause"
+                android:background="@drawable/control_buttons_background"
+                app:tint="@color/button_tint_state_list"
+                android:contentDescription="@string/reset"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+    </LinearLayout>
 
         <!-- Settings button in bottom left corner -->
         <ImageButton
@@ -43,10 +67,11 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_settings"
             android:background="@drawable/close_button_oval_background"
-            android:imageTintList="@color/button_tint_state_list"
+            app:tint="@color/button_tint_state_list"
             android:contentDescription="@string/settings"
             android:layout_gravity="bottom|start"
-            android:layout_margin="16dp" />
+            android:layout_margin="16dp"
+            tools:ignore="MissingConstraints" />
 
         <!-- Close button in top right corner -->
         <ImageButton
@@ -55,9 +80,21 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_close"
             android:background="@drawable/close_button_oval_background"
-            android:imageTintList="@color/button_tint_state_list"
+            app:tint="@color/button_tint_state_list"
             android:contentDescription="@string/close"
             android:layout_gravity="top|end"
-            android:layout_margin="16dp" />
-    </LinearLayout>
-</LinearLayout>
+            android:layout_margin="16dp"
+            tools:ignore="MissingConstraints" />
+
+    <!-- Fragment container for settings - initially hidden -->
+    <FrameLayout
+        android:id="@+id/clock_fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -33,6 +33,7 @@ import androidx.lifecycle.*
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.timer.repository.TimerRepository
 import com.example.purramid.purramidtime.timer.viewmodel.TimerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers

@@ -1,15 +1,28 @@
-// TimerRepository.kt
-package com.example.purramid.purramidtime.timer
+package com.example.purramid.purramidtime.timer.repository
 
 import android.os.SystemClock
 import android.util.Log
 import com.example.purramid.purramidtime.data.db.TimerDao
 import com.example.purramid.purramidtime.data.db.TimerStateEntity
-import com.example.purramid.purramidtime.ui.PurramidPalette
+import com.example.purramid.purramidtime.di.IoDispatcher
+import com.example.purramid.purramidtime.timer.MusicUrlManager
+import com.example.purramid.purramidtime.timer.PresetTimesManager
+import com.example.purramid.purramidtime.timer.TimerState
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,7 +32,7 @@ class TimerRepository @Inject constructor(
     private val timerDao: TimerDao,
     private val musicUrlManager: MusicUrlManager,
     private val presetTimesManager: PresetTimesManager,
-    @com.example.purramid.purramidtime.di.IoDispatcher private val ioDispatcher: CoroutineDispatcher
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
     companion object {
         private const val TAG = "TimerRepository"
@@ -27,7 +40,7 @@ class TimerRepository @Inject constructor(
     }
 
     private val gson = Gson()
-    
+
     // Store active timer states in memory for quick access
     private val activeTimerStates = mutableMapOf<Int, MutableStateFlow<TimerState>>()
     private val tickerJobs = mutableMapOf<Int, Job?>()
@@ -63,22 +76,22 @@ class TimerRepository @Inject constructor(
                     recentMusicUrls = musicUrlManager.getRecentUrls()
                 )
             }
-            
+
             // Update the flow
             activeTimerStates.getOrPut(timerId) {
                 MutableStateFlow(state)
             }.value = state
-            
+
             // Save if new
             if (entity == null) {
                 saveState(state)
             }
-            
+
             // Start ticker if running
             if (state.isRunning) {
                 startTicker(timerId)
             }
-            
+
             state
         } catch (e: Exception) {
             Log.e(TAG, "Error loading initial state for timer $timerId", e)
@@ -109,26 +122,26 @@ class TimerRepository @Inject constructor(
         val stateFlow = activeTimerStates.getOrPut(timerId) {
             MutableStateFlow(TimerState(timerId = timerId))
         }
-        
+
         val newState = update(stateFlow.value)
         stateFlow.value = newState
         saveState(newState)
     }
 
     // --- Timer Controls ---
-    
+
     suspend fun togglePlayPause(timerId: Int) {
         val stateFlow = activeTimerStates[timerId] ?: return
         val currentState = stateFlow.value
-        
+
         if (currentState.currentMillis <= 0L) {
             return // Don't start countdown if already finished
         }
 
         val newRunningState = !currentState.isRunning
-        
+
         updateState(timerId) { it.copy(isRunning = newRunningState) }
-        
+
         if (newRunningState) {
             startTicker(timerId)
         } else {
@@ -192,7 +205,7 @@ class TimerRepository @Inject constructor(
 
     suspend fun setMusicUrl(timerId: Int, url: String?) {
         url?.let { musicUrlManager.addRecentUrl(it) }
-        
+
         updateState(timerId) { state ->
             state.copy(
                 musicUrl = url,
@@ -212,11 +225,11 @@ class TimerRepository @Inject constructor(
     }
 
     // --- Ticker Logic ---
-    
+
     private fun startTicker(timerId: Int) {
         // Cancel existing ticker if any
         tickerJobs[timerId]?.cancel()
-        
+
         val stateFlow = activeTimerStates[timerId] ?: return
         val startTime = SystemClock.elapsedRealtime()
         val initialMillis = stateFlow.value.currentMillis
@@ -225,14 +238,14 @@ class TimerRepository @Inject constructor(
             while (isActive && stateFlow.value.isRunning) {
                 val elapsed = SystemClock.elapsedRealtime() - startTime
                 val newMillis = (initialMillis - elapsed).coerceAtLeast(0L)
-                
+
                 stateFlow.update { it.copy(currentMillis = newMillis) }
-                
+
                 if (newMillis <= 0L) {
                     handleCountdownFinish(timerId)
                     break
                 }
-                
+
                 delay(TICK_INTERVAL_MS)
             }
             Log.d(TAG, "Ticker coroutine ended for timer $timerId")
@@ -262,13 +275,13 @@ class TimerRepository @Inject constructor(
     }
 
     // --- Persistence ---
-    
+
     private suspend fun saveState(state: TimerState) = withContext(ioDispatcher) {
         if (state.timerId <= 0) {
             Log.w(TAG, "Attempted to save state with invalid timerId: ${state.timerId}")
             return@withContext
         }
-        
+
         try {
             val entity = mapStateToEntity(state)
             timerDao.insertOrUpdate(entity)
@@ -282,7 +295,7 @@ class TimerRepository @Inject constructor(
         stopTicker(timerId)
         activeTimerStates.remove(timerId)
         tickerJobs.remove(timerId)
-        
+
         try {
             timerDao.deleteById(timerId)
             Log.d(TAG, "Deleted state for timer $timerId")
@@ -292,7 +305,7 @@ class TimerRepository @Inject constructor(
     }
 
     // --- Cleanup ---
-    
+
     fun cleanup() {
         tickerJobs.values.forEach { it?.cancel() }
         tickerJobs.clear()
@@ -301,7 +314,7 @@ class TimerRepository @Inject constructor(
     }
 
     // --- Mappers ---
-    
+
     private fun mapEntityToState(entity: TimerStateEntity): TimerState {
         val recentUrlsList = try {
             val typeToken = object : TypeToken<List<String>>() {}.type
