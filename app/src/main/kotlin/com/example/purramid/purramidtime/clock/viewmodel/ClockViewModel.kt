@@ -251,22 +251,6 @@ class ClockViewModel @Inject constructor(
         }
     }
 
-    fun deleteState() {
-        if (instanceId == -1) {
-            Log.w(TAG, "Cannot delete state, invalid instanceId: $instanceId")
-            return
-        }
-
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                clockDao.deleteByInstanceId(instanceId)
-                Log.d(TAG, "Deleted state for clock $instanceId")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete state for clock $instanceId", e)
-            }
-        }
-    }
-
     // --- Mappers (Remain the same) ---
     private fun mapEntityToState(entity: ClockStateEntity): ClockState {
         val timeZone = try {
@@ -360,47 +344,6 @@ class ClockViewModel @Inject constructor(
                 Log.e(TAG, "Failed to save state for clock $currentId", e)
             }
         }
-    }
-
-    fun deleteState() {
-        val currentId = instanceId
-        if (currentId == null || currentId == -1) {
-            Log.w(TAG, "Cannot delete state, invalid instanceId: $currentId")
-            return
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                clockDao.deleteByInstanceId(currentId)
-                Log.d(TAG, "Deleted state for clock $currentId")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete state for clock $currentId", e)
-            }
-        }
-    }
-
-    // Mappers
-    private fun mapEntityToState(entity: ClockStateEntity): ClockState {
-        val timeZone = try { ZoneId.of(entity.timeZoneId) } catch (e: Exception) { ZoneId.systemDefault() }
-        val manualTime = entity.manuallySetTimeSeconds?.let { LocalTime.ofSecondOfDay(it % (24 * 3600)) }
-        // If paused and has manual time, load that. Otherwise load current time for the zone.
-        val initialCurrentTime = if (entity.isPaused && manualTime != null) manualTime else LocalTime.now(timeZone)
-
-        return ClockState(
-            instanceId = entity.instanceId,
-            timeZoneId = timeZone,
-            isPaused = entity.isPaused,
-            displaySeconds = entity.displaySeconds,
-            is24Hour = entity.is24Hour,
-            clockColor = entity.clockColor,
-            mode = entity.mode,
-            isNested = entity.isNested,
-            windowX = entity.windowX,
-            windowY = entity.windowY,
-            windowWidth = entity.windowWidth,
-            windowHeight = entity.windowHeight,
-            currentTime = initialCurrentTime.truncatedTo(ChronoUnit.NANOS), // Start with loaded/current time
-            manuallySetTime = manualTime
-        )
     }
 
     private fun mapStateToEntity(state: ClockState): ClockStateEntity {

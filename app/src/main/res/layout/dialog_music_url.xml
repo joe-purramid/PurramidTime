@@ -89,7 +89,7 @@
                 android:paddingHorizontal="8dp"/>
 
             <ImageButton
-                android:id="@+id/buttonPlay"
+                android:id="@+id/buttonPlayPause"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:src="@drawable/ic_play"
