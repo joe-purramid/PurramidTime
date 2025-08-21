@@ -11,10 +11,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.PixelFormat
 import android.os.Build
-import android.os.Bundle
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.os.SystemClock
 import android.util.DisplayMetrics
 import android.util.Log
@@ -31,37 +28,26 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.ViewModelStoreOwner
 import com.example.purramid.purramidtime.clock.ClockStateManager
 import com.example.purramid.purramidtime.clock.repository.ClockRepository
-import com.example.purramid.purramidtime.clock.viewmodel.ClockState
-import com.example.purramid.purramidtime.clock.viewmodel.ClockViewModel
-import com.example.purramid.purramidtime.data.db.ClockDao
+import com.example.purramid.purramidtime.data.db.ClockStateEntity
 import com.example.purramid.purramidtime.di.ClockPrefs
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.data.db.ClockStateEntity
 import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import java.lang.ref.WeakReference
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
-import kotlinx.coroutines.channels.BufferOverflow
+import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.math.max
 
 @AndroidEntryPoint
 class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListener {
