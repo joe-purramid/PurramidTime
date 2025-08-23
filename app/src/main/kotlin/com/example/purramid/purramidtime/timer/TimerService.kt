@@ -29,12 +29,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.ColorUtils
-import androidx.lifecycle.*
+import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.timer.repository.TimerRepository
-import com.example.purramid.purramidtime.timer.viewmodel.TimerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,7 +48,7 @@ import kotlin.math.abs
 // Service Actions
 const val ACTION_START_TIMER = "com.example.purramid.purramidtime.timer.ACTION_START_TIMER"
 const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.purramidtime.timer.ACTION_STOP_TIMER_SERVICE"
-const val EXTRA_TIMER_ID = TimerViewModel.KEY_TIMER_ID
+const val EXTRA_TIMER_ID = "timerId"
 const val EXTRA_DURATION_MS = "com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS"
 
 @AndroidEntryPoint
@@ -67,8 +67,7 @@ class TimerService : LifecycleService() {
     private var stateObserverJob: Job? = null
     private var currentInflatedLayoutId: Int = 0
 
-    // --- Cached Views (Common and Specific) ---
-    // Common
+    // --- Cached Views ---
     private var digitalTimeTextView: TextView? = null
     private var playPauseButton: ImageView? = null
     private var settingsButton: ImageView? = null
@@ -100,7 +99,7 @@ class TimerService : LifecycleService() {
         private const val NOTIFICATION_ID = 5
         private const val CHANNEL_ID = "TimerServiceChannel"
         const val PREFS_NAME_FOR_ACTIVITY = "timer_prefs"
-        private val requiredLayoutId: Int = R.layout.view_floating_timer  // Add this line
+        private val requiredLayoutId: Int = R.layout.view_floating_timer
     }
 
     override fun onCreate() {
@@ -198,34 +197,32 @@ class TimerService : LifecycleService() {
     }
 
     private suspend fun addOverlayViewIfNeeded() = withContext(Dispatchers.Main) {
-        withContext(Dispatchers.Main) {
-            val currentState = timerRepository.getCurrentState(timerId)
+        val currentState = timerRepository.getCurrentState(timerId)
 
-            if (overlayView == null) {
-                layoutParams = createDefaultLayoutParams()
-                applyStateToLayoutParams(currentState, layoutParams!!)
+        if (overlayView == null) {
+            layoutParams = createDefaultLayoutParams()
+            applyStateToLayoutParams(currentState, layoutParams!!)
 
-                val inflater = LayoutInflater.from(this@TimerService)
-                overlayView = inflater.inflate(requiredLayoutId, null)
-                currentInflatedLayoutId = requiredLayoutId
+            val inflater = LayoutInflater.from(this@TimerService)
+            overlayView = inflater.inflate(requiredLayoutId, null)
+            currentInflatedLayoutId = requiredLayoutId
 
-                cacheViews()
-                setupListeners()
-                setupWindowDragListener()
+            cacheViews()
+            setupListeners()
+            setupWindowDragListener()
 
-                try {
-                    if (!isViewAdded) {
-                        windowManager.addView(overlayView, layoutParams)
-                        isViewAdded = true
-                        Log.d(TAG, "Timer overlay view added.")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error adding timer overlay view", e)
-                    cleanupViewReferences()
+            try {
+                if (!isViewAdded) {
+                    windowManager.addView(overlayView, layoutParams)
+                    isViewAdded = true
+                    Log.d(TAG, "Timer overlay view added.")
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error adding timer overlay view", e)
+                cleanupViewReferences()
             }
-            updateOverlayViews(currentState)
         }
+        updateOverlayViews(currentState)
     }
 
     private fun createDefaultLayoutParams(): WindowManager.LayoutParams {
@@ -274,7 +271,7 @@ class TimerService : LifecycleService() {
     }
 
     private fun showPresetTimesPopup() {
-        // Create a popup window or start an activity to show preset times
+        // Create intent to show preset times in activity
         val intent = Intent(this, TimerActivity::class.java).apply {
             action = "com.example.purramid.purramidtime.timer.ACTION_SHOW_PRESETS"
             putExtra(EXTRA_TIMER_ID, timerId)
@@ -387,6 +384,7 @@ class TimerService : LifecycleService() {
         resetButtonCountdown = null
         settingsButton = null
         closeButton = null
+        presetButton = null
     }
 
     private fun formatTime(millis: Long): String {

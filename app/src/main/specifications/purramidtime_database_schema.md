@@ -221,16 +221,6 @@ data class StopwatchStateEntity(
     @ColumnInfo(name = "window_height")
     val windowHeight: Int = -1,
     
-    // Nested stopwatch fields
-    @ColumnInfo(name = "is_nested")
-    val isNested: Boolean = false,
-    
-    @ColumnInfo(name = "nested_x")
-    val nestedX: Int = -1,
-    
-    @ColumnInfo(name = "nested_y")
-    val nestedY: Int = -1,
-    
     // Sound fields for lap notifications
     @ColumnInfo(name = "sounds_enabled")
     val soundsEnabled: Boolean = false,

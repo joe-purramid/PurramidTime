@@ -1,4 +1,4 @@
-// src/main/kotlin/com/example/purramid/com.example.purramid.purramidtime/timer/TimerActivity.kt
+// TimerActivity.kt
 package com.example.purramid.purramidtime.timer
 
 import android.content.Intent
@@ -9,8 +9,6 @@ import androidx.core.content.ContextCompat
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.databinding.ActivityTimerBinding
 import com.example.purramid.purramidtime.instance.InstanceManager
-import com.example.purramid.purramidtime.timer.ACTION_START_TIMER
-import com.example.purramid.purramidtime.timer.EXTRA_TIMER_ID
 import com.example.purramid.purramidtime.timer.ui.TimerSettingsFragment
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -23,20 +21,9 @@ class TimerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTimerBinding
 
     companion object {
-        private const val TAG = "TimerService"
-        private const val NOTIFICATION_ID = 5
-        private const val CHANNEL_ID = "TimerServiceChannel"
-        const val PREFS_NAME_FOR_ACTIVITY = "timer_prefs"
-        const val MAX_TIMER_INSTANCES = 4
-        private val requiredLayoutId: Int
-            get() = R.layout.view_floating_timer
-
-        // Service Actions
-        const val ACTION_START_TIMER = "com.example.purramid.purramidtime.timer.ACTION_START_TIMER"
-        const val ACTION_STOP_TIMER_SERVICE = "com.example.purramid.purramidtime.timer.ACTION_STOP_TIMER_SERVICE"
+        private const val TAG = "TimerActivity"
         const val ACTION_SHOW_TIMER_SETTINGS = "com.example.purramid.purramidtime.timer.ACTION_SHOW_TIMER_SETTINGS"
-        const val EXTRA_TIMER_ID = "com.example.purramid.purramidtime.timer.EXTRA_TIMER_ID"
-        const val EXTRA_DURATION_MS = "com.example.purramid.purramidtime.timer.EXTRA_DURATION_MS"
+        const val ACTION_SHOW_PRESETS = "com.example.purramid.purramidtime.timer.ACTION_SHOW_PRESETS"
     }
 
     private var currentTimerId: Int = 0
@@ -50,19 +37,30 @@ class TimerActivity : AppCompatActivity() {
 
         currentTimerId = intent.getIntExtra(EXTRA_TIMER_ID, 0)
 
-        if (intent.action == ACTION_SHOW_TIMER_SETTINGS) {
-            if (currentTimerId != 0) {
-                showSettingsFragment(currentTimerId)
-            } else {
-                Log.e(TAG, "Cannot show settings, invalid timerId: ${0}")
-                finish()
+        when (intent.action) {
+            ACTION_SHOW_TIMER_SETTINGS -> {
+                if (currentTimerId != 0) {
+                    showSettingsFragment(currentTimerId)
+                } else {
+                    Log.e(TAG, "Cannot show settings, invalid timerId: 0")
+                    finish()
+                }
             }
-        } else {
-            // Default action: launch a new timer service instance
-            if (canCreateNewInstance()) {
-                Log.d(TAG, "Launching timer service")
-                startTimerService(currentTimerId)
-                finish()
+            ACTION_SHOW_PRESETS -> {
+                if (currentTimerId != 0) {
+                    showPresetsDialog(currentTimerId)
+                } else {
+                    Log.e(TAG, "Cannot show presets, invalid timerId: 0")
+                    finish()
+                }
+            }
+            else -> {
+                // Default action: launch a new timer service instance
+                if (canCreateNewInstance()) {
+                    Log.d(TAG, "Launching timer service")
+                    startTimerService(currentTimerId)
+                    finish()
+                }
             }
         }
     }
@@ -93,7 +91,7 @@ class TimerActivity : AppCompatActivity() {
         val serviceIntent = Intent(this, TimerService::class.java).apply {
             action = ACTION_START_TIMER
             if (timerId != 0) {
-            putExtra(EXTRA_TIMER_ID, timerId)
+                putExtra(EXTRA_TIMER_ID, timerId)
             }
             durationMs?.let { putExtra(EXTRA_DURATION_MS, it) }
         }
@@ -109,17 +107,37 @@ class TimerActivity : AppCompatActivity() {
         }
     }
 
+    private fun showPresetsDialog(timerId: Int) {
+        // This would show the presets dialog
+        // Implementation would be similar to showSettingsFragment
+        Log.d(TAG, "Showing presets dialog for timerId: $timerId")
+        // TODO: Implement preset dialog showing
+        finish()
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
         Log.d(TAG, "onNewIntent - Action: ${intent?.action}")
-        if (intent?.action == ACTION_SHOW_TIMER_SETTINGS) {
-            val timerIdForSettings = intent.getIntExtra(EXTRA_TIMER_ID, 0)
-            if (timerIdForSettings != 0) {
-                currentTimerId = timerIdForSettings
-                showSettingsFragment(timerIdForSettings)
-            } else {
-                Log.e(TAG, "Cannot show settings from onNewIntent, invalid timerId.")
+
+        when (intent?.action) {
+            ACTION_SHOW_TIMER_SETTINGS -> {
+                val timerIdForSettings = intent.getIntExtra(EXTRA_TIMER_ID, 0)
+                if (timerIdForSettings != 0) {
+                    currentTimerId = timerIdForSettings
+                    showSettingsFragment(timerIdForSettings)
+                } else {
+                    Log.e(TAG, "Cannot show settings from onNewIntent, invalid timerId.")
+                }
+            }
+            ACTION_SHOW_PRESETS -> {
+                val timerIdForPresets = intent.getIntExtra(EXTRA_TIMER_ID, 0)
+                if (timerIdForPresets != 0) {
+                    currentTimerId = timerIdForPresets
+                    showPresetsDialog(timerIdForPresets)
+                } else {
+                    Log.e(TAG, "Cannot show presets from onNewIntent, invalid timerId.")
+                }
             }
         }
     }
