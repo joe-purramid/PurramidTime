@@ -30,6 +30,11 @@
   - Following new specifications for pre-set time
   - Saved pre-sets are universal and persist across sessions
 
+- **Reviewed**: 20 August 2025
+- **Architecture**: Inactive Iconography
+- **Key Decisions**:
+  - To demonstrate an inactive button, add alpha = 0.5f for disabled state
+
   
   
   
