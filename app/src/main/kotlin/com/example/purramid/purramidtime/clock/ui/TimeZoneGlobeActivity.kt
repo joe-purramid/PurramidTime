@@ -3,6 +3,7 @@ package com.example.purramid.purramidtime.clock.ui
 import android.R.attr.tag
 import android.animation.ValueAnimator
 import android.animation.TypeEvaluator
+import android.annotation.SuppressLint
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.os.Bundle
 import android.util.Log
@@ -15,9 +16,12 @@ import androidx.lifecycle.lifecycleScope
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.clock.data.CityData
 import com.example.purramid.purramidtime.clock.viewmodel.TimeZoneGlobeUiState
+import com.example.purramid.purramidtime.clock.viewmodel.TimeZoneGlobeViewModel
 import com.example.purramid.purramidtime.clock.viewmodel.TimeZoneOverlayInfo
 import com.google.android.filament.Box
+import com.google.android.filament.Engine
 import com.google.android.filament.IndexBuffer
+import com.google.android.filament.Material
 import com.google.android.filament.MaterialInstance
 import com.google.android.filament.RenderableManager
 import com.google.android.filament.VertexBuffer
@@ -30,7 +34,6 @@ import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
-import io.github.sceneview.utils.Color as SceneViewColor
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
@@ -42,6 +45,9 @@ import kotlin.math.sin
 
 // Import ViewModel and State classes from this package
 import com.google.android.material.snackbar.Snackbar
+import io.github.sceneview.collision.HitResult
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.concurrent.ConcurrentHashMap
 
 @AndroidEntryPoint // Enable Hilt Injection
@@ -125,7 +131,7 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                     handleError("Failed to load model: $GLOBE_MODEL_ASSET_PATH")
                     return@launch
                 }
-                val modelInstance = model.instance ?: model.createInstance("DefaultGlobe")
+                val modelInstance = model.instance
                 globeNode = ModelNode(
                     modelInstance = modelInstance,
                     scaleToUnits = EARTH_RADIUS
@@ -137,11 +143,11 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                     isRotationEditable = false
                     isScaleEditable = false
                 }
-                sceneView.addChild(globeNode!!)
-                overlayParentNode = Node(sceneView.engine).apply {
-                    setParent(globeNode)
+                sceneView.addChildNode(globeNode!!)
+                overlayParentNode = Node().apply {
+                    parent = globeNode
                 }
-                Log.d(TAG, "Purramid Globe model loaded and added.") // Added brand name
+                    Log.d(TAG, "Purramid Globe model loaded and added.") // Added brand name
                 viewModel.uiState.value?.let { state ->
                     if (!state.isLoading && state.timeZoneOverlays.isNotEmpty()) {
                         createOrUpdateOverlays(state.timeZoneOverlays)
@@ -177,7 +183,7 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
         } ?: run {
             cityNorthernTextView.text = ""
             citySouthernTextView.text = ""
-            utcOffsetTextView.text = getString(R.string.timezone_placeholder) // Use resource
+            utcOffsetTextView.text = getString(R.string.time_zone_placeholder)
         }
     }
 
@@ -198,12 +204,20 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
             val deferred = CompletableDeferred<MaterialInstance>()
             lifecycleScope.launch {
                 try {
-                    val color = SceneViewColor(colorArgb)
+                    // Convert ARGB int to float components
+                    val a = android.graphics.Color.alpha(colorArgb) / 255f
+                    val r = android.graphics.Color.red(colorArgb) / 255f
+                    val g = android.graphics.Color.green(colorArgb) / 255f
+                    val b = android.graphics.Color.blue(colorArgb) / 255f
+
                     val material = materialLoader.createColorInstance(
-                        color = color, isMetallic = 0.0f, roughness = 1.0f, reflectance = 0.0f
+                        r = r, g = g, b = b, a = a,
+                        isMetallic = 0.0f,
+                        roughness = 1.0f,
+                        reflectance = 0.0f
                     )
-                    material.material.blendingMode = MaterialLoader.BlendingMode.TRANSPARENT
-                    material.setParameter("baseColorFactor", color)
+                    // Set color parameter as float array
+                    material.setParameter("baseColor", floatArrayOf(r, g, b, a))
                     deferred.complete(material)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to create material instance for color $colorArgb", e)
@@ -213,7 +227,6 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
             deferred
         }
     }
-
     private fun animateGlobeRotation(start: Rotation, end: Rotation) {
         // Use ObjectAnimator or compose animation to animate globeNode.rotation
         // from 'start' to 'end' over a specific duration.
@@ -230,7 +243,7 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
     }
 
     private fun clearOverlays() {
-        overlayParentNode?.children?.toList()?.forEach { it.destroy() }
+        overlayParentNode?.childNodes?.toList()?.forEach { it.destroy() }
     }
 
     private fun createPolygonRenderable(
@@ -333,8 +346,11 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
 
 
     // --- User Interaction ---
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupTouchListener() {
-        sceneView.cameraManipulator.enabled = false // Disable built-in manipulator
+        sceneView.isTouchEnabled = false
+        //was below
+        // sceneView.cameraManipulator.enabled = false // Disable built-in manipulator
 
         // Handle drag gestures for rotation
         sceneView.setOnTouchListener { _, event ->
@@ -357,16 +373,17 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
         }
 
         // Handle tap gestures for selection
-        sceneView.onTap = { motionEvent, hitResult ->
-            val hitNode = hitResult?.node
-            if (hitNode != null && hitNode.parent == overlayParentNode && hitNode.tag is String) {
-                val tappedTzId = hitNode.tag as String
-                Log.d(TAG, "Tapped on time zone: $tappedTzId")
-                viewModel.setActiveTimeZone(tappedTzId)
-            } else {
-                Log.d(TAG, "Tap detected, but not on a tagged overlay node.")
+        sceneView.onTouchEvent = { motionEvent ->
+            // Handle tap detection manually or use a different approach
+            when (motionEvent.action) {
+                MotionEvent.ACTION_UP -> {
+                    // Perform hit testing manually if needed
+                    true
+                }
+
+                else -> false
             }
-        }
+        } as ((MotionEvent, HitResult?) -> Boolean)?
     }
 
     private fun setupButtonListeners() {
@@ -412,17 +429,28 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
             }
         }
     }
-    
+
     private fun createCityPin(city: CityData, isNorthern: Boolean) {
         lifecycleScope.launch {
             try {
                 // Create a simple sphere for the city pin
                 val engine = sceneView.engine
                 val pinRadius = 0.02f // Small pin size
-                val pinColor = if (isNorthern) SceneViewColor(0xFF0000FF) else SceneViewColor(0xFF00FF00) // Blue for north, green for south
-                
+
+                // Use Android Color constants or create ARGB int values
+                val pinColorArgb = if (isNorthern) {
+                    android.graphics.Color.BLUE  // Blue for north
+                } else {
+                    android.graphics.Color.GREEN // Green for south
+                }
+
+                // Convert to float components
+                val r = android.graphics.Color.red(pinColorArgb) / 255f
+                val g = android.graphics.Color.green(pinColorArgb) / 255f
+                val b = android.graphics.Color.blue(pinColorArgb) / 255f
+
                 val material = materialLoader.createColorInstance(
-                    color = pinColor,
+                    r = r, g = g, b = b, a = 1.0f,
                     isMetallic = 0.0f,
                     roughness = 0.5f,
                     reflectance = 0.0f
@@ -450,7 +478,7 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                 cityPinNodes.add(pinNode)
                 
                 Log.d(TAG, "Created city pin for ${city.name} at (${city.latitude}, ${city.longitude})")
-                
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error creating city pin for ${city.name}", e)
             }
@@ -521,21 +549,31 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
     }
 }
 
+enum class RotationDirection {
+    LEFT, RIGHT
+}
+
 // --- Buffer Utils (Outside Activity) ---
-private fun float3ListToFloatBuffer(list: List<Float3>): FloatBuffer {
-    val buffer = java.nio.ByteBuffer.allocateDirect(list.size * 3 * 4)
-        .order(java.nio.ByteOrder.nativeOrder())
+// Extension function for Float3 list
+private fun List<Float3>.toFloatBuffer(): FloatBuffer {
+    val buffer = ByteBuffer.allocateDirect(this.size * 3 * 4)
+        .order(ByteOrder.nativeOrder())
         .asFloatBuffer()
-    list.forEach { buffer.put(it.toFloatArray()) }
+    this.forEach {
+        buffer.put(it.x)
+        buffer.put(it.y)
+        buffer.put(it.z)
+    }
     buffer.rewind()
     return buffer
 }
 
-private fun intArrayToBuffer(array: IntArray): IntBuffer {
-    val buffer = java.nio.ByteBuffer.allocateDirect(array.size * 4)
-        .order(java.nio.ByteOrder.nativeOrder())
+// Extension function for IntArray
+private fun IntArray.toBuffer(): IntBuffer {
+    val buffer = ByteBuffer.allocateDirect(this.size * 4)
+        .order(ByteOrder.nativeOrder())
         .asIntBuffer()
-    buffer.put(array)
+    buffer.put(this)
     buffer.rewind()
     return buffer
 }

@@ -39,6 +39,7 @@ class TimeZoneRepositoryImpl @Inject constructor(
     private val cityDbMutex = Mutex()
     private val GEOJSON_ASSET_NAME = "time_zones.geojson"
     private val timeZoneDbMutex = Mutex()
+    private var timeZoneDbPopulated = false
     @Volatile private var cityDbPopulated = false // Flag to check if DB is populated
 
     // Reusable JTS WKTReader instance
@@ -273,7 +274,7 @@ class TimeZoneRepositoryImpl @Inject constructor(
                  }
              }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse WKT: $wkt", e);
+            Log.e(TAG, "Failed to parse WKT: $wkt", e)
              emptyList()
         }
     }

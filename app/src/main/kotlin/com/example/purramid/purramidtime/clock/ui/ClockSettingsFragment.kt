@@ -23,6 +23,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.ZoneId
 import androidx.core.content.edit
+import com.example.purramid.purramidtime.ui.PurramidPalette
 
 @AndroidEntryPoint
 class ClockSettingsFragment : Fragment() {
@@ -105,35 +106,57 @@ class ClockSettingsFragment : Fragment() {
     }
 
     private fun setupColorPalette() {
-        val colors = resources.getIntArray(R.array.clock_palette_colors)
-        val outlineColors = resources.getIntArray(R.array.clock_palette_outline_colors)
-        binding.colorPalette.removeAllViews()
-        colors.forEachIndexed { index, colorValue ->
-            val colorView = View(requireContext()).apply {
-                val sizeInDp = 40
-                val sizeInPx = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, sizeInDp.toFloat(), resources.displayMetrics).toInt()
-                layoutParams = LinearLayout.LayoutParams(sizeInPx, sizeInPx).apply {
-                    setMargins(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4))
+        // Use PurramidPalette directly - single source of truth
+        val colors = PurramidPalette.appStandardPalette.map { it.colorInt }.toIntArray()
+
+        // Define outline colors based on contrast needs
+        val outlineColors = PurramidPalette.appStandardPalette.map { namedColor ->
+            when (namedColor) {
+                PurramidPalette.WHITE, PurramidPalette.LIGHT_BLUE -> Color.BLACK
+                PurramidPalette.BLACK, PurramidPalette.TEAL, PurramidPalette.VIOLET -> Color.WHITE
+                PurramidPalette.GOLDENROD -> Color.BLACK
+                else -> Color.BLACK
+            }
+        }.toIntArray()
+
+        // Get the saved color for this clock
+        val idToLoad = if (currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0
+        selectedColor = uiStatePrefs.getInt("clock_${idToLoad}_color", Color.WHITE)
+
+        // Clear any existing color swatches
+        binding.colorPaletteContainer.removeAllViews()
+
+        // Create color swatches
+        colors.forEachIndexed { index, color ->
+            val colorView = View(context).apply {
+                layoutParams = LinearLayout.LayoutParams(dpToPx(40), dpToPx(40)).apply {
+                    setMargins(dpToPx(4), 0, dpToPx(4), 0)
                 }
+
+                // Create background with outline
                 background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(colorValue)
-                    setStroke(dpToPx(1), outlineColors[index])
+                    shape = GradientDrawable.RECTANGLE
+                    setColor(color)
+                    setStroke(dpToPx(2), outlineColors[index])
+                    cornerRadius = dpToPx(4).toFloat()
                 }
+
+                // Set click listener
                 setOnClickListener {
-                    selectedColor = colorValue
+                    selectedColor = color
                     updateColorSelectionInUI(this)
-                    sendUpdateIntentToService("color", colorValue)
+                    sendUpdateIntentToService("color", color)
                     uiStatePrefs.edit {
-                        putInt(
-                            "clock_${if (currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_color",
-                            colorValue
-                        )
+                        putInt("clock_${idToLoad}_color", color)
                     }
                 }
             }
-            binding.colorPalette.addView(colorView)
-            if (colorValue == selectedColor) {
+
+            // Add to container
+            binding.colorPaletteContainer.addView(colorView)
+
+            // Select if this is the current color
+            if (color == selectedColor) {
                 updateColorSelectionInUI(colorView)
             }
         }

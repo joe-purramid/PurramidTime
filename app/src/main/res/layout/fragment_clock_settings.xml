@@ -60,6 +60,13 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/colorPaletteContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp" />
+
+        <LinearLayout
             android:id="@+id/layoutColor"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

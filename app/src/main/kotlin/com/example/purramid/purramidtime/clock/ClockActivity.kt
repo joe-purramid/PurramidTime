@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import com.example.purramid.purramidtime.clock.viewmodel.ClockState
 
 @AndroidEntryPoint
 class ClockActivity : AppCompatActivity() {
@@ -89,7 +90,7 @@ class ClockActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUI(state: ClockViewModel.ClockState) {
+    private fun updateUI(state: ClockState) {
         // Update UI elements based on clock state
         // This is primarily for the settings fragment to show current values
     }

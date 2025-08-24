@@ -60,6 +60,7 @@
     <string name="pm_designator">PM</string>
     <string name="clock_setting_24_hour">24-Hour Clock</string>
     <string name="set_time_zone">Set Time Zone</string>
+    <string name="time_zone_placeholder">Select a Time Zone</string>
     <string name="error_loading_model">Placeholder</string>
     <string name="error_loading_texture">Placeholder</string>
     <string name="error_creating_texture">Placeholder</string>

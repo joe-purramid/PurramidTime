@@ -158,7 +158,7 @@ class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListen
             setClockMode(state.mode == "analog")
             setClockColor(state.clockColor)
             setIs24HourFormat(state.is24Hour)
-            setClockTimeZone(state.timeZoneId.id)
+            setClockTimeZone(state.timeZoneId)
             setDisplaySeconds(state.displaySeconds)
             setPaused(state.isPaused)
             updateDisplayTime(clockStateManager.getCurrentTimeForClock(instanceId))
@@ -166,8 +166,7 @@ class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListen
 
         // Update play/pause button
         rootView.findViewById<ImageButton>(R.id.buttonPlayPause)?.apply {
-            val isPaused = !currentState.isPaused
-            setImageResource(if (isPaused) R.drawable.ic_play else R.drawable.ic_pause)
+            setImageResource(if (state.isPaused) R.drawable.ic_play else R.drawable.ic_pause)
             isActivated = state.isPaused
             imageTintList = ContextCompat.getColorStateList(this@ClockOverlayService, R.color.button_tint_state_list)
         }
@@ -359,11 +358,6 @@ class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListen
             setOnClickListener {
                 val currentState = clockStateManager.clockStates.value[instanceId] ?: return@setOnClickListener
                 clockStateManager.updateClockPaused(instanceId, !currentState.isPaused)
-
-                // Update button appearance
-                // TODO Is this still needed?
-                setImageResource(if (!isPaused) R.drawable.ic_play else R.drawable.ic_pause)
-                isActivated = !isPaused
             }
         }
 
