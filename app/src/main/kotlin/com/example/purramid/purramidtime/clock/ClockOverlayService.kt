@@ -6,13 +6,11 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
-import android.os.SystemClock
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Gravity
@@ -28,14 +26,12 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.LifecycleService
-import com.example.purramid.purramidtime.clock.ClockStateManager
 import com.example.purramid.purramidtime.clock.repository.ClockRepository
 import com.example.purramid.purramidtime.data.db.ClockStateEntity
 import com.example.purramid.purramidtime.di.ClockPrefs
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
-import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.LocalTime
 import java.time.ZoneId
@@ -48,7 +44,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import kotlin.text.compareTo
 
 @AndroidEntryPoint
 class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListener {

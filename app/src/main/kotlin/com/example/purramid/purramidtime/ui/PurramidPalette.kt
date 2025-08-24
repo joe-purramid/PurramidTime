@@ -29,25 +29,6 @@ object PurramidPalette {
         VIOLET
     )
 
-    // Special color to represent the default/no custom color state for dice
-    // This allows the die's original SVG color or a transparent tint to be used.
-    val DEFAULT_DIE_COLOR = NamedColor("Default", Color.TRANSPARENT, true) // Color.TRANSPARENT is a good choice for "no override"
-
-    /**
-     * The list of colors available in the palette picker for dice.
-     * Includes the "Default" option first.
-     */
-    val dicePaletteColors: List<NamedColor> = listOf(
-        DEFAULT_DIE_COLOR, // Represents using the die's intrinsic color
-        WHITE,
-        BLACK,
-        GOLDENROD,
-        TEAL,
-        LIGHT_BLUE,
-        VIOLET
-        // Add other Purramid brand colors here if they become available
-    )
-
     /**
      * Default color to show for a die's color preview square if no specific color is configured.
      * This is distinct from DEFAULT_DIE_COLOR which is an *option* in the picker.

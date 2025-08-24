@@ -52,6 +52,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.material3)
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -2,7 +2,6 @@
 package com.example.purramid.purramidtime.clock
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -18,6 +17,8 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
+import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class ClockActivity : AppCompatActivity() {
@@ -83,10 +84,7 @@ class ClockActivity : AppCompatActivity() {
     private fun observeClockState() {
         lifecycleScope.launch {
             clockViewModel.uiState.collectLatest { state ->
-                state?.let {
-                    // Update any UI elements based on state if needed
-                    updateUI(it)
-                }
+                updateUI(state)
             }
         }
     }
@@ -113,7 +111,7 @@ class ClockActivity : AppCompatActivity() {
 
                 if (!hasRequested) {
                     // First time - auto prompt
-                    prefs.edit().putBoolean(PREFS_KEY_PERMISSION_REQUESTED, true).apply()
+                    prefs.edit { putBoolean(PREFS_KEY_PERMISSION_REQUESTED, true) }
                     requestOverlayPermission()
                 } else {
                     // Already requested before, show snackbar
@@ -139,7 +137,7 @@ class ClockActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
+                "package:$packageName".toUri()
             )
             overlayPermissionLauncher.launch(intent)
         }

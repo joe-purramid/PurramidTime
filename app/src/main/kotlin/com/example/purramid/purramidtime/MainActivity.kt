@@ -6,13 +6,11 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
-import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -31,10 +29,8 @@ import com.example.purramid.purramidtime.databinding.ActivityMainBinding
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.stopwatch.StopwatchActivity
 import com.example.purramid.purramidtime.timer.TimerActivity
-import com.example.purramid.purramidtime.AboutActivity
 import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.UUID
 import javax.inject.Inject
 
 // --- Define simple Enums for Size Classes (for XML Views context) ---

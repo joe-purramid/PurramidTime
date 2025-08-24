@@ -26,6 +26,7 @@ material = "1.12.0"
 recyclerview = "1.3.2"
 room = "2.7.0"
 sceneView = "2.3.0"
+material3 = "1.3.2"
 
 [libraries]
 # Android Core
@@ -79,6 +80,7 @@ jts-io-common = { group = "org.locationtech.jts.io", name = "jts-io-common", ver
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

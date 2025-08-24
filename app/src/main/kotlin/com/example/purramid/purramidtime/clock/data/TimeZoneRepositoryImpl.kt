@@ -258,7 +258,7 @@ class TimeZoneRepositoryImpl @Inject constructor(
 
      // Helper to parse WKT string back to a list containing one Polygon
     private fun parseWktToPolygons(wkt: String): List<Polygon> {
-         if (wkt.isNullOrBlank()) return emptyList()
+         if (wkt.isBlank()) return emptyList()
          return try {
             val geometry = WKTReader().read(wkt)
              when (geometry) {

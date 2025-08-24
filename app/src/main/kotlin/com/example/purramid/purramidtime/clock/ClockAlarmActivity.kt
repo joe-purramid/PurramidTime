@@ -243,7 +243,7 @@ class ClockAlarmActivity : AppCompatActivity() {
     
     // Cancel alarm functionality
     private fun cancelAlarm(alarmId: Long) {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
         val intent = Intent(this, AlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             this,
@@ -312,7 +312,7 @@ class AlarmRingingActivity : AppCompatActivity() {
         val vibrationEnabled = intent.getBooleanExtra("vibration_enabled", true)
         
         // Set up UI
-        findViewById<TextView>(R.id.alarmLabel).text = if (label.isNotEmpty()) label else "Alarm"
+        findViewById<TextView>(R.id.alarmLabel).text = label.ifEmpty { "Alarm" }
         
         // Start sound and vibration
         if (soundEnabled) {

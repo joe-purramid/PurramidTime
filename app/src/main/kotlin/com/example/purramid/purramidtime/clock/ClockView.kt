@@ -1,6 +1,7 @@
 // ClockView.kt
 package com.example.purramid.purramidtime.clock
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -14,7 +15,6 @@ import android.view.MotionEvent
 import android.view.View
 import com.example.purramid.purramidtime.ui.PurramidPalette
 import com.example.purramid.purramidtime.util.dpToPx
-import java.time.Duration
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -26,6 +26,7 @@ import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
+import androidx.core.graphics.withRotation
 
 /**
  * A custom view that displays a clock, either analog or digital.
@@ -380,31 +381,29 @@ class ClockView @JvmOverloads constructor(
         width: Float,
         paint: Paint
     ) {
-        canvas.save()
-        canvas.rotate(angle, centerX, centerY)
+        canvas.withRotation(angle, centerX, centerY) {
+            paint.strokeWidth = width
 
-        paint.strokeWidth = width
+            // Draw the main hand
+            drawLine(
+                centerX,
+                centerY,
+                centerX,
+                centerY - length,
+                paint
+            )
 
-        // Draw the main hand
-        canvas.drawLine(
-            centerX,
-            centerY,
-            centerX,
-            centerY - length,
-            paint
-        )
+            // Draw a tail for balance
+            val tailLength = length * 0.2f
+            drawLine(
+                centerX,
+                centerY,
+                centerX,
+                centerY + tailLength,
+                paint
+            )
 
-        // Draw a tail for balance
-        val tailLength = length * 0.2f
-        canvas.drawLine(
-            centerX,
-            centerY,
-            centerX,
-            centerY + tailLength,
-            paint
-        )
-
-        canvas.restore()
+        }
     }
 
     // --- Digital Clock Drawing ---
@@ -473,6 +472,7 @@ class ClockView @JvmOverloads constructor(
     }
 
     // --- Touch Handling for Analog Clock ---
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         // Only handle touch in analog mode when paused
         if (!isAnalog || !isPaused || interactionListener == null || instanceId == -1) {

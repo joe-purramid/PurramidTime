@@ -22,6 +22,7 @@ import com.example.purramid.purramidtime.databinding.FragmentClockSettingsBindin
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.ZoneId
+import androidx.core.content.edit
 
 @AndroidEntryPoint
 class ClockSettingsFragment : Fragment() {
@@ -59,7 +60,12 @@ class ClockSettingsFragment : Fragment() {
             selectedTimeZoneId?.let {
                 Log.d(TAG, "Time zone selected: $it for clock $currentInstanceIdForConfig")
                 sendUpdateIntentToService("time_zone", it)
-                uiStatePrefs.edit().putString("clock_${currentInstanceIdForConfig}_time_zone_id", it).apply()
+                uiStatePrefs.edit {
+                    putString(
+                        "clock_${currentInstanceIdForConfig}_time_zone_id",
+                        it
+                    )
+                }
             }
         }
     }
@@ -118,7 +124,12 @@ class ClockSettingsFragment : Fragment() {
                     selectedColor = colorValue
                     updateColorSelectionInUI(this)
                     sendUpdateIntentToService("color", colorValue)
-                    uiStatePrefs.edit().putInt("clock_${if(currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_color", colorValue).apply()
+                    uiStatePrefs.edit {
+                        putInt(
+                            "clock_${if (currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_color",
+                            colorValue
+                        )
+                    }
                 }
             }
             binding.colorPalette.addView(colorView)
@@ -138,11 +149,21 @@ class ClockSettingsFragment : Fragment() {
         binding.modeToggleButton.setOnCheckedChangeListener { _, isChecked ->
             val newMode = if (isChecked) "analog" else "digital"
             sendUpdateIntentToService("mode", newMode)
-            uiStatePrefs.edit().putString("clock_${if(currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_mode", newMode).apply()
+            uiStatePrefs.edit {
+                putString(
+                    "clock_${if (currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_mode",
+                    newMode
+                )
+            }
         }
         binding.twentyFourHourToggleButton.setOnCheckedChangeListener { _, isChecked ->
             sendUpdateIntentToService("24hour", isChecked)
-            uiStatePrefs.edit().putBoolean("clock_${if(currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_24hour", isChecked).apply()
+            uiStatePrefs.edit {
+                putBoolean(
+                    "clock_${if (currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_24hour",
+                    isChecked
+                )
+            }
         }
         binding.setTimeZoneButton.setOnClickListener {
             val intent = Intent(requireContext(), TimeZoneGlobeActivity::class.java)
@@ -152,7 +173,12 @@ class ClockSettingsFragment : Fragment() {
         }
         binding.secondsToggleButton.setOnCheckedChangeListener { _, isChecked ->
             sendUpdateIntentToService("seconds", isChecked)
-            uiStatePrefs.edit().putBoolean("clock_${if(currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_display_seconds", isChecked).apply()
+            uiStatePrefs.edit {
+                putBoolean(
+                    "clock_${if (currentInstanceIdForConfig > 0) currentInstanceIdForConfig else 0}_display_seconds",
+                    isChecked
+                )
+            }
         }
         binding.setAlarmButton.setOnClickListener {
             val alarmIntent = Intent(requireContext(), ClockAlarmActivity::class.java).apply {
@@ -168,7 +194,12 @@ class ClockSettingsFragment : Fragment() {
                     putExtra(ClockOverlayService.EXTRA_NEST_STATE, isChecked)
                 }
                 ContextCompat.startForegroundService(requireContext(), serviceIntent)
-                uiStatePrefs.edit().putBoolean("clock_${currentInstanceIdForConfig}_nest", isChecked).apply()
+                uiStatePrefs.edit {
+                    putBoolean(
+                        "clock_${currentInstanceIdForConfig}_nest",
+                        isChecked
+                    )
+                }
             } else {
                 Snackbar.make(binding.root, "Select a clock to nest.", Snackbar.LENGTH_SHORT).show()
                 binding.nestToggleButton.isChecked = !isChecked

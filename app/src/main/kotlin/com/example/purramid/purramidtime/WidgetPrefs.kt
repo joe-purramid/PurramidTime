@@ -3,6 +3,7 @@ package com.example.purramid.purramidtime
 
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.edit
 
 object WidgetPrefs {
 
@@ -13,11 +14,12 @@ object WidgetPrefs {
 
     // Save the configuration for a specific widget ID
     fun saveWidgetConfig(context: Context, appWidgetId: Int, iconResId: Int, launchIntent: Intent) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
-        val intentUri = launchIntent.toUri(Intent.URI_INTENT_SCHEME) // Convert Intent to String URI
-        prefs.putInt(PREF_PREFIX_KEY + appWidgetId + PREF_ICON_SUFFIX, iconResId)
-        prefs.putString(PREF_PREFIX_KEY + appWidgetId + PREF_INTENT_URI_SUFFIX, intentUri)
-        prefs.apply()
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+            val intentUri =
+                launchIntent.toUri(Intent.URI_INTENT_SCHEME) // Convert Intent to String URI
+            putInt(PREF_PREFIX_KEY + appWidgetId + PREF_ICON_SUFFIX, iconResId)
+            putString(PREF_PREFIX_KEY + appWidgetId + PREF_INTENT_URI_SUFFIX, intentUri)
+        }
     }
 
     // Load the icon resource ID for a specific widget ID
@@ -43,9 +45,9 @@ object WidgetPrefs {
 
     // Delete the configuration for a specific widget ID when it's removed
     fun deleteWidgetConfig(context: Context, appWidgetId: Int) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
-        prefs.remove(PREF_PREFIX_KEY + appWidgetId + PREF_ICON_SUFFIX)
-        prefs.remove(PREF_PREFIX_KEY + appWidgetId + PREF_INTENT_URI_SUFFIX)
-        prefs.apply()
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+            remove(PREF_PREFIX_KEY + appWidgetId + PREF_ICON_SUFFIX)
+            remove(PREF_PREFIX_KEY + appWidgetId + PREF_INTENT_URI_SUFFIX)
+        }
     }
 }
