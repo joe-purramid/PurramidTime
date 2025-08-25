@@ -1,6 +1,5 @@
 package com.example.purramid.purramidtime.clock.ui
 
-import android.R.attr.tag
 import android.animation.ValueAnimator
 import android.animation.TypeEvaluator
 import android.annotation.SuppressLint
@@ -18,14 +17,14 @@ import com.example.purramid.purramidtime.clock.data.CityData
 import com.example.purramid.purramidtime.clock.viewmodel.TimeZoneGlobeUiState
 import com.example.purramid.purramidtime.clock.viewmodel.TimeZoneGlobeViewModel
 import com.example.purramid.purramidtime.clock.viewmodel.TimeZoneOverlayInfo
+import com.example.purramid.purramidtime.clock.viewmodel.RotationDirection
 import com.google.android.filament.Box
-import com.google.android.filament.Engine
 import com.google.android.filament.IndexBuffer
 import com.google.android.filament.Material
 import com.google.android.filament.MaterialInstance
 import com.google.android.filament.RenderableManager
 import com.google.android.filament.VertexBuffer
-import com.google.android.filament.utils.Float3 // Using Filament types directly
+import com.google.android.filament.utils.Float3
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.sceneview.SceneView
 import io.github.sceneview.loaders.MaterialLoader
@@ -38,30 +37,24 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import org.locationtech.jts.geom.Polygon
+import com.google.android.material.snackbar.Snackbar
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.cos
 import kotlin.math.sin
 
-// Import ViewModel and State classes from this package
-import com.google.android.material.snackbar.Snackbar
-import io.github.sceneview.collision.HitResult
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.concurrent.ConcurrentHashMap
-
-@AndroidEntryPoint // Enable Hilt Injection
-class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_globe) { // Use constructor injection for layout
+@AndroidEntryPoint
+class TimeZoneGlobeActivity : AppCompatActivity() {
 
     private val TAG = "TimeZoneGlobeActivity"
-    // Assuming assets are directly in app/src/main/assets/
     private val GLOBE_MODEL_ASSET_PATH = "scene.gltf"
-    private val EARTH_RADIUS = 0.7f // Adjust scale to match your model's desired size
-    private val OVERLAY_RADIUS_FACTOR = 1.005f // Slightly above surface to prevent Z-fighting
-    private val ROTATION_FACTOR = 0.15f // Touch rotation sensitivity
-    // BUTTON_ROTATION_AMOUNT_DEGREES is no longer used directly here
+    private val EARTH_RADIUS = 0.7f
+    private val OVERLAY_RADIUS_FACTOR = 1.005f
+    private val ROTATION_FACTOR = 0.15f
 
-    // Inject ViewModel
     private val viewModel: TimeZoneGlobeViewModel by viewModels()
 
     // Views
@@ -77,7 +70,7 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
     private lateinit var modelLoader: ModelLoader
     private lateinit var materialLoader: MaterialLoader
     private var globeNode: ModelNode? = null
-    private var overlayParentNode: Node? = null // Parent for overlays, attached to globeNode
+    private var overlayParentNode: Node? = null
 
     // Material cache
     private val materialCache = ConcurrentHashMap<Int, CompletableDeferred<MaterialInstance>>()
@@ -86,9 +79,9 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
     private var lastX: Float = 0f
     private var lastY: Float = 0f
 
-    // --- City Pin Management ---
+    // City Pin Management
     private val cityPinNodes = mutableListOf<Node>()
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_time_zone_globe)
@@ -104,30 +97,27 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
 
         // Initialize SceneView Loaders
         modelLoader = ModelLoader(sceneView.engine, this)
-        materialLoader = MaterialLoader(sceneView.engine)
+        materialLoader = MaterialLoader(sceneView.engine, this)
 
-        // Configure SceneView Camera (optional, adjust defaults)
-        sceneView.cameraNode.position = Position(x = 0.0f, y = 0.0f, z = 2.5f) // Adjust distance
+        // Configure SceneView Camera
+        sceneView.cameraNode.position = Position(x = 0.0f, y = 0.0f, z = 2.5f)
 
         // Start loading the globe model
         loadGlobeModel()
 
         // Setup interaction listeners
-        setupTouchListener() // Includes drag rotation and tap selection
-        setupButtonListeners() // Includes new ViewModel calls
-        resetButton.setOnClickListener {
-            viewModel.resetRotation() // Call the ViewModel's reset function
-        }
+        setupTouchListener()
+        setupButtonListeners()
 
         // Observe state changes from ViewModel
         observeViewModel()
     }
 
     private fun loadGlobeModel() {
-        lifecycleScope.launch { // Use lifecycleScope for coroutine
+        lifecycleScope.launch {
             try {
                 val model = modelLoader.loadModel(GLOBE_MODEL_ASSET_PATH)
-                if (model == null || model.asset == null) {
+                if (model == null) {
                     handleError("Failed to load model: $GLOBE_MODEL_ASSET_PATH")
                     return@launch
                 }
@@ -136,7 +126,7 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                     modelInstance = modelInstance,
                     scaleToUnits = EARTH_RADIUS
                 ).apply {
-                    viewModel.uiState.value?.let { state ->
+                    viewModel.uiState.value.let { state ->
                         rotation = state.currentRotation
                     }
                     isPositionEditable = false
@@ -144,11 +134,11 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                     isScaleEditable = false
                 }
                 sceneView.addChildNode(globeNode!!)
-                overlayParentNode = Node().apply {
+                overlayParentNode = Node(engine = sceneView.engine).apply {
                     parent = globeNode
                 }
-                    Log.d(TAG, "Purramid Globe model loaded and added.") // Added brand name
-                viewModel.uiState.value?.let { state ->
+                Log.d(TAG, "Purramid Globe model loaded and added.")
+                viewModel.uiState.value.let { state ->
                     if (!state.isLoading && state.timeZoneOverlays.isNotEmpty()) {
                         createOrUpdateOverlays(state.timeZoneOverlays)
                     }
@@ -162,13 +152,20 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
     private fun observeViewModel() {
         lifecycleScope.launch {
             viewModel.uiState.collectLatest { uiState ->
-                // Update UI elements based on state
-                uiState.activeTimeZoneInfo?.let { info ->
-                    cityNorthernTextView.text = info.northernCity
-                    citySouthernTextView.text = info.southernCity
-                    utcOffsetTextView.text = info.utcOffsetString
+                updateUiTexts(uiState)
+
+                // Update globe rotation when state changes
+                uiState.targetRotation?.let { targetRotation ->
+                    globeNode?.let { node ->
+                        animateGlobeRotation(node.rotation, targetRotation)
+                    }
                 }
-                
+
+                // Update overlays when they change
+                if (!uiState.isLoading && uiState.timeZoneOverlays.isNotEmpty()) {
+                    createOrUpdateOverlays(uiState.timeZoneOverlays)
+                }
+
                 // Update city pins when timezone changes
                 updateCityPins(uiState.activeTimeZoneId)
             }
@@ -187,7 +184,6 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
         }
     }
 
-    // --- Overlay Creation ---
     private fun createOrUpdateOverlays(overlayInfos: List<TimeZoneOverlayInfo>) {
         if (overlayParentNode == null) return
         clearOverlays()
@@ -204,21 +200,17 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
             val deferred = CompletableDeferred<MaterialInstance>()
             lifecycleScope.launch {
                 try {
-                    // Convert ARGB int to float components
                     val a = android.graphics.Color.alpha(colorArgb) / 255f
                     val r = android.graphics.Color.red(colorArgb) / 255f
                     val g = android.graphics.Color.green(colorArgb) / 255f
                     val b = android.graphics.Color.blue(colorArgb) / 255f
 
-                    val material = materialLoader.createColorInstance(
-                        r = r, g = g, b = b, a = a,
-                        isMetallic = 0.0f,
-                        roughness = 1.0f,
-                        reflectance = 0.0f
-                    )
-                    // Set color parameter as float array
-                    material.setParameter("baseColor", floatArrayOf(r, g, b, a))
-                    deferred.complete(material)
+                    val material = Material.Builder()
+                        .build(sceneView.engine)
+                        .createInstance().apply {
+                            setParameter("baseColor", r, g, b, a)
+                        }
+                    material.setParameter("baseColor", r, g, b, a)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to create material instance for color $colorArgb", e)
                     deferred.completeExceptionally(e)
@@ -227,13 +219,11 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
             deferred
         }
     }
+
     private fun animateGlobeRotation(start: Rotation, end: Rotation) {
-        // Use ObjectAnimator or compose animation to animate globeNode.rotation
-        // from 'start' to 'end' over a specific duration.
         Log.d(TAG, "Animating rotation from $start to $end")
-        // Example using ObjectAnimator (might need a TypeEvaluator for Rotation)
         ValueAnimator.ofObject(RotationEvaluator(), start, end).apply {
-            duration = 500 // ms
+            duration = 500
             interpolator = AccelerateDecelerateInterpolator()
             addUpdateListener { animation ->
                 globeNode?.rotation = animation.animatedValue as Rotation
@@ -262,12 +252,12 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                     .bufferCount(1).vertexCount(vertices.size)
                     .attribute(VertexBuffer.VertexAttribute.POSITION, 0, VertexBuffer.AttributeType.FLOAT3, 0, 0)
                     .build(engine)
-                vertexBuffer.setBufferAt(engine, 0, float3ListToFloatBuffer(vertices))
+                vertexBuffer.setBufferAt(engine, 0, vertices.toFloatBuffer())
 
                 val indexBuffer = IndexBuffer.Builder()
                     .indexCount(indices.size).bufferType(IndexBuffer.Builder.IndexType.UINT)
                     .build(engine)
-                indexBuffer.setBuffer(engine, intArrayToBuffer(IntArray(indices.size) { indices[it] }))
+                indexBuffer.setBuffer(engine, IntArray(indices.size) { indices[it] }.toIntBuffer())
 
                 val bounds = calculateBounds(vertices)
                 val renderableEntity = engine.entityManager.create()
@@ -279,18 +269,16 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                     .build(engine, renderableEntity)
 
                 val node = Node(engine, renderableEntity).apply {
-                    tag = tzId // Store tzid for tap detection
+                    name = tzId
                 }
-                node.setParent(overlayParentNode)
+                overlayParentNode?.addChildNode(node)
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error creating overlay renderable for $tzId", e)
-                // Handle error, potentially destroy awaited material if needed
             }
         }
     }
 
-    // Helper for triangulation (Simple Fan Example)
     private fun triangulatePolygon(polygon: Polygon): Pair<List<Float3>, List<Int>>? {
         try {
             if (polygon.exteriorRing.coordinates.size < 4) return null
@@ -305,17 +293,19 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
                 vertices.add(latLonToFloat3(coord.y, coord.x, overlayRadius))
                 val currentIndex = i + 1
                 val nextIndex = if (i == polygon.exteriorRing.coordinates.size - 2) 1 else currentIndex + 1
-                indices.add(centroidIndex); indices.add(currentIndex); indices.add(nextIndex)
+                indices.add(centroidIndex)
+                indices.add(currentIndex)
+                indices.add(nextIndex)
             }
             return Pair(vertices, indices)
         } catch (e: Exception) {
-            Log.e(TAG, "Error during triangulation", e); return null
+            Log.e(TAG, "Error during triangulation", e)
+            return null
         }
     }
 
-    // Helper to calculate bounding box
     private fun calculateBounds(vertices: List<Float3>): Box {
-        if (vertices.isEmpty()) return Box(0f, 0f, 0f, 0.1f, 0.1f, 0.1f) // Min bounds
+        if (vertices.isEmpty()) return Box(0f, 0f, 0f, 0.1f, 0.1f, 0.1f)
         var minX = vertices[0].x; var minY = vertices[0].y; var minZ = vertices[0].z
         var maxX = vertices[0].x; var maxY = vertices[0].y; var maxZ = vertices[0].z
         for (i in 1 until vertices.size) {
@@ -325,7 +315,6 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
         val halfExtentX = (maxX - minX) / 2f
         val halfExtentY = (maxY - minY) / 2f
         val halfExtentZ = (maxZ - minZ) / 2f
-        // Ensure halfExtents are not zero or negative if geometry is flat/a point
         val minHalfExtent = 0.001f
         return Box(
             (minX + maxX) / 2f, (minY + maxY) / 2f, (minZ + maxZ) / 2f,
@@ -333,7 +322,6 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
         )
     }
 
-    // Helper to convert Lat/Lon to Filament Float3
     private fun latLonToFloat3(lat: Double, lon: Double, radius: Float): Float3 {
         val latRad = Math.toRadians(lat)
         val lonRad = Math.toRadians(lon)
@@ -342,88 +330,61 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
         val z = radius * cos(latRad) * sin(lonRad) * -1.0
         return Float3(x.toFloat(), y.toFloat(), z.toFloat())
     }
-    // --- End Overlay Creation ---
 
-
-    // --- User Interaction ---
     @SuppressLint("ClickableViewAccessibility")
     private fun setupTouchListener() {
-        sceneView.isTouchEnabled = false
-        //was below
-        // sceneView.cameraManipulator.enabled = false // Disable built-in manipulator
-
-        // Handle drag gestures for rotation
         sceneView.setOnTouchListener { _, event ->
             if (globeNode == null) return@setOnTouchListener false
             when (event.action) {
-                MotionEvent.ACTION_DOWN -> { lastX = event.x; lastY = event.y; true }
+                MotionEvent.ACTION_DOWN -> {
+                    lastX = event.x
+                    lastY = event.y
+                    true
+                }
                 MotionEvent.ACTION_MOVE -> {
-                    val dx = event.x - lastX; val dy = event.y - lastY
+                    val dx = event.x - lastX
+                    val dy = event.y - lastY
                     val currentRot = globeNode!!.rotation
                     val deltaYaw = -dx * ROTATION_FACTOR * 2
                     val deltaPitch = -dy * ROTATION_FACTOR * 2
                     val newPitch = (currentRot.x + deltaPitch).coerceIn(-89f, 89f)
                     val newRotation = Rotation(x = newPitch, y = (currentRot.y + deltaYaw) % 360, z = currentRot.z)
-                    viewModel.updateRotation(newRotation) // Update state via ViewModel
-                    lastX = event.x; lastY = event.y; true
+                    viewModel.updateRotation(newRotation)
+                    lastX = event.x
+                    lastY = event.y
+                    true
                 }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { true }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> true
                 else -> false
             }
         }
-
-        // Handle tap gestures for selection
-        sceneView.onTouchEvent = { motionEvent ->
-            // Handle tap detection manually or use a different approach
-            when (motionEvent.action) {
-                MotionEvent.ACTION_UP -> {
-                    // Perform hit testing manually if needed
-                    true
-                }
-
-                else -> false
-            }
-        } as ((MotionEvent, HitResult?) -> Boolean)?
     }
 
     private fun setupButtonListeners() {
         rotateLeftButton.setOnClickListener { viewModel.rotateToAdjacentZone(RotationDirection.LEFT) }
         rotateRightButton.setOnClickListener { viewModel.rotateToAdjacentZone(RotationDirection.RIGHT) }
-        resetButton.setOnClickListener { viewModel.updateRotation(Rotation(0f, 0f, 0f)) }
+        resetButton.setOnClickListener { viewModel.resetRotation() }
     }
-    // --- End User Interaction ---
-
-    // --- Utility ---
-    private fun handleError(message: String, throwable: Throwable? = null) {
-        Log.e(TAG, message, throwable)
-        Snackbar.make(sceneView, message, Snackbar.LENGTH_LONG).show()
-    }
-
-    // --- Lifecycle is handled by SceneView ---
 
     private fun updateCityPins(timeZoneId: String?) {
-        // Clear existing pins
         clearCityPins()
-        
+
         if (timeZoneId == null) return
-        
-        // Load cities for the active timezone
+
         lifecycleScope.launch {
             try {
-                val cities = viewModel.repository.getCitiesForTimeZone(timeZoneId)
+                val cities = viewModel.getCitiesForTimeZone(timeZoneId)
                 val northernCities = cities.filter { it.latitude > 0 }.sortedBy { it.latitude }.reversed().take(2)
                 val southernCities = cities.filter { it.latitude < 0 }.sortedBy { it.latitude }.take(2)
-                
-                // Create pins for northern cities
+
                 northernCities.forEach { city ->
                     createCityPin(city, isNorthern = true)
                 }
-                
-                // Create pins for southern cities
+
                 southernCities.forEach { city ->
                     createCityPin(city, isNorthern = false)
                 }
-                
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading city pins for $timeZoneId", e)
             }
@@ -433,50 +394,49 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
     private fun createCityPin(city: CityData, isNorthern: Boolean) {
         lifecycleScope.launch {
             try {
-                // Create a simple sphere for the city pin
                 val engine = sceneView.engine
-                val pinRadius = 0.02f // Small pin size
+                val pinRadius = 0.02f
 
-                // Use Android Color constants or create ARGB int values
                 val pinColorArgb = if (isNorthern) {
-                    android.graphics.Color.BLUE  // Blue for north
+                    android.graphics.Color.BLUE
                 } else {
-                    android.graphics.Color.GREEN // Green for south
+                    android.graphics.Color.GREEN
                 }
 
-                // Convert to float components
                 val r = android.graphics.Color.red(pinColorArgb) / 255f
                 val g = android.graphics.Color.green(pinColorArgb) / 255f
                 val b = android.graphics.Color.blue(pinColorArgb) / 255f
 
-                val material = materialLoader.createColorInstance(
-                    r = r, g = g, b = b, a = 1.0f,
-                    isMetallic = 0.0f,
-                    roughness = 0.5f,
-                    reflectance = 0.0f
-                )
-                
-                // Create sphere geometry (simplified)
+                val material = Material.Builder()
+                    .build(sceneView.engine)
+                    .createInstance().apply {
+                        setParameter("baseColor", r, g, b, 1.0f)
+                        setParameter("metallic", 0.0f)
+                        setParameter("roughness", 0.5f)
+                        setParameter("reflectance", 0.0f)
+                    }
+
                 val renderableEntity = engine.entityManager.create()
                 val bounds = Box(0f, 0f, 0f, pinRadius, pinRadius, pinRadius)
-                
+
+                val (vertexBuffer, indexBuffer) = createSphereGeometry(pinRadius)
+
                 RenderableManager.Builder(1)
                     .boundingBox(bounds)
-                    .geometry(0, RenderableManager.PrimitiveType.TRIANGLES, createSphereGeometry(pinRadius))
+                    .geometry(0, RenderableManager.PrimitiveType.TRIANGLES, vertexBuffer, indexBuffer)
                     .material(0, material)
                     .culling(false)
                     .build(engine, renderableEntity)
-                
-                // Position pin on globe surface
-                val pinPosition = latLonToFloat3(city.latitude, city.longitude, EARTH_RADIUS + 0.01f) // Slightly above surface
+
+                val pinPosition = latLonToFloat3(city.latitude, city.longitude, EARTH_RADIUS + 0.01f)
                 val pinNode = Node(engine, renderableEntity).apply {
                     position = Position(pinPosition.x, pinPosition.y, pinPosition.z)
-                    tag = "city_pin_${city.name}"
+                    name = "city_pin_${city.name}"
                 }
-                
-                pinNode.setParent(overlayParentNode)
+
+                overlayParentNode?.addChildNode(pinNode)
                 cityPinNodes.add(pinNode)
-                
+
                 Log.d(TAG, "Created city pin for ${city.name} at (${city.latitude}, ${city.longitude})")
 
             } catch (e: Exception) {
@@ -484,77 +444,74 @@ class TimeZoneGlobeActivity : AppCompatActivity(R.layout.activity_time_zone_glob
             }
         }
     }
-    
+
     private fun clearCityPins() {
         cityPinNodes.forEach { it.destroy() }
         cityPinNodes.clear()
     }
-    
+
     private fun createSphereGeometry(radius: Float): Pair<VertexBuffer, IndexBuffer> {
-        // Simplified sphere geometry creation
         val segments = 8
         val vertices = mutableListOf<Float3>()
         val indices = mutableListOf<Int>()
-        
-        // Generate sphere vertices
+
         for (lat in 0..segments) {
             val theta = lat * Math.PI / segments
             val sinTheta = sin(theta)
             val cosTheta = cos(theta)
-            
+
             for (lon in 0..segments) {
                 val phi = lon * 2 * Math.PI / segments
                 val sinPhi = sin(phi)
                 val cosPhi = cos(phi)
-                
+
                 val x = (radius * cosPhi * sinTheta).toFloat()
                 val y = (radius * cosTheta).toFloat()
                 val z = (radius * sinPhi * sinTheta).toFloat()
-                
+
                 vertices.add(Float3(x, y, z))
             }
         }
-        
-        // Generate indices for triangles
+
         for (lat in 0 until segments) {
             for (lon in 0 until segments) {
                 val current = lat * (segments + 1) + lon
                 val next = current + segments + 1
-                
+
                 indices.add(current)
                 indices.add(next)
                 indices.add(current + 1)
-                
+
                 indices.add(next)
                 indices.add(next + 1)
                 indices.add(current + 1)
             }
         }
-        
+
         val engine = sceneView.engine
         val vertexBuffer = VertexBuffer.Builder()
             .bufferCount(1)
             .vertexCount(vertices.size)
             .attribute(VertexBuffer.VertexAttribute.POSITION, 0, VertexBuffer.AttributeType.FLOAT3, 0, 0)
             .build(engine)
-        vertexBuffer.setBufferAt(engine, 0, Float3.toFloatBuffer(vertices))
-        
+        vertexBuffer.setBufferAt(engine, 0, vertices.toFloatBuffer())
+
         val indexBuffer = IndexBuffer.Builder()
             .indexCount(indices.size)
             .bufferType(IndexBuffer.Builder.IndexType.UINT)
             .build(engine)
-        indexBuffer.setBuffer(engine, IntArray(indices.size) { indices[it] }.toBuffer())
-        
+        indexBuffer.setBuffer(engine, IntArray(indices.size) { indices[it] }.toIntBuffer())
+
         return Pair(vertexBuffer, indexBuffer)
+    }
+
+    private fun handleError(message: String, throwable: Throwable? = null) {
+        Log.e(TAG, message, throwable)
+        Snackbar.make(sceneView, message, Snackbar.LENGTH_LONG).show()
     }
 }
 
-enum class RotationDirection {
-    LEFT, RIGHT
-}
-
-// --- Buffer Utils (Outside Activity) ---
-// Extension function for Float3 list
+// Extension functions for buffer conversion
 private fun List<Float3>.toFloatBuffer(): FloatBuffer {
     val buffer = ByteBuffer.allocateDirect(this.size * 3 * 4)
         .order(ByteOrder.nativeOrder())
@@ -568,8 +525,7 @@ private fun List<Float3>.toFloatBuffer(): FloatBuffer {
     return buffer
 }
 
-// Extension function for IntArray
-private fun IntArray.toBuffer(): IntBuffer {
+private fun IntArray.toIntBuffer(): IntBuffer {
     val buffer = ByteBuffer.allocateDirect(this.size * 4)
         .order(ByteOrder.nativeOrder())
         .asIntBuffer()
@@ -578,30 +534,28 @@ private fun IntArray.toBuffer(): IntBuffer {
     return buffer
 }
 
-// --- Animation Support ---
+// Animation Support
 class RotationEvaluator : TypeEvaluator<Rotation> {
     override fun evaluate(fraction: Float, startValue: Rotation, endValue: Rotation): Rotation {
-        // Interpolate each rotation component (x, y, z)
         val startX = startValue.x
         val startY = startValue.y
         val startZ = startValue.z
-        
+
         val endX = endValue.x
         val endY = endValue.y
         val endZ = endValue.z
-        
-        // Handle Y-axis wrap-around (longitude)
+
         val deltaY = endY - startY
         val adjustedDeltaY = when {
             deltaY > 180f -> deltaY - 360f
             deltaY < -180f -> deltaY + 360f
             else -> deltaY
         }
-        
+
         val interpolatedX = startX + (endX - startX) * fraction
         val interpolatedY = startY + adjustedDeltaY * fraction
         val interpolatedZ = startZ + (endZ - startZ) * fraction
-        
+
         return Rotation(
             x = interpolatedX,
             y = interpolatedY,

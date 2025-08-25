@@ -1,8 +1,10 @@
 // SharedPreferencesModule.kt
 package com.example.purramid.purramidtime.di
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.SharedPreferences
+import android.view.WindowManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,5 +37,17 @@ object AppModule {
     fun provideTimerPreferences(@ApplicationContext context: Context): SharedPreferences {
          // Assuming TimerService.PREFS_NAME_FOR_ACTIVITY exists
         return context.getSharedPreferences(com.example.purramid.purramidtime.timer.TimerService.PREFS_NAME_FOR_ACTIVITY, Context.MODE_PRIVATE)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWindowManager(@ApplicationContext context: Context): WindowManager {
+        return context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationManager(@ApplicationContext context: Context): NotificationManager {
+        return context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 }

@@ -2,6 +2,8 @@
 package com.example.purramid.purramidtime.data.db
 
 import android.content.Context
+import com.example.purramid.purramidtime.clock.data.TimeZoneRepository
+import com.example.purramid.purramidtime.clock.data.TimeZoneRepositoryImpl
 import com.example.purramid.purramidtime.di.IoDispatcher
 import dagger.Module
 import dagger.Provides
@@ -27,6 +29,17 @@ object DatabaseModule {
     @Singleton
     fun provideClockDao(database: PurrTimeDatabase): ClockDao {
         return database.clockDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTimeZoneRepository(
+        timeZoneDao: TimeZoneDao,
+        cityDao: CityDao,
+        @ApplicationContext context: Context,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
+    ): TimeZoneRepository {
+        return TimeZoneRepositoryImpl(timeZoneDao, cityDao, context, ioDispatcher)
     }
 
     @Provides

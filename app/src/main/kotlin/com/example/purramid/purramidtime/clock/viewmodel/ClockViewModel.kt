@@ -54,7 +54,7 @@ class ClockViewModel @Inject constructor(
     private var instanceId: Int = -1
     private lateinit var defaultState: ClockState
 
-    private val _uiState = MutableStateFlow<ClockState?>(null)
+    private val _uiState = MutableStateFlow(ClockState(instanceId = -1))
     val uiState: StateFlow<ClockState> = _uiState.asStateFlow()
 
     init {
@@ -102,17 +102,15 @@ class ClockViewModel @Inject constructor(
      * Called by the service's shared ticker.
      */
     fun updateTimeFromTicker(currentTimeMillis: Long) {
-        if (_uiState.value?.isPaused == true) {
+        if (_uiState.value.isPaused) {
             // Don't update time if paused
             return
         }
 
         _uiState.update { currentState ->
-            currentState?.let { state ->
-                val timeZone = state.timeZoneId
-                val newTime = LocalTime.now(timeZone)
-                state.copy(currentTime = newTime)
-            }
+            val timeZone = currentState.timeZoneId
+            val newTime = LocalTime.now(timeZone)
+            currentState.copy(currentTime = newTime)
         }
     }
 
@@ -122,13 +120,11 @@ class ClockViewModel @Inject constructor(
      * When resuming, the clock continues from the time it was paused at.
      */
     fun setPaused(shouldPause: Boolean) {
-        if (_uiState.value?.isPaused == shouldPause) return
+        if (_uiState.value.isPaused == shouldPause) return
 
         _uiState.update { currentState ->
-            currentState?.let { state ->
-                val manualTime = if (!shouldPause && state.manuallySetTime != null) null else state.manuallySetTime
-                state.copy(isPaused = shouldPause, manuallySetTime = manualTime)
-            }
+            val manualTime = if (!shouldPause && currentState.manuallySetTime != null) null else currentState.manuallySetTime
+            currentState.copy(isPaused = shouldPause, manuallySetTime = manualTime)
         }
 
         saveState(_uiState.value) // Save the paused state
@@ -140,97 +136,95 @@ class ClockViewModel @Inject constructor(
      */
     fun resetTime() {
         _uiState.update { currentState ->
-            currentState?.let { state ->
-                val actualCurrentTime = LocalTime.now(state.timeZoneId)
+            val actualCurrentTime = LocalTime.now(currentState.timeZoneId)
 
-                // If there was a manually set time or the clock was paused,
-                // calculate the time deficit/surplus and apply it
-                val adjustedTime = if (state.isPaused && state.manuallySetTime != null) {
-                    // Calculate the difference between manually set time and actual time
-                    val timeDifference = java.time.Duration.between(state.manuallySetTime, actualCurrentTime)
-                    // Apply the correction to restore actual time
-                    actualCurrentTime
-                } else if (state.isPaused) {
-                    // If paused without manual time, just restore to current time
-                    actualCurrentTime
-                } else {
-                    // If running, no adjustment needed
-                    actualCurrentTime
-                }
-
-                state.copy(
-                    currentTime = adjustedTime,
-                    isPaused = false,
-                    manuallySetTime = null
-                )
+            val adjustedTime = if (currentState.isPaused && currentState.manuallySetTime != null) {
+                actualCurrentTime
+            } else if (currentState.isPaused) {
+                actualCurrentTime
+            } else {
+                actualCurrentTime
             }
+
+            currentState.copy(
+                currentTime = adjustedTime,
+                isPaused = false,
+                manuallySetTime = null
+            )
         }
         saveState(_uiState.value)
     }
+
     /**
      * Sets a specific time, usually from user interaction (dragging hands).
      * This action implies the clock should be paused.
      */
     fun setManuallySetTime(manualTime: LocalTime) {
-        // Ensure clock is paused before accepting manual time
-        _uiState.value?.isPaused?.let {
-            if (!it) {
-                Log.d(TAG, "Pausing clock $instanceId before setting manual time.")
-                stopTicker() // Stop ticker explicitly
-            }
+        if (!_uiState.value.isPaused) {
+            Log.d(TAG, "Pausing clock $instanceId before setting manual time.")
+            stopTicker()
         }
-        _uiState.update {
-            it?.copy(
+        _uiState.update { currentState ->
+            currentState.copy(
                 manuallySetTime = manualTime,
-                currentTime = manualTime, // Update display time immediately
-                isPaused = true // Ensure it's marked as paused
+                currentTime = manualTime,
+                isPaused = true
             )
         }
-        saveState(_uiState.value) // Save the manually set time and paused state
+        saveState(_uiState.value)
     }
 
     // --- Settings Updates (Remain the same, call saveState) ---
     fun updateMode(newMode: String) {
-        if (_uiState.value?.mode == newMode) return
-        val resetTime = LocalTime.now(_uiState.value?.timeZoneId)
-        _uiState.update { it?.copy(mode = newMode, currentTime = resetTime, manuallySetTime = null, isPaused = false) }
+        if (_uiState.value.mode == newMode) return
+        val resetTime = LocalTime.now(_uiState.value.timeZoneId)
+        _uiState.update { it.copy(mode = newMode, currentTime = resetTime, manuallySetTime = null, isPaused = false) }
         startTicker()
         saveState(_uiState.value)
     }
+
     fun updateColor(newColor: Int) {
-        if (_uiState.value?.clockColor == newColor) return
-        _uiState.update { it?.copy(clockColor = newColor) }
+        if (_uiState.value.clockColor == newColor) return
+        _uiState.update { it.copy(clockColor = newColor) }
         saveState(_uiState.value)
     }
+
     fun updateIs24Hour(is24: Boolean) {
-        if (_uiState.value?.is24Hour == is24) return
-        _uiState.update { it?.copy(is24Hour = is24) }
+        if (_uiState.value.is24Hour == is24) return
+        _uiState.update { it.copy(is24Hour = is24) }
         saveState(_uiState.value)
     }
+
     fun updateTimeZone(zoneId: ZoneId) {
-        if (_uiState.value?.timeZoneId == zoneId) return
+        if (_uiState.value.timeZoneId == zoneId) return
         val newTime = LocalTime.now(zoneId)
-        _uiState.update { it?.copy(timeZoneId = zoneId, currentTime = newTime, manuallySetTime = null) }
+        _uiState.update { it.copy(timeZoneId = zoneId, currentTime = newTime, manuallySetTime = null) }
         saveState(_uiState.value)
     }
+
     fun updateDisplaySeconds(display: Boolean) {
-        if (_uiState.value?.displaySeconds == display) return
-        _uiState.update { it?.copy(displaySeconds = display) }
+        if (_uiState.value.displaySeconds == display) return
+        _uiState.update { it.copy(displaySeconds = display) }
         saveState(_uiState.value)
     }
+
     fun updateIsNested(isNested: Boolean) {
-        if (_uiState.value?.isNested == isNested) return
-        _uiState.update { it?.copy(isNested = isNested) }
+        if (_uiState.value.isNested == isNested) return
+        _uiState.update { it.copy(isNested = isNested) }
         saveState(_uiState.value)
     }
+
     fun updateWindowPosition(x: Int, y: Int) {
-        if (_uiState.value?.windowX == x && _uiState.value.windowY == y) return
-        _uiState.update { it?.copy(windowX = x, windowY = y) }
+        val current = _uiState.value
+        if (current.windowX == x && current.windowY == y) return
+        _uiState.update { it.copy(windowX = x, windowY = y) }
         saveState(_uiState.value)
     }
+
     fun updateWindowSize(width: Int, height: Int) {
-        if (_uiState.value?.windowWidth == width && _uiState.value?.windowHeight == height) return
-        _uiState.update { it?.copy(windowWidth = width, windowHeight = height) }
+        val current = _uiState.value
+        if (current.windowWidth == width && current.windowHeight == height) return
+        _uiState.update { it.copy(windowWidth = width, windowHeight = height) }
         saveState(_uiState.value)
     }
 
@@ -322,12 +316,6 @@ class ClockViewModel @Inject constructor(
         )
     }
 
-    override fun onCleared() {
-        Log.d(TAG, "ViewModel cleared for instanceId: $instanceId")
-        // No ticker to stop
-        super.onCleared()
-    }
-
     // Persistence
     private fun saveState(state: ClockState) {
         val currentId = state.instanceId
@@ -344,29 +332,6 @@ class ClockViewModel @Inject constructor(
                 Log.e(TAG, "Failed to save state for clock $currentId", e)
             }
         }
-    }
-
-    private fun mapStateToEntity(state: ClockState): ClockStateEntity {
-        // Store the time that should persist when paused (either manually set or the time it was paused at)
-        val timeToPersist = state.manuallySetTime ?: state.currentTime
-        val timeToPersistSeconds = timeToPersist.toSecondOfDay().toLong()
-
-        return ClockStateEntity(
-            instanceId = state.instanceId,
-            timeZoneId = state.timeZoneId.id,
-            isPaused = state.isPaused,
-            displaySeconds = state.displaySeconds,
-            is24Hour = state.is24Hour,
-            clockColor = state.clockColor,
-            mode = state.mode,
-            isNested = state.isNested,
-            windowX = state.windowX,
-            windowY = state.windowY,
-            windowWidth = state.windowWidth,
-            windowHeight = state.windowHeight,
-            // Save the manual time if set, otherwise save the current displayed time IF PAUSED
-            manuallySetTimeSeconds = if (state.isPaused) timeToPersistSeconds else null
-        )
     }
 
     private fun startTicker() {

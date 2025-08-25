@@ -39,6 +39,10 @@
             android:parentActivityName=".MainActivity"
             android:resizeableActivity="true"
             android:windowLayoutInDisplayCutoutMode="shortEdges">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <layout android:defaultWidth="420dp"
                 android:defaultHeight="300dp"
                 android:gravity="center" />
@@ -48,9 +52,6 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync">
-            <intent-filter>
-                <action android:name="com.example.purramid.purramidtime.ClockOverlayService" />
-            </intent-filter>
         </service>
 
         <activity android:name=".clock.ui.TimeZoneGlobeActivity"
@@ -71,6 +72,10 @@
             android:parentActivityName=".MainActivity"
             android:resizeableActivity="true"
             android:windowLayoutInDisplayCutoutMode="shortEdges">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <layout android:defaultWidth="420dp"
                 android:defaultHeight="300dp"
                 android:gravity="center" />
@@ -88,6 +93,10 @@
             android:parentActivityName=".MainActivity"
             android:resizeableActivity="true"
             android:windowLayoutInDisplayCutoutMode="shortEdges">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <layout android:defaultWidth="420dp"
                 android:defaultHeight="300dp"
                 android:gravity="center" />

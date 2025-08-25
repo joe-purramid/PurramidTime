@@ -6,7 +6,9 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:gravity="center_horizontal"
-    android:background="@android:color/transparent"> <com.example.purramid.purramidtime.ClockView
+    android:background="@android:color/transparent">
+
+    <com.example.purramid.purramidtime.clock.ClockView
         android:id="@+id/digitalClockView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -18,15 +18,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.TimeZone
 import javax.inject.Inject
-import kotlin.collections.forEach
-import kotlin.collections.get
-import kotlin.compareTo
 import kotlin.math.abs
-import kotlin.text.clear
-import kotlin.text.get
-import kotlin.text.set
-import kotlin.text.toFloat
-import kotlin.text.toInt
 
 // Data class to hold processed info for overlays
 data class TimeZoneOverlayInfo(
@@ -57,7 +49,7 @@ enum class RotationDirection { LEFT, RIGHT }
 
 @HiltViewModel
 class TimeZoneGlobeViewModel @Inject constructor(
-    private val repository: TimeZoneRepository
+    internal val repository: TimeZoneRepository
 ) : ViewModel() {
 
     private val TAG = "TimeZoneGlobeViewModel"
@@ -88,6 +80,11 @@ class TimeZoneGlobeViewModel @Inject constructor(
         loadTimeZoneData()
     }
 
+    // Expose method for getting cities
+    suspend fun getCitiesForTimeZone(tzId: String): List<CityData> {
+        return repository.getCitiesForTimeZone(tzId)
+    }
+
     // Calculate and store current offsets (considering DST) for all loaded time zones
     private fun calculateAllOffsetCenters() {
         offsetCenterLongitudes.clear()
@@ -107,7 +104,7 @@ class TimeZoneGlobeViewModel @Inject constructor(
             // IMPROVEMENT NEEDED: Use city/polygon data for better center calculation!
             val estimatedCenter = (offset * 15.0f).coerceIn(-180f, 180f) // Basic estimate
             offsetCenterLongitudes[offset] = estimatedCenter
-            Log.d(TAG, "Center for UTC${offset}: ${estimatedCenter} degrees")
+            Log.d(TAG, "Center for UTC${offset}: $estimatedCenter degrees")
         }
 
         // Create the sorted list
@@ -259,8 +256,8 @@ class TimeZoneGlobeViewModel @Inject constructor(
                 // Handle wrap-around average (e.g., for zones near +/- 180) - complex!
                 // Simple average for now:
                 val avgLongitude = representativeLongitudes.average().toFloat()
-                hourlyOffsetCenterLongitudes[hourOffset] set avgLongitude
-                Log.d(TAG, "Center for UTC${hourOffset}: ${avgLongitude} degrees")
+                hourlyOffsetCenterLongitudes[hourOffset] = avgLongitude
+                Log.d(TAG, "Center for UTC${hourOffset}: $avgLongitude degrees")
             }
         }
         // Manually add edge cases if needed (e.g., UTC+14)
@@ -307,7 +304,7 @@ class TimeZoneGlobeViewModel @Inject constructor(
         // 6. Calculate required Y rotation (same logic as before)
         val targetYRotation = -targetLongitude
         val rotationDifference = targetYRotation - currentYRotation
-        val shortestRotation = rotationDifference - if (rotationDifference compareTo 180f) 360f else if (rotationDifference compareTo -180f) -360f else 0f
+        val shortestRotation = rotationDifference - if (rotationDifference > 180f) 360f else if (rotationDifference < -180f) -360f else 0f
         val finalTargetYRotation = (currentYRotation + shortestRotation)
 
         // 7. Update State (same logic as before)
@@ -369,7 +366,7 @@ class TimeZoneGlobeViewModel @Inject constructor(
                 val zoneId = ZoneId.of(tzId)
                 val now = ZonedDateTime.now(zoneId)
                 val offsetSeconds = now.offset.totalSeconds
-                timeZoneOffsets[tzId] set offsetSeconds
+                timeZoneOffsets[tzId] = offsetSeconds
             } catch (e: Exception) {
                 Log.w(TAG, "Could not calculate offset for timezone: $tzId", e)
             }
