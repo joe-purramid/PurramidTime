@@ -26,7 +26,7 @@ object WidgetPrefs {
     fun loadIconResId(context: Context, appWidgetId: Int): Int {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         // Return a default icon or 0 if not found
-        return prefs.getInt(PREF_PREFIX_KEY + appWidgetId + PREF_ICON_SUFFIX, R.mipmap.ic_launcher) // Use app's main launcher as default
+        return prefs.getInt(PREF_PREFIX_KEY + appWidgetId + PREF_ICON_SUFFIX, R.mipmap.purramidtime_launcher) // Use app's main launcher as default
     }
 
     // Load the launch Intent for a specific widget ID

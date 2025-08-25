@@ -83,7 +83,7 @@ class PurramidWidgetProvider : AppWidgetProvider() {
                  )
                  views.setOnClickPendingIntent(R.id.widget_image, configPendingIntent)
                  // You could also set a default "Tap to configure" icon/text here
-                 views.setImageViewResource(R.id.widget_image, R.mipmap.ic_launcher) // Default icon
+                 views.setImageViewResource(R.id.widget_image, R.mipmap.purramidtime_launcher) // Default icon
             }
 
 

@@ -11,4 +11,4 @@
         android:scaleType="fitCenter"
         android:layout_gravity="center"
         android:contentDescription="@string/app_widget_description"
-        android:src="@mipmap/ic_launcher" /> </FrameLayout>
+        android:src="@mipmap/purramidtime_launcher" /> </FrameLayout>
