@@ -25,11 +25,18 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.PurramidTime.Floating"
+            android:resizeableActivity="true"
+            android:windowLayoutInDisplayCutoutMode="shortEdges">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <layout
+                android:defaultWidth="200dp"
+                android:defaultHeight="200dp"
+                android:gravity="center" />
         </activity>
 
         <!-- CLOCK -->

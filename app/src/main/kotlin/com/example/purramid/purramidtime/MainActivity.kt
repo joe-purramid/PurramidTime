@@ -12,6 +12,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -95,8 +96,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupRecyclerView()
-
         // Calculate screen dimensions in pixels
         val displayMetrics = resources.displayMetrics
         screenWidthPx = displayMetrics.widthPixels
@@ -157,8 +156,11 @@ class MainActivity : AppCompatActivity() {
 
         // Apply Layout Adaptations based on Size Classes
         adaptLayoutToSizeClasses(widthSizeClass, heightSizeClass)
-        // Set initial freeform window size
-        setInitialFreeformWindowSize()
+
+        // Set window to floating size if in freeform mode
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInMultiWindowMode) {
+            setFloatingWindowSize()
+        }
     }
 
     private fun setupRecyclerView() {
@@ -339,24 +341,16 @@ class MainActivity : AppCompatActivity() {
         }
         binding.intentsRecyclerView.setPadding(paddingSize, paddingSize, paddingSize, paddingSize)
     }
-
-    private fun setInitialFreeformWindowSize(widthFraction: Float = 0.6f, heightFraction: Float = 0.7f) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            try {
-                val window = this.window
-                val layoutParams = WindowManager.LayoutParams()
-                layoutParams.copyFrom(window.attributes)
-                val calculatedWidthFraction = if (screenWidthPx > 3000) 0.25f else 0.4f
-                val calculatedHeightFraction = if (screenWidthPx > 3000) 0.3f else 0.45f
-                layoutParams.width = (screenWidthPx * calculatedWidthFraction).toInt()
-                layoutParams.height = (screenHeightPx * calculatedHeightFraction).toInt()
-                window.attributes = layoutParams
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
 }
+
+    // Helper method
+    private fun dpToPx(dp: Int): Int {
+        return TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            dp.toFloat(),
+            resources.displayMetrics
+        ).toInt()
+    }
 
 // Curved LinearLayoutManager for the app-intent list
 class CurvedLinearLayoutManager(context: Context) : LinearLayoutManager(context) {

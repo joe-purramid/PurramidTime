@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -57,15 +58,6 @@ class ClockActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_clock)
 
-        // Check if service is running, if not start it
-        val serviceIntent = Intent(this, ClockOverlayService::class.java).apply {
-            action = ClockOverlayService.ACTION_START_CLOCK_SERVICE
-        }
-        ContextCompat.startForegroundService(this, serviceIntent)
-
-        // Check and request overlay permission on first launch
-        checkAndRequestOverlayPermission()
-
         // Initialize ViewModel with instance ID if provided
         val instanceId = intent.getIntExtra(ClockOverlayService.EXTRA_CLOCK_ID, -1)
         if (instanceId > 0) {
@@ -77,7 +69,18 @@ class ClockActivity : AppCompatActivity() {
         if (intent.action == ACTION_SHOW_CLOCK_SETTINGS) {
             showSettingsFragment(instanceId)
         } else {
-            // Normal launch - check and start service
+            // Normal launch - start service
+            Log.d(TAG, "Normal launch - starting clock service")
+
+            // Check if service is already running
+            val serviceIntent = Intent(this, ClockOverlayService::class.java).apply {
+                action = ClockOverlayService.ACTION_START_CLOCK_SERVICE
+            }
+
+            // Start the service
+            ContextCompat.startForegroundService(this, serviceIntent)
+
+            // Check and request overlay permission if needed
             checkAndRequestOverlayPermission()
         }
     }
@@ -125,12 +128,13 @@ class ClockActivity : AppCompatActivity() {
                     }.show()
                 }
             } else {
-                // Permission already granted, start service
-                startClockService()
+                // Permission already granted, just close the activity
+                Log.d(TAG, "Overlay permission already granted, closing activity")
+                finish()
             }
         } else {
-            // Pre-M, no runtime permission needed
-            startClockService()
+            // Pre-M, no runtime permission needed - just close
+            finish()
         }
     }
 
@@ -145,12 +149,10 @@ class ClockActivity : AppCompatActivity() {
     }
 
     private fun startClockService() {
-        val serviceIntent = Intent(this, ClockOverlayService::class.java).apply {
-            action = ClockOverlayService.ACTION_START_CLOCK_SERVICE
-        }
-        ContextCompat.startForegroundService(this, serviceIntent)
+        // Don't start service again if we already started it in onCreate
+        Log.d(TAG, "startClockService called - finishing activity")
 
-        // Close the activity after starting the service
+        // Just close the activity since service was already started
         finish()
     }
 }
