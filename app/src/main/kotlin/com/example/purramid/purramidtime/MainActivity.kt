@@ -11,6 +11,7 @@ import android.content.Intent
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -232,6 +233,7 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         )
+        Log.d(TAG, "Total intents defined: ${allIntents.size}")  // Should show 4
     }
 
     // Helper Function for Touch Handling
