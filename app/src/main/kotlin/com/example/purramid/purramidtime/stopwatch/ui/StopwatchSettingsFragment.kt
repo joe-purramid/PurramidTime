@@ -1,14 +1,17 @@
 // StopwatchSettingsFragment.kt
 package com.example.purramid.purramidtime.stopwatch.ui
 
+import android.app.Dialog
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -23,7 +26,7 @@ import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.stopwatch.StopwatchService
 import com.example.purramid.purramidtime.stopwatch.viewmodel.StopwatchViewModel
 import com.example.purramid.purramidtime.ui.PurramidPalette
-import com.example.purramid.purramidtime.util.*
+import com.example.purramid.purramidtime.util.dpToPx
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -42,6 +45,26 @@ class StopwatchSettingsFragment : DialogFragment() {
     private var selectedStopwatchColor: Int = PurramidPalette.WHITE.colorInt
     private var selectedStopwatchColorView: View? = null
 
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState)
+
+        dialog.window?.apply {
+            // Ensure the dialog appears above overlay windows
+            setType(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            })
+
+            // Make it non-modal so touches outside go through
+            addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
+        }
+
+        return dialog
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -57,6 +80,16 @@ class StopwatchSettingsFragment : DialogFragment() {
         setupStopwatchColorPalette()
         setupListeners()
         observeViewModel()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Set dialog width here to ensure it's applied
+        dialog?.window?.let { window ->
+            val width = (resources.displayMetrics.widthPixels * 0.8).toInt() // 80% of screen width
+            val height = WindowManager.LayoutParams.WRAP_CONTENT
+            window.setLayout(width, height)
+        }
     }
 
     private fun setupStopwatchColorPalette() {

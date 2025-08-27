@@ -4,6 +4,7 @@ package com.example.purramid.purramidtime.timer
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.purramid.purramidtime.R
@@ -30,6 +31,16 @@ class TimerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Make the activity transparent so dialog appears floating
+        window?.apply {
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT
+            )
+        }
+
         binding = ActivityTimerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -98,12 +109,27 @@ class TimerActivity : AppCompatActivity() {
         ContextCompat.startForegroundService(this, serviceIntent)
     }
 
+    // Add theme support for transparent activity
+    override fun onStart() {
+        super.onStart()
+        // Ensure activity doesn't block the overlay
+        window?.apply {
+            val params = attributes
+            params.alpha = 0f // Make activity window transparent
+            attributes = params
+        }
+    }
+
     private fun showSettingsFragment(timerId: Int) {
         if (supportFragmentManager.findFragmentByTag(TimerSettingsFragment.TAG) == null) {
             Log.d(TAG, "Showing settings fragment for timerId: $timerId")
-            TimerSettingsFragment.newInstance(timerId).show(
-                supportFragmentManager, TimerSettingsFragment.TAG
-            )
+
+            val fragment = TimerSettingsFragment.newInstance(timerId)
+
+            // Show with proper transaction
+            supportFragmentManager.beginTransaction()
+                .add(fragment, TimerSettingsFragment.TAG)
+                .commitAllowingStateLoss()
         }
     }
 

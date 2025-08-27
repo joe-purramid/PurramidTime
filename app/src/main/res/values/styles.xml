@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base Text Appearances with Balsamiq Sans -->
+    <style name="TextAppearance.PurramidTime" parent="TextAppearance.AppCompat">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+    </style>
+
+    <!-- Display styles -->
+    <style name="TextAppearance.PurramidTime.DisplayLarge" parent="TextAppearance.MaterialComponents.Headline1">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">57sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.DisplayMedium" parent="TextAppearance.MaterialComponents.Headline2">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">45sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.DisplaySmall" parent="TextAppearance.MaterialComponents.Headline3">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">36sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Headline styles -->
+    <style name="TextAppearance.PurramidTime.HeadlineLarge" parent="TextAppearance.MaterialComponents.Headline4">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.HeadlineMedium" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.HeadlineSmall" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Title styles -->
+    <style name="TextAppearance.PurramidTime.TitleLarge" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.TitleMedium" parent="TextAppearance.MaterialComponents.Subtitle2">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.TitleSmall" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Body styles -->
+    <style name="TextAppearance.PurramidTime.BodyLarge" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.BodyMedium" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.BodySmall" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Label styles -->
+    <style name="TextAppearance.PurramidTime.LabelLarge" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.LabelMedium" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.LabelSmall" parent="TextAppearance.MaterialComponents.Overline">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <!-- Special purpose styles -->
+    <style name="TextAppearance.PurramidTime.Button" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.Clock.Digital" parent="TextAppearance.PurramidTime">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">48sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.Timer.Display" parent="TextAppearance.PurramidTime">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">56sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.PurramidTime.Timer.Centiseconds" parent="TextAppearance.PurramidTime">
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="Theme.Transparent" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+</resources>

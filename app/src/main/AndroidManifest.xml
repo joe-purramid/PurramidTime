@@ -43,6 +43,10 @@
         <activity android:name=".clock.ClockActivity"
             android:exported="false"
             android:label="@string/clock_title"
+            android:theme="@style/Theme.Transparent"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
             android:parentActivityName=".MainActivity"
             android:resizeableActivity="true"
             android:windowLayoutInDisplayCutoutMode="shortEdges">
@@ -76,6 +80,10 @@
         <activity android:name=".stopwatch.StopwatchActivity"
             android:exported="false"
             android:label="@string/stopwatch_title"
+            android:theme="@style/Theme.Transparent"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
             android:parentActivityName=".MainActivity"
             android:resizeableActivity="true"
             android:windowLayoutInDisplayCutoutMode="shortEdges">
@@ -97,6 +105,10 @@
         <activity android:name=".timer.TimerActivity"
             android:exported="false"
             android:label="@string/timer_title"
+            android:theme="@style/Theme.Transparent"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
             android:parentActivityName=".MainActivity"
             android:resizeableActivity="true"
             android:windowLayoutInDisplayCutoutMode="shortEdges">

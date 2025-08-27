@@ -2,13 +2,31 @@
 <resources>
     <!-- Base application theme -->
     <style name="Theme.PurramidTime" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Primary brand colors -->
         <item name="colorPrimary">@color/purple_500</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>
         <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Secondary brand colors -->
         <item name="colorSecondary">@color/teal_200</item>
         <item name="colorSecondaryVariant">@color/teal_700</item>
         <item name="colorOnSecondary">@color/black</item>
+
+        <!-- Status bar color -->
         <item name="android:statusBarColor">@android:color/transparent</item>
+
+        <!-- Set Balsamiq Sans as default font family -->
+        <item name="android:fontFamily">@font/balsamiq_sans</item>
+        <item name="fontFamily">@font/balsamiq_sans</item>
+
+        <!-- Apply custom text appearances -->
+        <item name="textAppearanceHeadline1">@styles/TextAppearance.PurramidTime.Headline1</item>
+        <item name="textAppearanceHeadline2">@style/TextAppearance.PurramidTime.Headline2</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.PurramidTime.Body1</item>
+        <item name="textAppearanceButton">@style/TextAppearance.PurramidTime.Button</item>
+
+        <!-- Default text appearance for all text -->
+        <item name="android:textAppearance">@style/TextAppearance.PurramidTime</item>
     </style>
 
     <!-- Floating window theme for MainActivity -->

@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -69,20 +70,43 @@ class TimerSettingsFragment : DialogFragment() {
         val dialog = super.onCreateDialog(savedInstanceState)
 
         dialog.window?.apply {
-            // Ensure the dialog appears above overlay windows
-            setType(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            } else {
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.TYPE_PHONE
-            })
+            setBackgroundDrawableResource(android.R.color.transparent)
 
-            // Make it non-modal so touches outside go through
-            addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH)
+            // Make dialog non-fullscreen
+            setLayout(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+
+            // Allow touches outside to pass through
+            clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+
+            // Position the dialog (optional - adjust as needed)
+            val params = attributes
+            params.gravity = Gravity.CENTER
+            params.y = -100 // Offset from center
+            attributes = params
         }
 
+        // Make dialog cancelable by outside touch
+        dialog.setCanceledOnTouchOutside(true)
+
         return dialog
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        // Set the dialog width to a reasonable size
+        dialog?.window?.apply {
+            val width = (resources.displayMetrics.widthPixels * 0.85).toInt() // 85% of screen width
+            val height = WindowManager.LayoutParams.WRAP_CONTENT
+            setLayout(width, height)
+
+            // Ensure dialog background is styled properly
+            setBackgroundDrawableResource(R.drawable.dialog_background)
+        }
     }
 
     private fun setupTimerColorPalette() {

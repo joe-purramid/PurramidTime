@@ -74,7 +74,7 @@ class StopwatchService : LifecycleService() {
     private var playPauseButton: ImageView? = null
     private var settingsButton: ImageView? = null
     private var closeButton: TextView? = null
-    private var lapResetButton: Button? = null
+    private var lapResetButton: ImageView? = null
     private var lapTimesLayout: LinearLayout? = null
     private var lapTimeTextViews = mutableListOf<TextView>()
     private var noLapsTextView: TextView? = null
@@ -357,7 +357,7 @@ class StopwatchService : LifecycleService() {
         playPauseButton = overlayView?.findViewById(R.id.playPauseButton)
         settingsButton = overlayView?.findViewById(R.id.settingsButton)
         closeButton = overlayView?.findViewById(R.id.closeButton)
-        lapResetButton = overlayView?.findViewById(R.id.lapResetButton)
+        lapResetButton = overlayView?.findViewById<ImageView>(R.id.lapResetButton) // Changed to ImageView
         lapTimesLayout = overlayView?.findViewById(R.id.lapTimesLayout)
         noLapsTextView = overlayView?.findViewById(R.id.noLapsTextView)
 
@@ -378,11 +378,14 @@ class StopwatchService : LifecycleService() {
         }
         closeButton?.setOnClickListener { stopService() }
         settingsButton?.setOnClickListener { openSettings() }
+
+        // Update for ImageView
         lapResetButton?.setOnClickListener {
-            if (_currentState.value.isRunning) {
+            val state = _currentState.value
+            if (state.isRunning && state.showLapTimes) {
                 playButtonSound()
                 addLap()
-            } else {
+            } else if (state.currentMillis > 0L) {
                 playButtonSound()
                 resetStopwatch()
             }
@@ -413,19 +416,35 @@ class StopwatchService : LifecycleService() {
 
         closeButton?.setTextColor(textColor)
 
-        lapResetButton?.setTextColor(textColor)
-        lapResetButton?.text = getString(if (state.isRunning) R.string.lap else R.string.reset)
-        lapResetButton?.isEnabled = state.isRunning || state.currentMillis > 0L
+        // Handle lap/reset button visibility and appearance
+        val lapButton = lapResetButton as? ImageView
+        lapButton?.let { button ->
+            // Only show the button if lap times are enabled OR if there's time to reset
+            val showButton = state.showLapTimes || state.currentMillis > 0L
+            button.visibility = if (showButton) View.VISIBLE else View.GONE
 
-        // Disable lap button if max laps reached
-        if (state.isRunning && state.laps.size >= MAX_LAPS) {
-            lapResetButton?.isEnabled = false
+            button.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
+
+            if (state.isRunning && state.showLapTimes) {
+                // Show lap icon when running and lap times enabled
+                button.setImageResource(R.drawable.ic_lap)
+                button.contentDescription = getString(R.string.lap)
+                button.isEnabled = state.laps.size < MAX_LAPS
+            } else if (state.currentMillis > 0L) {
+                // Show reset icon when stopped with time
+                button.setImageResource(R.drawable.ic_reset)
+                button.contentDescription = getString(R.string.reset)
+                button.isEnabled = true
+            } else {
+                // Hide when at 00:00.00 and not running
+                button.visibility = View.GONE
+            }
         }
 
-        // Only show lap times if enabled in settings
+        // Only show lap times layout if lap times are enabled AND there are laps
         val hasLaps = state.laps.isNotEmpty() && state.showLapTimes
-        lapTimesLayout?.visibility = if (hasLaps) View.VISIBLE else View.GONE
-        noLapsTextView?.visibility = if (state.showLapTimes && !hasLaps) View.VISIBLE else View.GONE
+        lapTimesLayout?.visibility = if (hasLaps || (state.showLapTimes && state.isRunning)) View.VISIBLE else View.GONE
+        noLapsTextView?.visibility = if (state.showLapTimes && state.isRunning && state.laps.isEmpty()) View.VISIBLE else View.GONE
         noLapsTextView?.setTextColor(textColor)
 
         if (hasLaps) {

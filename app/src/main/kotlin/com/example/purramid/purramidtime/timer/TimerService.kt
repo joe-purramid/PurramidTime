@@ -17,6 +17,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.R.attr.action
 import android.util.Log
 import android.util.TypedValue
 import android.view.Gravity
@@ -406,7 +407,9 @@ class TimerService : LifecycleService() {
         val intent = Intent(this, TimerActivity::class.java).apply {
             action = TimerActivity.ACTION_SHOW_TIMER_SETTINGS
             putExtra(EXTRA_TIMER_ID, timerId)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         startActivity(intent)
     }
