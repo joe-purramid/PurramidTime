@@ -235,8 +235,10 @@ class TimerService : LifecycleService() {
                 @Suppress("DEPRECATION")
                 WindowManager.LayoutParams.TYPE_PHONE
             },
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            PixelFormat.TRANSLUCENT
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or  // touch pass-through
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,   // proper positioning
+            PixelFormat.TRANSLUCENT  // enables transparency
         ).apply {
             gravity = Gravity.CENTER
         }

@@ -9,16 +9,13 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.util.TypedValue
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -36,7 +33,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 // --- Define simple Enums for Size Classes (for XML Views context) ---
-// Based on Material Design breakpoints: https://m3.material.io/foundations/layout/applying-layout/window-size-classes
 enum class WindowWidthSizeClass { COMPACT, MEDIUM, EXPANDED }
 enum class WindowHeightSizeClass { COMPACT, MEDIUM, EXPANDED }
 
@@ -80,8 +76,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: IntentAdapter
     private var isIntentsVisible = false
     private val allIntents = mutableListOf<AppIntent>()
-    private var screenWidthPx: Int = 0
-    private var screenHeightPx: Int = 0
 
     @Inject
     lateinit var instanceManager: InstanceManager
@@ -96,14 +90,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Calculate screen dimensions in pixels
-        val displayMetrics = resources.displayMetrics
-        screenWidthPx = displayMetrics.widthPixels
-        screenHeightPx = displayMetrics.heightPixels
-
         // --- Calculate Window Size Classes ---
         val wmc = WindowMetricsCalculator.getOrCreate()
         val currentWindowMetrics = wmc.computeCurrentWindowMetrics(this)
+        val displayMetrics = resources.displayMetrics
         val widthDp = currentWindowMetrics.bounds.width() / displayMetrics.density
         val heightDp = currentWindowMetrics.bounds.height() / displayMetrics.density
 
@@ -129,25 +119,21 @@ class MainActivity : AppCompatActivity() {
         adapter = IntentAdapter(allIntents) { appIntent ->
             animateIntentSelection(appIntent) {
                 appIntent.action.invoke(this@MainActivity)
-                if (isIntentsVisible) {
-                    hideIntentsAnimated()
-                }
+                finish() // Close MainActivity after launching app-intent
             }
         }
         binding.intentsRecyclerView.adapter = adapter
 
-        // Set up click listener for the app icon button
-        binding.appIconButtonContainer.setOnClickListener {
-            toggleIntentsVisibility()
+        // Auto-show the intents menu immediately
+        binding.appIconImageView.post {
+            showIntentsAnimated()
         }
 
         // Set up touch listener for handling clicks outside the intents
         binding.root.setOnTouchListener { _, event ->
-            if (isIntentsVisible && event.action == MotionEvent.ACTION_DOWN) {
-                if (!isTouchInsideView(event.rawX, event.rawY, binding.appIconButtonContainer) &&
-                    !isTouchInsideView(event.rawX, event.rawY, binding.intentsRecyclerView)
-                ) {
-                    hideIntentsAnimated()
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                if (!isTouchInsideView(event.rawX, event.rawY, binding.intentsRecyclerView)) {
+                    finish() // Close the activity if clicked outside
                     return@setOnTouchListener true
                 }
             }
@@ -156,15 +142,6 @@ class MainActivity : AppCompatActivity() {
 
         // Apply Layout Adaptations based on Size Classes
         adaptLayoutToSizeClasses(widthSizeClass, heightSizeClass)
-
-        // Set window to floating size if in freeform mode
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInMultiWindowMode) {
-            setFloatingWindowSize()
-        }
-    }
-
-    private fun setupRecyclerView() {
-        // This is now handled in defineAppIntents()
     }
 
     // Define Intents according to specification order
@@ -177,16 +154,8 @@ class MainActivity : AppCompatActivity() {
                     iconResId = R.mipmap.tp_clock_launcher,
                     id = "clock",
                     action = { context ->
-                        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.CLOCK)
-                        if (activeCount > 0) {
-                            val intent = Intent(context, ClockActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                            }
-                            context.startActivity(intent)
-                        } else {
-                            val intent = Intent(context, ClockActivity::class.java)
-                            context.startActivity(intent)
-                        }
+                        val intent = Intent(context, ClockActivity::class.java)
+                        context.startActivity(intent)
                     }
                 ),
                 AppIntent(
@@ -194,16 +163,8 @@ class MainActivity : AppCompatActivity() {
                     iconResId = R.mipmap.tp_timer_launcher,
                     id = "timer",
                     action = { context ->
-                        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.TIMER)
-                        if (activeCount > 0) {
-                            val intent = Intent(context, TimerActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                            }
-                            context.startActivity(intent)
-                        } else {
-                            val intent = Intent(context, TimerActivity::class.java)
-                            context.startActivity(intent)
-                        }
+                        val intent = Intent(context, TimerActivity::class.java)
+                        context.startActivity(intent)
                     }
                 ),
                 AppIntent(
@@ -211,31 +172,22 @@ class MainActivity : AppCompatActivity() {
                     iconResId = R.mipmap.tp_stopwatch_launcher,
                     id = "stopwatch",
                     action = { context ->
-                        val activeCount = instanceManager.getActiveInstanceCount(InstanceManager.STOPWATCH)
-                        if (activeCount > 0) {
-                            val intent = Intent(context, StopwatchActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-                            }
-                            context.startActivity(intent)
-                        } else {
-                            val intent = Intent(context, StopwatchActivity::class.java)
-                            context.startActivity(intent)
-                        }
+                        val intent = Intent(context, StopwatchActivity::class.java)
+                        context.startActivity(intent)
                     }
                 ),
                 AppIntent(
                     title = getString(R.string.about),
-                    iconResId = R.mipmap.tp_about_launcher,
+                    iconResId = R.drawable.ic_info,
                     id = "about",
                     action = { context ->
                         val intent = Intent(context, AboutActivity::class.java)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
                         context.startActivity(intent)
                     }
                 )
             )
         )
-        Log.d(TAG, "Total intents defined: ${allIntents.size}")  // Should show 4
+        Log.d(TAG, "Total intents defined: ${allIntents.size}")
     }
 
     // Helper Function for Touch Handling
@@ -267,29 +219,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Visibility Toggle Function
-    private fun toggleIntentsVisibility() {
-        if (isIntentsVisible) {
-            hideIntentsAnimated()
-        } else {
-            showIntentsAnimated()
-        }
-    }
-
     private fun showIntentsAnimated() {
         if (isIntentsVisible) return
 
         binding.intentsRecyclerView.visibility = View.VISIBLE
         binding.intentsRecyclerView.alpha = 0f
 
-        val scaleDownX = ObjectAnimator.ofFloat(binding.appIconImageView, View.SCALE_X, 1f, 0.8f)
-        val scaleDownY = ObjectAnimator.ofFloat(binding.appIconImageView, View.SCALE_Y, 1f, 0.8f)
         val fadeIn = ObjectAnimator.ofFloat(binding.intentsRecyclerView, View.ALPHA, 0f, 1f)
 
-        AnimatorSet().apply {
-            duration = 300
+        fadeIn.apply {
+            duration = 200
             interpolator = AccelerateDecelerateInterpolator()
-            playTogether(scaleDownX, scaleDownY, fadeIn)
             addListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationStart(animation: Animator) {
                     isIntentsVisible = true
@@ -299,32 +239,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun hideIntentsAnimated() {
-        if (!isIntentsVisible) return
-
-        val slideUpDistancePx = this.dpToPx(-30)
-
-        val scaleUpX = ObjectAnimator.ofFloat(binding.appIconImageView, View.SCALE_X, binding.appIconImageView.scaleX, 1f)
-        val scaleUpY = ObjectAnimator.ofFloat(binding.appIconImageView, View.SCALE_Y, binding.appIconImageView.scaleY, 1f)
-        val fadeOut = ObjectAnimator.ofFloat(binding.intentsRecyclerView, View.ALPHA, 1f, 0f)
-        val slideUp = ObjectAnimator.ofFloat(binding.intentsRecyclerView, View.TRANSLATION_Y, 0f, slideUpDistancePx.toFloat())
-
-        AnimatorSet().apply {
-            duration = 300
-            interpolator = AccelerateDecelerateInterpolator()
-            playTogether(scaleUpX, scaleUpY, fadeOut, slideUp)
-            addListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    binding.intentsRecyclerView.visibility = View.GONE
-                    binding.intentsRecyclerView.translationY = 0f
-                    isIntentsVisible = false
-                }
-            })
-            start()
-        }
-    }
-
-    // Utility and Other Functions
     private fun adaptLayoutToSizeClasses(widthSizeClass: WindowWidthSizeClass, heightSizeClass: WindowHeightSizeClass) {
         val layoutManager = binding.intentsRecyclerView.layoutManager as? LinearLayoutManager
         layoutManager?.orientation =
@@ -342,15 +256,6 @@ class MainActivity : AppCompatActivity() {
         binding.intentsRecyclerView.setPadding(paddingSize, paddingSize, paddingSize, paddingSize)
     }
 }
-
-    // Helper method
-    private fun dpToPx(dp: Int): Int {
-        return TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            dp.toFloat(),
-            resources.displayMetrics
-        ).toInt()
-    }
 
 // Curved LinearLayoutManager for the app-intent list
 class CurvedLinearLayoutManager(context: Context) : LinearLayoutManager(context) {
