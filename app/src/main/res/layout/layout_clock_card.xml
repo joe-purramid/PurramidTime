@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="300dp"
+    android:layout_height="300dp"
+    android:background="@drawable/card_background">
+
+    <!-- Close button — top-right, 15 dp offset -->
+    <ImageButton
+        android:id="@+id/btn_close"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/close"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_close"
+        android:layout_marginTop="15dp"
+        android:layout_marginEnd="15dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Settings button — bottom-left, 15 dp offset -->
+    <ImageButton
+        android:id="@+id/btn_settings"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/settings"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_settings"
+        android:layout_marginStart="15dp"
+        android:layout_marginBottom="15dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Time numerals -->
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/balsamiq_sans"
+        android:includeFontPadding="false"
+        android:text="12:12"
+        android:textColor="#000000"
+        android:textSize="100dp"
+        android:layout_marginBottom="35dp"
+        app:layout_constraintBottom_toTopOf="@id/btn_play"
+        app:layout_constraintEnd_toStartOf="@id/tv_period"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- AM/PM indicator — baseline-aligned to numerals -->
+    <TextView
+        android:id="@+id/tv_period"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/balsamiq_sans"
+        android:includeFontPadding="false"
+        android:text="PM"
+        android:textColor="#000000"
+        android:textSize="45dp"
+        android:layout_marginStart="4dp"
+        app:layout_constraintBaseline_toBaselineOf="@id/tv_time"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/tv_time" />
+
+    <!-- Play button -->
+    <ImageButton
+        android:id="@+id/btn_play"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/play"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_play"
+        android:layout_marginBottom="25dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_reset"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Reset button -->
+    <ImageButton
+        android:id="@+id/btn_reset"
+        android:layout_width="75dp"
+        android:layout_height="75dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/reset"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_reset"
+        android:layout_marginBottom="25dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_play" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
