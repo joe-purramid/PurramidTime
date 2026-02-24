@@ -18,7 +18,7 @@ data class ClockStateEntity(
     val instanceId: Int,
     
     @ColumnInfo(name = "uuid")
-    val uuid: String = UUID.randomUUID().toString(),
+    val uuid: UUID = UUID.randomUUID(),
     
     @ColumnInfo(name = "timezone_id")
     val timeZoneId: String = ZoneId.systemDefault().id,
@@ -67,14 +67,14 @@ data class ClockStateEntity(
         ForeignKey(
             entity = ClockStateEntity::class,
             parentColumns = ["instanceId"],
-            childColumns = ["instance_id"],
+            childColumns = ["instanceId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
-        Index(value = ["instance_id"]),
+        Index(value = ["instanceId"]),
         Index(value = ["time"]),
-        Index(value = ["is_enabled"])
+        Index(value = ["isEnabled"])
     ]
 )
 data class ClockAlarmEntity(
@@ -85,7 +85,7 @@ data class ClockAlarmEntity(
     val instanceId: Int, // Associated clock instance
     
     @ColumnInfo(name = "uuid")
-    val uuid: String = UUID.randomUUID().toString(),
+    val uuid: UUID = UUID.randomUUID(),
     
     @ColumnInfo(name = "time")
     val time: LocalTime, // Alarm time
@@ -182,7 +182,6 @@ data class TimerStateEntity(
     @ColumnInfo(name = "recent_music_urls_json")
     val recentMusicUrlsJson: String = "[]"
 )
-```
 
 ### **StopwatchState Entity**
 ```kotlin
@@ -238,6 +237,7 @@ data class StopwatchStateEntity(
     @ColumnInfo(name = "show_lap_times")
     val showLapTimes: Boolean = false
 )
+
 ```
 
 ### **City Entity**
@@ -317,10 +317,10 @@ interface ClockAlarmDao {
     @Update
     suspend fun updateAlarm(alarm: ClockAlarmEntity)
     
-    @Query("SELECT * FROM clock_alarms WHERE instance_id = :instanceId ORDER BY time ASC")
+    @Query("SELECT * FROM clock_alarms WHERE instanceId = :instanceId ORDER BY time ASC")
     fun getAlarmsForClock(instanceId: Int): Flow<List<ClockAlarmEntity>>
     
-    @Query("SELECT * FROM clock_alarms WHERE is_enabled = 1 ORDER BY time ASC")
+    @Query("SELECT * FROM clock_alarms WHERE isEnabled = 1 ORDER BY time ASC")
     fun getAllActiveAlarms(): Flow<List<ClockAlarmEntity>>
     
     @Query("SELECT * FROM clock_alarms WHERE alarmId = :alarmId")
@@ -329,10 +329,10 @@ interface ClockAlarmDao {
     @Query("DELETE FROM clock_alarms WHERE alarmId = :alarmId")
     suspend fun deleteAlarm(alarmId: Long)
     
-    @Query("DELETE FROM clock_alarms WHERE instance_id = :instanceId")
+    @Query("DELETE FROM clock_alarms WHERE instanceId = :instanceId")
     suspend fun deleteAlarmsForClock(instanceId: Int)
     
-    @Query("UPDATE clock_alarms SET is_enabled = :enabled WHERE alarmId = :alarmId")
+    @Query("UPDATE clock_alarms SET isEnabled = :enabled WHERE alarmId = :alarmId")
     suspend fun setAlarmEnabled(alarmId: Long, enabled: Boolean)
 }
 ```
@@ -472,6 +472,42 @@ abstract class PurramidTimeDatabase : RoomDatabase() {
     abstract fun stopwatchDao(): StopwatchDao
     abstract fun cityDao(): CityDao
     abstract fun timeZoneDao(): TimeZoneDao
+    
+    companion object {
+        @Volatile
+        private var INSTANCE: PurramidTimeDatabase? = null
+        
+        private const val DATABASE_NAME = "purramid_time_db"
+        
+        fun getInstance(context: Context, isDebugBuild: Boolean = false): PurramidTimeDatabase {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: buildDatabase(context, isDebugBuild).also { INSTANCE = it }
+            }
+        }
+        
+        private fun buildDatabase(context: Context, isDebugBuild: Boolean): PurramidTimeDatabase {
+            val builder = Room.databaseBuilder(
+                context.applicationContext,
+                PurramidTimeDatabase::class.java,
+                DATABASE_NAME
+            )
+            
+            return if (isDebugBuild) {
+                // Destructive migration for DEBUG builds
+                builder.fallbackToDestructiveMigration().build()
+            } else {
+                // Proper migrations for RELEASE builds
+                builder.addMigrations(*getAllMigrations()).build()
+            }
+        }
+        
+        private fun getAllMigrations(): Array<Migration> {
+            return arrayOf(
+                // Future migrations will be added here
+                // MIGRATION_1_2, MIGRATION_2_3, etc.
+            )
+        }
+    }
 }
 ```
 
@@ -479,6 +515,14 @@ abstract class PurramidTimeDatabase : RoomDatabase() {
 
 ```kotlin
 class PurramidTimeConverters {
+    // UUID converters
+    @TypeConverter
+    fun fromUUID(uuid: UUID?): String? = uuid?.toString()
+    
+    @TypeConverter
+    fun toUUID(uuidString: String?): UUID? = 
+        uuidString?.let { UUID.fromString(it) }
+    
     // LocalTime converters
     @TypeConverter
     fun fromLocalTime(time: LocalTime?): String? = 
@@ -509,24 +553,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): PurramidTimeDatabase {
-        val builder = Room.databaseBuilder(
-            context.applicationContext,
-            PurramidTimeDatabase::class.java,
-            "purramid_time_db"
-        )
-        
-        return if (BuildConfig.DEBUG) {
-            builder.fallbackToDestructiveMigration(dropAllTables = true).build()
-        } else {
-            builder.addMigrations(*getAllMigrations()).build()
-        }
-    }
-    
-    private fun getAllMigrations(): Array<Migration> {
-        return arrayOf(
-            // Future migrations will be added here
-            // MIGRATION_1_2, MIGRATION_2_3, etc.
-        )
+        return PurramidTimeDatabase.getInstance(context, BuildConfig.DEBUG)
     }
     
     @Provides
@@ -559,7 +586,7 @@ object DatabaseModule {
 
 ```kotlin
 class DatabaseInitializer @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val context: Context,
     private val cityDao: CityDao,
     private val timeZoneDao: TimeZoneDao
 ) {
@@ -624,7 +651,7 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
 ## Performance Considerations
 
 ### **Query Optimization**
-- Indexes on frequently queried columns (instanceId, instance_id, timezone_id, time, is_enabled)
+- Indexes on frequently queried columns (instanceId, timezone_id, time, isEnabled)
 - Foreign key constraints for data integrity
 - LIMIT clauses for search queries
 - Flow-based reactive queries for UI updates

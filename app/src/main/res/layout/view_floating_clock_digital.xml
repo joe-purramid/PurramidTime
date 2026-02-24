@@ -12,7 +12,9 @@
         android:id="@+id/digitalClockView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingBottom="4dp"/> <View
+        android:paddingBottom="4dp" />
+
+    <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="?android:attr/dividerHorizontal"
@@ -33,17 +35,21 @@
             android:layout_height="40dp"
             android:padding="8dp"
             android:scaleType="fitCenter"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/action_button_background"
+            android:imageTintList="@color/icon_tint_stateful"
             app:srcCompat="@drawable/ic_pause"
             tools:srcCompat="@drawable/ic_pause"
-            android:contentDescription="@string/pause" /> <ImageButton
+            android:contentDescription="@string/pause" />
+
+        <ImageButton
             android:id="@+id/buttonReset"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:padding="8dp"
             android:scaleType="fitCenter"
             android:layout_marginStart="16dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/action_button_background"
+            android:imageTintList="@color/icon_tint_stateful"
             app:srcCompat="@drawable/ic_reset"
             android:contentDescription="@string/reset" />
 
@@ -54,7 +60,8 @@
             android:padding="8dp"
             android:scaleType="fitCenter"
             android:layout_marginStart="16dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/action_button_background"
+            android:imageTintList="@color/icon_tint_stateful"
             app:srcCompat="@drawable/ic_settings"
             android:contentDescription="@string/settings" />
 

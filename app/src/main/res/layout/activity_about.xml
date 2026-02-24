@@ -121,7 +121,7 @@
             android:id="@+id/data_privacy_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/data_privacy_title"
+            android:text="@string/data_privacy_text"
             android:layout_marginBottom="16dp" />
 
         <View

@@ -68,13 +68,14 @@
             android:id="@+id/rotateLeftButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="&lt;" />
+            android:text="@string/rotate_left"
+            android:contentDescription="@string/rotate_left" />
 
         <Button
             android:id="@+id/resetButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reset UTC"
+            android:text="@string/reset_utc"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp" />
 
@@ -82,7 +83,8 @@
             android:id="@+id/rotateRightButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="&gt;" />
+            android:text="@string/rotate_right"
+            android:contentDescription="@string/rotate_right" />
 
     </LinearLayout>
 

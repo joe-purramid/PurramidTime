@@ -38,29 +38,6 @@ class ClockActivity : AppCompatActivity()
 - Audio manager: `@Singleton`
 - Service: System-managed singleton
 
-### **Dispatcher Qualifiers**
-```kotlin
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class IoDispatcher
-
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class MainDispatcher
-
-@Module
-@InstallIn(SingletonComponent::class)
-object DispatcherModule {
-    @Provides
-    @IoDispatcher
-    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
-
-    @Provides
-    @MainDispatcher
-    fun provideMainDispatcher(): CoroutineDispatcher = Dispatchers.Main
-}
-```
-
 ## State Management
 
 ### **UI State Pattern**
@@ -93,15 +70,16 @@ data class ClockSettings(
 
 ### **Threading Rules**
 ```kotlin
-class TimeZoneRepository @Inject constructor(
+class PurrPetsRepository @Inject constructor(
     private val dao: ClockDao,
+    private val audioManager: AudioManager,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
-    suspend fun saveClockData(clock: ClockStateEntity) = withContext(ioDispatcher) {
-        dao.insertOrUpdate(clock)
+    suspend fun saveClockData(clock: Clock) = withContext(ioDispatcher) {
+        dao.insertClock(clock)
     }
     
-    fun observeClocks() = dao.getAllStates().flowOn(ioDispatcher)
+    fun observeClock() = dao.getAllClock().flowOn(ioDispatcher)
 }
 ```
 
@@ -110,11 +88,13 @@ class TimeZoneRepository @Inject constructor(
 ### **Foreground Service Pattern**
 ```kotlin
 @AndroidEntryPoint
-class ClockOverlayService : Service() {
-    @Inject lateinit var timeZoneRepository: TimeZoneRepository
+class ClockOverlaysService : Service() {
+    @Inject lateinit var repository: ClockRepository
+    @Inject lateinit var audioManager: AudioManager
     
     // Service manages overlay window lifecycle
     // Repository handles all data operations
+    // AudioManager handles microphone operations
 }
 ```
 
@@ -242,12 +222,12 @@ interface AnimationLifecycle {
   - Snooze Indicator: Subtle breathing animation
   - Dismissal: Particle burst or fade effect
 
- - 4.2 Timezone Transitions
+ - 6.2 Timezone Transitions
   - Globe Rotation: Smooth interpolation between timezone positions
   - Overlay Morphing: Animated transition between timezone highlights
   - City Pin Animations: Pop-in effect for city markers
 
- - 4.3 Error State Animations
+ - 6.3 Error State Animations
   - Connection Lost: Gentle shake animation
   - Invalid Time: Red pulse on affected elements
   - Permission Denied: Bounce-back effect
@@ -298,7 +278,7 @@ object TestAppModule
 <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-<uses-permission android:name="android.permission.INTERNET" /> <!-- Used for streaming music URLs only -->
+<uses-permission android:name="android.permission.INTERNET" />
 <uses-permission android:name="android.permission.WAKE_LOCK" />
 <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
@@ -327,7 +307,7 @@ object TestAppModule
 
 ### **Data Protection**
 - No sensitive user data collection
-- Local storage only (no cloud sync); INTERNET permission is used exclusively for streaming music URLs
+- Local storage only (no cloud sync)
 - Audio data processed locally, never stored
 - Overlay permission usage limited to app functionality
 

@@ -6,18 +6,13 @@
 - Services: *Service (e.g., ClockOverlayService)
 - ViewModels: *ViewModel
 - Repositories: *Repository
-- Use lowercase for packages: com.example.purramid.purramidtime.*
+- Use lowercase for packages: com.purramid.purramidtime.*
 
 ## Resolution standards
-- Drawable assets must be provided at xxhdpi (2k) and xxxhdpi (4k) densities
-- Default design target is xxxhdpi (4k)
-- mdpi (1k) assets are unnecessary
-- Assets above xxxhdpi (8k) are unnecessary at this time
-
-## Text Sizing Conventions
-- Use `dp` for text in fixed-size overlay windows where the layout must not shift (e.g., the clock card, timer display)
-- Use `sp` for text in standard Activities or settings screens where accessibility font scaling is appropriate
-- Document the choice in layout XML comments when using `dp` for text, so future contributors understand the intent
+- Pixel density must support 2k and 4k resolutions
+- Default resolution is 4k
+- 1k is unnecessary
+- 8k is unnecessary at this time
 
 ## State Management
 - Use sealed classes for UI states

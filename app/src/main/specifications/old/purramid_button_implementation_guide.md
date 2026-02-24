@@ -106,18 +106,16 @@ For each existing icon XML file, update the `android:tint` attribute:
 ```
 
 **Apply this change to:**
-- `ic_close.xml`
 - `ic_delete.xml`
-- `ic_play.xml`
-- `ic_reset.xml`
 - `ic_settings.xml`
+- `ic_reset.xml`
 - `ic_resize_left_handle.xml`
 - `ic_resize_right_handle.xml`
 - Any other action button icons
 
 ### Step 5: Update Layout Files
 
-For each ImageButton in your activity or overlay layouts:
+For each ImageButton in your fragment/activity layouts:
 
 **Before:**
 ```xml
@@ -145,20 +143,18 @@ For each ImageButton in your activity or overlay layouts:
 - `android:background="@drawable/action_button_background"`
 - `android:contentDescription="..."` (for accessibility)
 
-### Step 6: Activity Code Implementation
+### Step 6: Fragment/Activity Code Implementation
 
-In your Activity, manage button states using the `isActivated` property:
+In your Fragment or Activity, manage button states using the `isActivated` property:
 
 ```kotlin
-@AndroidEntryPoint
-class ClockActivity : AppCompatActivity() {
+class YourFragment : Fragment() {
     private var isSettingsOpen = false
     
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_clock)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         
-        val settingsButton = findViewById<ImageButton>(R.id.settingsButton)
+        val settingsButton = view.findViewById<ImageButton>(R.id.settingsButton)
         
         // Set initial state
         settingsButton.isActivated = isSettingsOpen
@@ -187,46 +183,9 @@ class ClockActivity : AppCompatActivity() {
 }
 ```
 
-### Step 6b: Overlay Service Implementation
-
-For buttons managed within an overlay window (e.g., ClockOverlayService):
-
-```kotlin
-@AndroidEntryPoint
-class ClockOverlayService : Service() {
-    private var overlayView: View? = null
-    private var isSettingsOpen = false
-    
-    private fun setupOverlayButtons() {
-        val settingsButton = overlayView?.findViewById<ImageButton>(R.id.settingsButton)
-        
-        settingsButton?.isActivated = isSettingsOpen
-        
-        settingsButton?.setOnClickListener {
-            isSettingsOpen = !isSettingsOpen
-            settingsButton.isActivated = isSettingsOpen
-            
-            if (isSettingsOpen) {
-                openSettingsPanel()
-            } else {
-                closeSettingsPanel()
-            }
-        }
-    }
-    
-    private fun openSettingsPanel() {
-        // Implementation for opening settings in overlay
-    }
-    
-    private fun closeSettingsPanel() {
-        // Implementation for closing settings in overlay
-    }
-}
-```
-
 ### Step 7: State Persistence (Optional)
 
-To maintain button states across activity lifecycle events:
+To maintain button states across fragment lifecycle events:
 
 ```kotlin
 override fun onSaveInstanceState(outState: Bundle) {
@@ -234,19 +193,16 @@ override fun onSaveInstanceState(outState: Bundle) {
     outState.putBoolean("settings_open", isSettingsOpen)
 }
 
-override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_clock)
+override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    super.onViewCreated(view, savedInstanceState)
     
     // Restore state
     isSettingsOpen = savedInstanceState?.getBoolean("settings_open", false) ?: false
     
-    val settingsButton = findViewById<ImageButton>(R.id.settingsButton)
+    val settingsButton = view.findViewById<ImageButton>(R.id.settingsButton)
     settingsButton.isActivated = isSettingsOpen
 }
 ```
-
-For overlay services, persist state through the repository/database layer instead, since services don't have `onSaveInstanceState`.
 
 ---
 
@@ -260,17 +216,15 @@ Ensure these files are created/updated:
 
 ### Updated Files
 - [ ] `res/values/colors.xml` (add icon and background colors)
-- [ ] `ic_close.xml` (update tint)
 - [ ] `ic_delete.xml` (update tint)
-- [ ] `ic_play.xml` (update tint)
-- [ ] `ic_reset.xml` (update tint)
 - [ ] `ic_settings.xml` (update tint)
+- [ ] `ic_reset.xml` (update tint)
 - [ ] `ic_resize_left_handle.xml` (update tint)
 - [ ] `ic_resize_right_handle.xml` (update tint)
 - [ ] `ic_lock.xml` (update tint if needed)
 - [ ] `ic_lock_all.xml` (update tint if needed)
-- [ ] All activity/overlay layout files with ImageButtons
-- [ ] All Activity/Service Kotlin files with button logic
+- [ ] All fragment/activity layout files with ImageButtons
+- [ ] All Fragment/Activity Kotlin files with button logic
 
 ---
 
@@ -282,7 +236,6 @@ Ensure these files are created/updated:
 - [ ] Button states persist during device rotation
 - [ ] All buttons have proper content descriptions
 - [ ] Color changes are smooth and immediate
-- [ ] Button states in overlay windows persist through service lifecycle
 
 ---
 
@@ -295,7 +248,7 @@ Ensure these files are created/updated:
 **Solution**: Verify the button has `android:background="@drawable/action_button_background"`
 
 ### State not persisting
-**Solution**: For Activities, implement `onSaveInstanceState` and restore logic. For overlay Services, persist state through the repository/database layer.
+**Solution**: Implement `onSaveInstanceState` and restore logic
 
 ---
 

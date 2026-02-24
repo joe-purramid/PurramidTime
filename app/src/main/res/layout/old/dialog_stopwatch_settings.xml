@@ -94,7 +94,7 @@
                 android:text="@string/hundredths"
                 android:textAppearance="?android:textAppearanceMedium" />
 
-            <com.google.android.material.materialswitch.MaterialSwitch
+            <Switch
                 android:id="@+id/hundredthsSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -116,7 +116,7 @@
                 android:text="@string/lap"
                 android:textAppearance="?android:textAppearanceMedium" />
 
-            <com.google.android.material.materialswitch.MaterialSwitch
+            <Switch
                 android:id="@+id/lapSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
@@ -135,6 +135,6 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp" />
 
-    </LinearLayout>
+        </LinearLayout>
 
 </ScrollView>
