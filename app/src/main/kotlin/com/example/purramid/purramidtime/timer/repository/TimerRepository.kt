@@ -116,6 +116,19 @@ class TimerRepository @Inject constructor(
     }
 
     /**
+     * Ids of all timers with persisted state, used to restore windows after a
+     * process restart (crash recovery / sticky service re-creation).
+     */
+    suspend fun getAllPersistedTimerIds(): List<Int> = withContext(ioDispatcher) {
+        try {
+            timerDao.getAllInstanceIds()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load persisted timer ids", e)
+            emptyList()
+        }
+    }
+
+    /**
      * Update timer state
      */
     suspend fun updateState(timerId: Int, update: (TimerState) -> TimerState) {

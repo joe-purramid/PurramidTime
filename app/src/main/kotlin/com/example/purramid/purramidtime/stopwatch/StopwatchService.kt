@@ -25,7 +25,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.WindowManager
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -33,19 +32,21 @@ import androidx.core.app.NotificationCompat
 import androidx.core.graphics.ColorUtils
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.purramid.purramidtime.instance.InstanceManager
 import com.example.purramid.purramidtime.MainActivity
 import com.example.purramid.purramidtime.R
+import com.example.purramid.purramidtime.stopwatch.ui.LapTimesAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.math.abs
@@ -58,34 +59,38 @@ class StopwatchService : LifecycleService() {
     @Inject lateinit var notificationManager: NotificationManager
     @Inject lateinit var stopwatchRepository: StopwatchRepository
 
-    private var overlayView: View? = null
-    private var stopwatchId: Int = 0
-    private var layoutParams: WindowManager.LayoutParams? = null
-    private var isViewAdded = false
+    /**
+     * Per-window state. The service is a process singleton, so everything specific
+     * to a single stopwatch window lives here, keyed by instanceId (1-4).
+     *
+     * The [state] flow is updated in-memory by the ticker (every tick) for smooth
+     * display; it is only persisted on discrete events (play/pause, reset, lap,
+     * move, settings) to avoid a per-tick database write storm.
+     */
+    private class StopwatchInstance(val stopwatchId: Int) {
+        val state = MutableStateFlow(StopwatchState(stopwatchId = stopwatchId))
+        var overlayView: View? = null
+        var layoutParams: WindowManager.LayoutParams? = null
+        var isViewAdded = false
+        var stateObserverJob: Job? = null
+        var tickerJob: Job? = null
 
-    // State management
-    private val _currentState = MutableStateFlow(StopwatchState())
-    private val currentState: StateFlow<StopwatchState> = _currentState.asStateFlow()
-    private var stateObserverJob: Job? = null
-    private var tickerJob: Job? = null
+        // Cached views
+        var digitalTimeTextView: TextView? = null
+        var playPauseButton: ImageView? = null
+        var settingsButton: ImageView? = null
+        var closeButton: ImageView? = null
+        var lapResetButton: ImageView? = null
+        var lapTimesLayout: LinearLayout? = null
+        var noLapsTextView: TextView? = null
+        var lapTimesRecyclerView: RecyclerView? = null
+        val lapTimesAdapter = LapTimesAdapter()
+    }
 
-    // Cached Views
-    private var digitalTimeTextView: TextView? = null
-    private var playPauseButton: ImageView? = null
-    private var settingsButton: ImageView? = null
-    private var closeButton: TextView? = null
-    private var lapResetButton: ImageView? = null
-    private var lapTimesLayout: LinearLayout? = null
-    private var lapTimeTextViews = mutableListOf<TextView>()
-    private var noLapsTextView: TextView? = null
+    private val instances = ConcurrentHashMap<Int, StopwatchInstance>()
+    private var isForeground = false
 
-    // Touch handling
-    private var initialX: Int = 0
-    private var initialY: Int = 0
-    private var initialTouchX: Float = 0f
-    private var initialTouchY: Float = 0f
-    private var isMoving = false
-    private val touchSlop: Int by lazy { ViewConfiguration.get(this).scaledTouchSlop }
+    // Device-level constants (not per-instance)
     private val movementThreshold: Int by lazy {
         TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP,
@@ -114,11 +119,24 @@ class StopwatchService : LifecycleService() {
         super.onCreate()
         Log.d(TAG, "onCreate")
         createNotificationChannel()
+        restorePersistedStopwatches()
+    }
 
-        // Clean up orphaned instances on service start
-        lifecycleScope.launch(Dispatchers.IO) {
-            val activeIds = instanceManager.getActiveInstanceIds(InstanceManager.STOPWATCH)
-            stopwatchRepository.cleanupOrphanedInstances(activeIds)
+    /**
+     * Re-create windows for any stopwatches that were active when the process was
+     * last killed. Mirrors ClockOverlayService's restore path so a sticky restart
+     * does not lose windows or leak instance slots.
+     */
+    private fun restorePersistedStopwatches() {
+        lifecycleScope.launch {
+            val ids = stopwatchRepository.getAllInstanceIds()
+            if (ids.isEmpty()) return@launch
+            Log.d(TAG, "Restoring ${ids.size} persisted stopwatch(es): $ids")
+            startForegroundServiceIfNeeded()
+            ids.forEach { id ->
+                instanceManager.registerExistingInstance(InstanceManager.STOPWATCH, id)
+                initializeInstance(id)
+            }
         }
     }
 
@@ -128,210 +146,178 @@ class StopwatchService : LifecycleService() {
         val intentStopwatchId = intent?.getIntExtra(EXTRA_STOPWATCH_ID, 0) ?: 0
         Log.d(TAG, "onStartCommand: Action: $action, ID: $intentStopwatchId")
 
-        // Handle instance management
-        if (intentStopwatchId <= 0 && action != ACTION_STOP_STOPWATCH_SERVICE) {
-            // Request new instance ID from InstanceManager
-            val instanceId = instanceManager.getNextInstanceId(InstanceManager.STOPWATCH)
-            if (instanceId == null) {
-                Log.e(TAG, "No available instance slots for Stopwatch")
-                stopSelf()
-                return START_NOT_STICKY
-            }
-            this.stopwatchId = instanceId
-            Log.d(TAG, "Allocated new instanceId: $stopwatchId")
-        } else if (intentStopwatchId > 0) {
-            // Register existing instance with InstanceManager
-            if (!instanceManager.registerExistingInstance(InstanceManager.STOPWATCH, intentStopwatchId)) {
-                Log.w(TAG, "Failed to register existing instance $intentStopwatchId")
-            }
-            this.stopwatchId = intentStopwatchId
-        }
-
-        // Handle actions
         when (action) {
-            ACTION_START_STOPWATCH -> {
-                startForegroundServiceIfNeeded()
-                lifecycleScope.launch {
-                    loadState()
-                    addOverlayViewIfNeeded()
+            ACTION_START_STOPWATCH -> handleStartStopwatch(intentStopwatchId)
+            ACTION_STOP_STOPWATCH_SERVICE -> {
+                if (intentStopwatchId > 0) {
+                    removeStopwatchInstance(intentStopwatchId)
+                } else {
+                    stopAllInstancesAndService()
                 }
             }
-            ACTION_STOP_STOPWATCH_SERVICE -> {
-                stopService()
-            }
-            ACTION_UPDATE_SETTING -> {
-                handleSettingUpdate(intent)
-            }
+            ACTION_UPDATE_SETTING -> handleSettingUpdate(intent)
+            null -> Log.d(TAG, "Null intent (restart) - windows restored in onCreate")
+            else -> Log.w(TAG, "Unhandled action: $action")
         }
         return START_STICKY
     }
 
-    private suspend fun loadState() {
-        if (stopwatchId <= 0) return
-
-        val state = stopwatchRepository.getStopwatchState(stopwatchId)
-        _currentState.value = state
-
-        if (state.isRunning) {
-            startTicker()
+    private fun handleStartStopwatch(intentStopwatchId: Int) {
+        val id = if (intentStopwatchId > 0) {
+            instanceManager.registerExistingInstance(InstanceManager.STOPWATCH, intentStopwatchId)
+            intentStopwatchId
+        } else {
+            val newId = instanceManager.getNextInstanceId(InstanceManager.STOPWATCH)
+            if (newId == null) {
+                Log.e(TAG, "No available instance slots for Stopwatch")
+                if (instances.isEmpty()) stopSelf()
+                return
+            }
+            newId
         }
 
-        observeStateChanges()
+        startForegroundServiceIfNeeded()
+        lifecycleScope.launch { initializeInstance(id) }
     }
 
-    private fun observeStateChanges() {
-        stateObserverJob?.cancel()
-        stateObserverJob = lifecycleScope.launch {
-            currentState.collect { state ->
-                Log.d(TAG, "State changed: Running=${state.isRunning}, Millis=${state.currentMillis}")
-                updateOverlayViews(state)
-                updateLayoutParamsIfNeeded(state)
+    private suspend fun initializeInstance(id: Int) {
+        // Already active: just make sure the window and observer exist.
+        if (instances.containsKey(id)) {
+            withContext(Dispatchers.Main) {
+                val instance = instances[id] ?: return@withContext
+                if (instance.overlayView == null) createAndAddStopwatchWindow(instance)
+                if (instance.stateObserverJob == null) observeStateChanges(instance)
+                updateOverlayViews(instance, instance.state.value)
+            }
+            return
+        }
+
+        val loaded = stopwatchRepository.getStopwatchState(id)
+        withContext(Dispatchers.Main) {
+            val instance = instances.getOrPut(id) { StopwatchInstance(id) }
+            instance.state.value = loaded
+            createAndAddStopwatchWindow(instance)
+            observeStateChanges(instance)
+            if (loaded.isRunning) startTicker(instance)
+            updateOverlayViews(instance, loaded)
+        }
+    }
+
+    private fun observeStateChanges(instance: StopwatchInstance) {
+        instance.stateObserverJob?.cancel()
+        instance.stateObserverJob = lifecycleScope.launch {
+            instance.state.collect { state ->
+                updateOverlayViews(instance, state)
+                updateLayoutParamsIfNeeded(instance, state)
             }
         }
     }
 
     private fun handleSettingUpdate(intent: Intent) {
+        val id = intent.getIntExtra(EXTRA_STOPWATCH_ID, 0)
         val key = intent.getStringExtra(EXTRA_SETTING_KEY) ?: return
+        val instance = instances[id] ?: return
 
-        lifecycleScope.launch {
-            val updatedState = when (key) {
-                "showCentiseconds" -> {
-                    val value = intent.getBooleanExtra(EXTRA_SETTING_VALUE, true)
-                    _currentState.value.copy(showCentiseconds = value)
-                }
-                "overlayColor" -> {
-                    val value = intent.getIntExtra(EXTRA_SETTING_VALUE, Color.WHITE)
-                    _currentState.value.copy(overlayColor = value)
-                }
-                "soundsEnabled" -> {
-                    val value = intent.getBooleanExtra(EXTRA_SETTING_VALUE, false)
-                    _currentState.value.copy(soundsEnabled = value)
-                }
-                "showLapTimes" -> {
-                    val value = intent.getBooleanExtra(EXTRA_SETTING_VALUE, false)
-                    _currentState.value.copy(showLapTimes = value)
-                }
-                else -> _currentState.value
-            }
-
-            _currentState.value = updatedState
-            stopwatchRepository.updateStopwatchState(updatedState)
+        val updatedState = when (key) {
+            "showCentiseconds" ->
+                instance.state.value.copy(showCentiseconds = intent.getBooleanExtra(EXTRA_SETTING_VALUE, true))
+            "overlayColor" ->
+                instance.state.value.copy(overlayColor = intent.getIntExtra(EXTRA_SETTING_VALUE, Color.WHITE))
+            "soundsEnabled" ->
+                instance.state.value.copy(soundsEnabled = intent.getBooleanExtra(EXTRA_SETTING_VALUE, false))
+            "showLapTimes" ->
+                instance.state.value.copy(showLapTimes = intent.getBooleanExtra(EXTRA_SETTING_VALUE, false))
+            else -> instance.state.value
         }
+
+        instance.state.value = updatedState
+        lifecycleScope.launch { stopwatchRepository.saveStopwatchState(updatedState) }
     }
 
-    // Stopwatch control methods
-    private fun togglePlayPause() {
-        val newRunningState = !_currentState.value.isRunning
-        val updatedState = _currentState.value.copy(isRunning = newRunningState)
-        _currentState.value = updatedState
+    // --- Stopwatch controls ---
 
-        if (newRunningState) {
-            startTicker()
-        } else {
-            stopTicker()
-        }
+    private fun togglePlayPause(instance: StopwatchInstance) {
+        val newRunningState = !instance.state.value.isRunning
+        val updatedState = instance.state.value.copy(isRunning = newRunningState)
+        instance.state.value = updatedState
 
-        lifecycleScope.launch {
-            stopwatchRepository.saveStopwatchState(updatedState)
-        }
+        if (newRunningState) startTicker(instance) else stopTicker(instance)
+
+        lifecycleScope.launch { stopwatchRepository.saveStopwatchState(updatedState) }
     }
 
-    private fun resetStopwatch() {
-        stopTicker()
-        val updatedState = _currentState.value.copy(
+    private fun resetStopwatch(instance: StopwatchInstance) {
+        stopTicker(instance)
+        val updatedState = instance.state.value.copy(
             isRunning = false,
             currentMillis = 0L,
             laps = emptyList()
         )
-        _currentState.value = updatedState
-
-        lifecycleScope.launch {
-            stopwatchRepository.saveStopwatchState(updatedState)
-        }
+        instance.state.value = updatedState
+        lifecycleScope.launch { stopwatchRepository.saveStopwatchState(updatedState) }
     }
 
-    private fun addLap() {
-        val currentState = _currentState.value
-        if (!currentState.isRunning) return
+    private fun addLap(instance: StopwatchInstance) {
+        val current = instance.state.value
+        if (!current.isRunning || current.laps.size >= MAX_LAPS) return
 
-        if (currentState.laps.size >= MAX_LAPS) {
-            Log.d(TAG, "Maximum number of laps ($MAX_LAPS) reached")
-            return
-        }
-
-        val currentLaps = currentState.laps.toMutableList()
-        currentLaps.add(currentState.currentMillis)
-        val updatedState = currentState.copy(laps = currentLaps)
-        _currentState.value = updatedState
-
-        lifecycleScope.launch {
-            stopwatchRepository.saveStopwatchState(updatedState)
-        }
+        val updatedState = current.copy(laps = current.laps + current.currentMillis)
+        instance.state.value = updatedState
+        lifecycleScope.launch { stopwatchRepository.saveStopwatchState(updatedState) }
     }
 
-    private fun startTicker() {
-        if (tickerJob?.isActive == true) return
+    private fun startTicker(instance: StopwatchInstance) {
+        if (instance.tickerJob?.isActive == true) return
         val startTime = SystemClock.elapsedRealtime()
-        val initialMillis = _currentState.value.currentMillis
+        val initialMillis = instance.state.value.currentMillis
 
-        tickerJob = lifecycleScope.launch(Dispatchers.Default) {
-            while (isActive && _currentState.value.isRunning) {
+        instance.tickerJob = lifecycleScope.launch(Dispatchers.Default) {
+            while (isActive && instance.state.value.isRunning) {
                 val elapsed = SystemClock.elapsedRealtime() - startTime
                 val newMillis = initialMillis + elapsed
-
                 withContext(Dispatchers.Main.immediate) {
-                    _currentState.value = _currentState.value.copy(currentMillis = newMillis)
+                    instance.state.value = instance.state.value.copy(currentMillis = newMillis)
                 }
-
                 delay(TICK_INTERVAL_MS)
             }
-            Log.d(TAG, "Ticker coroutine ended for stopwatch $stopwatchId")
-        }
-        Log.d(TAG, "Ticker starting for stopwatch $stopwatchId...")
-    }
-
-    private fun stopTicker() {
-        tickerJob?.cancel()
-        tickerJob = null
-        Log.d(TAG, "Ticker stopped for stopwatch $stopwatchId")
-    }
-
-    private fun updateWindowPosition(x: Int, y: Int) {
-        val updatedState = _currentState.value.copy(windowX = x, windowY = y)
-        _currentState.value = updatedState
-
-        lifecycleScope.launch {
-            stopwatchRepository.saveStopwatchState(updatedState)
+            Log.d(TAG, "Ticker coroutine ended for stopwatch ${instance.stopwatchId}")
         }
     }
 
-    private suspend fun addOverlayViewIfNeeded() {
-        withContext(Dispatchers.Main) {
-            if (overlayView == null) {
-                layoutParams = createDefaultLayoutParams()
-                val currentState = _currentState.value
-                applyStateToLayoutParams(currentState, layoutParams!!)
+    private fun stopTicker(instance: StopwatchInstance) {
+        instance.tickerJob?.cancel()
+        instance.tickerJob = null
+    }
 
-                val inflater = LayoutInflater.from(this@StopwatchService)
-                overlayView = inflater.inflate(R.layout.view_floating_stopwatch, null)
+    private fun updateWindowPosition(instance: StopwatchInstance, x: Int, y: Int) {
+        val updatedState = instance.state.value.copy(windowX = x, windowY = y)
+        instance.state.value = updatedState
+        lifecycleScope.launch { stopwatchRepository.saveStopwatchState(updatedState) }
+    }
 
-                cacheViews()
-                setupListeners()
-                setupWindowDragListener()
+    // --- Window management ---
 
-                try {
-                    if (!isViewAdded) {
-                        windowManager.addView(overlayView, layoutParams)
-                        isViewAdded = true
-                        Log.d(TAG, "Stopwatch overlay view added.")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error adding stopwatch overlay view", e)
-                    cleanupViewReferences()
-                }
-            }
-            updateOverlayViews(_currentState.value)
+    private fun createAndAddStopwatchWindow(instance: StopwatchInstance) {
+        val params = createDefaultLayoutParams()
+        applyStateToLayoutParams(instance.state.value, params)
+        instance.layoutParams = params
+
+        val view = LayoutInflater.from(this).inflate(R.layout.view_floating_stopwatch, null)
+        instance.overlayView = view
+
+        cacheViews(instance)
+        setupListeners(instance)
+        setupWindowDragListener(instance)
+
+        try {
+            windowManager.addView(view, params)
+            instance.isViewAdded = true
+            Log.d(TAG, "Stopwatch overlay view added for ${instance.stopwatchId}.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding stopwatch overlay view for ${instance.stopwatchId}", e)
+            cleanupInstanceViews(instance)
         }
+        updateOverlayViews(instance, instance.state.value)
     }
 
     private fun createDefaultLayoutParams(): WindowManager.LayoutParams {
@@ -351,114 +337,100 @@ class StopwatchService : LifecycleService() {
         }
     }
 
-    private fun cacheViews() {
-        if (overlayView == null) return
-        digitalTimeTextView = overlayView?.findViewById(R.id.digitalTimeTextView)
-        playPauseButton = overlayView?.findViewById(R.id.playPauseButton)
-        settingsButton = overlayView?.findViewById(R.id.settingsButton)
-        closeButton = overlayView?.findViewById(R.id.closeButton)
-        lapResetButton = overlayView?.findViewById<ImageView>(R.id.lapResetButton) // Changed to ImageView
-        lapTimesLayout = overlayView?.findViewById(R.id.lapTimesLayout)
-        noLapsTextView = overlayView?.findViewById(R.id.noLapsTextView)
-
-        // Cache lap time text views
-        lapTimeTextViews.clear()
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime1TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime2TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime3TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime4TextView) ?: TextView(this))
-        lapTimeTextViews.add(overlayView?.findViewById(R.id.lapTime5TextView) ?: TextView(this))
-        lapTimeTextViews.removeAll { it.id == View.NO_ID }
+    private fun cacheViews(instance: StopwatchInstance) {
+        val view = instance.overlayView ?: return
+        instance.digitalTimeTextView = view.findViewById(R.id.digitalTimeTextView)
+        instance.playPauseButton = view.findViewById(R.id.playPauseButton)
+        instance.settingsButton = view.findViewById(R.id.settingsButton)
+        instance.closeButton = view.findViewById(R.id.closeButton)
+        instance.lapResetButton = view.findViewById(R.id.lapResetButton)
+        instance.lapTimesLayout = view.findViewById(R.id.lapTimesLayout)
+        instance.noLapsTextView = view.findViewById(R.id.noLapsTextView)
+        instance.lapTimesRecyclerView = view.findViewById<RecyclerView>(R.id.lapTimesRecyclerView)?.apply {
+            layoutManager = LinearLayoutManager(this@StopwatchService)
+            adapter = instance.lapTimesAdapter
+        }
     }
 
-    private fun setupListeners() {
-        playPauseButton?.setOnClickListener {
-            playButtonSound()
-            togglePlayPause()
+    private fun setupListeners(instance: StopwatchInstance) {
+        instance.playPauseButton?.setOnClickListener {
+            playButtonSound(instance)
+            togglePlayPause(instance)
         }
-        closeButton?.setOnClickListener { stopService() }
-        settingsButton?.setOnClickListener { openSettings() }
-
-        // Update for ImageView
-        lapResetButton?.setOnClickListener {
-            val state = _currentState.value
+        instance.closeButton?.setOnClickListener { removeStopwatchInstance(instance.stopwatchId) }
+        instance.settingsButton?.setOnClickListener { openSettings(instance.stopwatchId) }
+        instance.lapResetButton?.setOnClickListener {
+            val state = instance.state.value
             if (state.isRunning && state.showLapTimes) {
-                playButtonSound()
-                addLap()
+                playButtonSound(instance)
+                addLap(instance)
             } else if (state.currentMillis > 0L) {
-                playButtonSound()
-                resetStopwatch()
+                playButtonSound(instance)
+                resetStopwatch(instance)
             }
         }
     }
 
-    private fun updateOverlayViews(state: StopwatchState) {
-        if (overlayView == null || !isViewAdded) return
+    private fun updateOverlayViews(instance: StopwatchInstance, state: StopwatchState) {
+        if (instance.overlayView == null || !instance.isViewAdded) return
 
-        overlayView?.setBackgroundColor(state.overlayColor)
+        instance.overlayView?.setBackgroundColor(state.overlayColor)
 
-        // Use proper luminance calculation for text color
         val textColor = if (ColorUtils.calculateLuminance(state.overlayColor) > 0.5) {
             Color.BLACK
         } else {
             Color.WHITE
         }
 
-        val showCenti = state.showCentiseconds
-        val timeStr = formatTime(state.currentMillis, showCenti)
+        instance.digitalTimeTextView?.text = formatTime(state.currentMillis, state.showCentiseconds)
+        instance.digitalTimeTextView?.setTextColor(textColor)
 
-        digitalTimeTextView?.text = timeStr
-        digitalTimeTextView?.setTextColor(textColor)
+        instance.playPauseButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
+        instance.playPauseButton?.setImageResource(if (state.isRunning) R.drawable.ic_pause else R.drawable.ic_play)
+        instance.playPauseButton?.contentDescription = getString(if (state.isRunning) R.string.pause else R.string.play)
 
-        playPauseButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
-        playPauseButton?.setImageResource(if (state.isRunning) R.drawable.ic_pause else R.drawable.ic_play)
-        playPauseButton?.contentDescription = getString(if (state.isRunning) R.string.pause else R.string.play)
+        instance.settingsButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
+        instance.closeButton?.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
 
-        closeButton?.setTextColor(textColor)
-
-        // Handle lap/reset button visibility and appearance
-        val lapButton = lapResetButton as? ImageView
-        lapButton?.let { button ->
-            // Only show the button if lap times are enabled OR if there's time to reset
-            val showButton = state.showLapTimes || state.currentMillis > 0L
-            button.visibility = if (showButton) View.VISIBLE else View.GONE
-
+        // Lap/Reset button: lap while running with laps enabled, otherwise reset.
+        instance.lapResetButton?.let { button ->
             button.setColorFilter(textColor, PorterDuff.Mode.SRC_IN)
-
-            if (state.isRunning && state.showLapTimes) {
-                // Show lap icon when running and lap times enabled
-                button.setImageResource(R.drawable.ic_lap)
-                button.contentDescription = getString(R.string.lap)
-                button.isEnabled = state.laps.size < MAX_LAPS
-            } else if (state.currentMillis > 0L) {
-                // Show reset icon when stopped with time
-                button.setImageResource(R.drawable.ic_reset)
-                button.contentDescription = getString(R.string.reset)
-                button.isEnabled = true
-            } else {
-                // Hide when at 00:00.00 and not running
-                button.visibility = View.GONE
-            }
-        }
-
-        // Only show lap times layout if lap times are enabled AND there are laps
-        val hasLaps = state.laps.isNotEmpty() && state.showLapTimes
-        lapTimesLayout?.visibility = if (hasLaps || (state.showLapTimes && state.isRunning)) View.VISIBLE else View.GONE
-        noLapsTextView?.visibility = if (state.showLapTimes && state.isRunning && state.laps.isEmpty()) View.VISIBLE else View.GONE
-        noLapsTextView?.setTextColor(textColor)
-
-        if (hasLaps) {
-            val reversedLaps = state.laps.reversed()
-            lapTimeTextViews.forEachIndexed { index, textView ->
-                if (index < reversedLaps.size) {
-                    textView.text = "${state.laps.size - index}. ${formatTime(reversedLaps[index], true)}"
-                    textView.visibility = View.VISIBLE
-                    textView.setTextColor(textColor)
-                } else {
-                    textView.visibility = View.GONE
+            when {
+                state.isRunning && state.showLapTimes -> {
+                    button.visibility = View.VISIBLE
+                    button.setImageResource(R.drawable.ic_lap)
+                    button.contentDescription = getString(R.string.lap)
+                    button.isEnabled = state.laps.size < MAX_LAPS
                 }
+                state.currentMillis > 0L -> {
+                    button.visibility = View.VISIBLE
+                    button.setImageResource(R.drawable.ic_reset)
+                    button.contentDescription = getString(R.string.reset)
+                    button.isEnabled = true
+                }
+                else -> button.visibility = View.GONE
             }
         }
+
+        // Lap times list. Laps are stored oldest-first, which is also the display
+        // order (spec 10.1.3.1.1 / 10.1.3.1.2), so no reversal is needed.
+        val showLapContainer = state.showLapTimes && (state.isRunning || state.laps.isNotEmpty())
+        instance.lapTimesLayout?.visibility = if (showLapContainer) View.VISIBLE else View.GONE
+
+        val lapItems = state.laps.mapIndexed { index, lapMillis ->
+            val number = index + 1
+            val time = formatTime(lapMillis, state.showCentiseconds)
+            LapTimesAdapter.LapItem(
+                label = getString(R.string.lap_row_label, number, time),
+                description = getString(R.string.lap_row_description, number, time)
+            )
+        }
+        instance.lapTimesAdapter.submit(lapItems, textColor)
+        instance.lapTimesRecyclerView?.visibility = if (lapItems.isNotEmpty()) View.VISIBLE else View.GONE
+
+        instance.noLapsTextView?.visibility =
+            if (state.showLapTimes && state.isRunning && state.laps.isEmpty()) View.VISIBLE else View.GONE
+        instance.noLapsTextView?.setTextColor(textColor)
     }
 
     private fun applyStateToLayoutParams(state: StopwatchState, params: WindowManager.LayoutParams) {
@@ -473,64 +445,64 @@ class StopwatchService : LifecycleService() {
         }
     }
 
-    private fun updateLayoutParamsIfNeeded(state: StopwatchState) {
-        if (layoutParams == null || !isViewAdded || overlayView == null) return
+    private fun updateLayoutParamsIfNeeded(instance: StopwatchInstance, state: StopwatchState) {
+        val params = instance.layoutParams ?: return
+        if (!instance.isViewAdded || instance.overlayView == null) return
         var needsUpdate = false
-        if (layoutParams?.x != state.windowX || layoutParams?.y != state.windowY) {
-            layoutParams?.x = state.windowX
-            layoutParams?.y = state.windowY
-            layoutParams?.gravity = Gravity.TOP or Gravity.START
+        if (params.x != state.windowX || params.y != state.windowY) {
+            params.x = state.windowX
+            params.y = state.windowY
+            params.gravity = Gravity.TOP or Gravity.START
             needsUpdate = true
         }
         val newWidth = if (state.windowWidth > 0) state.windowWidth else WindowManager.LayoutParams.WRAP_CONTENT
         val newHeight = if (state.windowHeight > 0) state.windowHeight else WindowManager.LayoutParams.WRAP_CONTENT
-        if (layoutParams?.width != newWidth || layoutParams?.height != newHeight) {
-            layoutParams?.width = newWidth
-            layoutParams?.height = newHeight
+        if (params.width != newWidth || params.height != newHeight) {
+            params.width = newWidth
+            params.height = newHeight
             needsUpdate = true
         }
 
         if (needsUpdate) {
             try {
-                windowManager.updateViewLayout(overlayView, layoutParams)
+                windowManager.updateViewLayout(instance.overlayView, params)
             } catch (e: Exception) {
                 Log.e(TAG, "Error updating layout params from state", e)
             }
         }
     }
 
-    private fun removeOverlayView() {
+    private fun removeInstanceView(instance: StopwatchInstance) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
-            Log.w(TAG, "removeOverlayView called from non-UI thread. Posting to handler.")
-            Handler(Looper.getMainLooper()).post { removeOverlayView() }
+            Handler(Looper.getMainLooper()).post { removeInstanceView(instance) }
             return
         }
-        overlayView?.let {
-            if (isViewAdded && it.isAttachedToWindow) {
+        instance.overlayView?.let {
+            if (instance.isViewAdded && it.isAttachedToWindow) {
                 try {
                     windowManager.removeView(it)
-                    isViewAdded = false
-                    Log.d(TAG, "Stopwatch overlay view removed.")
+                    Log.d(TAG, "Stopwatch overlay view removed for ${instance.stopwatchId}.")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error removing stopwatch overlay view", e)
+                    Log.e(TAG, "Error removing stopwatch overlay view for ${instance.stopwatchId}", e)
                 }
             }
         }
-        cleanupViewReferences()
+        cleanupInstanceViews(instance)
     }
 
-    private fun cleanupViewReferences() {
-        overlayView = null
-        layoutParams = null
-        isViewAdded = false
-        digitalTimeTextView = null
-        playPauseButton = null
-        lapResetButton = null
-        settingsButton = null
-        closeButton = null
-        lapTimesLayout = null
-        lapTimeTextViews.clear()
-        noLapsTextView = null
+    private fun cleanupInstanceViews(instance: StopwatchInstance) {
+        instance.overlayView = null
+        instance.layoutParams = null
+        instance.isViewAdded = false
+        instance.digitalTimeTextView = null
+        instance.playPauseButton = null
+        instance.lapResetButton = null
+        instance.settingsButton = null
+        instance.closeButton = null
+        instance.lapTimesLayout = null
+        instance.noLapsTextView = null
+        instance.lapTimesRecyclerView?.adapter = null
+        instance.lapTimesRecyclerView = null
     }
 
     private fun formatTime(millis: Long, includeCentiseconds: Boolean): String {
@@ -546,105 +518,112 @@ class StopwatchService : LifecycleService() {
             else -> String.format("%02d", seconds)
         }
 
-        return if (includeCentiseconds) {
-            String.format("%s.%02d", timeString, centi)
-        } else {
-            timeString
-        }
+        return if (includeCentiseconds) String.format("%s.%02d", timeString, centi) else timeString
     }
 
-    private fun openSettings() {
+    private fun openSettings(id: Int) {
         val intent = Intent(this, StopwatchActivity::class.java).apply {
             action = StopwatchActivity.ACTION_SHOW_STOPWATCH_SETTINGS
-            putExtra(EXTRA_STOPWATCH_ID, stopwatchId)
+            putExtra(EXTRA_STOPWATCH_ID, id)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupWindowDragListener() {
-        overlayView?.setOnTouchListener { _, event ->
-            layoutParams?.let { params ->
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        initialX = params.x
-                        initialY = params.y
-                        initialTouchX = event.rawX
-                        initialTouchY = event.rawY
+    private fun setupWindowDragListener(instance: StopwatchInstance) {
+        var initialX = 0
+        var initialY = 0
+        var initialTouchX = 0f
+        var initialTouchY = 0f
+        var isMoving = false
+
+        instance.overlayView?.setOnTouchListener { _, event ->
+            val params = instance.layoutParams ?: return@setOnTouchListener false
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = params.x
+                    initialY = params.y
+                    initialTouchX = event.rawX
+                    initialTouchY = event.rawY
+                    isMoving = false
+                    return@setOnTouchListener true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaX = event.rawX - initialTouchX
+                    val deltaY = event.rawY - initialTouchY
+
+                    if (!isMoving && (abs(deltaX) > movementThreshold || abs(deltaY) > movementThreshold)) {
+                        isMoving = true
+                    }
+
+                    if (isMoving) {
+                        params.x = initialX + deltaX.toInt()
+                        params.y = initialY + deltaY.toInt()
+                        try {
+                            windowManager.updateViewLayout(instance.overlayView, params)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error updating layout on move", e)
+                        }
+                    }
+                    return@setOnTouchListener true
+                }
+                MotionEvent.ACTION_UP -> {
+                    if (isMoving) {
+                        updateWindowPosition(instance, params.x, params.y)
                         isMoving = false
                         return@setOnTouchListener true
                     }
-                    MotionEvent.ACTION_MOVE -> {
-                        val currentX = event.rawX
-                        val currentY = event.rawY
-                        val deltaX = currentX - initialTouchX
-                        val deltaY = currentY - initialTouchY
-
-                        // Use movement threshold instead of touch slop
-                        if (!isMoving && (abs(deltaX) > movementThreshold || abs(deltaY) > movementThreshold)) {
-                            isMoving = true
-                        }
-
-                        if (isMoving) {
-                            params.x = initialX + deltaX.toInt()
-                            params.y = initialY + deltaY.toInt()
-                            try {
-                                windowManager.updateViewLayout(overlayView, params)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error updating layout on move", e)
-                            }
-                        }
-                        return@setOnTouchListener true
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        if (isMoving) {
-                            updateWindowPosition(params.x, params.y)
-                            isMoving = false
-                        }
-                        return@setOnTouchListener isMoving
-                    }
-                    MotionEvent.ACTION_CANCEL -> {
-                        isMoving = false
-                        return@setOnTouchListener false
-                    }
+                    return@setOnTouchListener false
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    isMoving = false
+                    return@setOnTouchListener false
                 }
             }
             false
         }
     }
 
-    private fun stopService() {
-        if (stopwatchId > 0) {
-            instanceManager.releaseInstanceId(InstanceManager.STOPWATCH, stopwatchId)
-
-            // Check if this is the last instance
-            val remainingInstances = instanceManager.getActiveInstanceCount(InstanceManager.STOPWATCH)
-
-            lifecycleScope.launch {
-                if (remainingInstances == 0) {
-                    // Last instance - persist state for future use
-                    Log.d(TAG, "Last stopwatch instance - preserving state")
-                    stopwatchRepository.saveStopwatchState(_currentState.value)
-                } else {
-                    // Not the last instance - clean up from database
-                    Log.d(TAG, "Cleaning up stopwatch instance $stopwatchId from database")
-                    stopwatchRepository.deleteStopwatch(stopwatchId)
-                }
-
-                stopwatchRepository.clearCache(stopwatchId)
-            }
+    /**
+     * Remove a single stopwatch window. Stops the service only once the last window
+     * is closed.
+     */
+    private fun removeStopwatchInstance(id: Int) {
+        val instance = instances.remove(id) ?: return
+        instance.stateObserverJob?.cancel()
+        stopTicker(instance)
+        removeInstanceView(instance)
+        instanceManager.releaseInstanceId(InstanceManager.STOPWATCH, id)
+        lifecycleScope.launch {
+            stopwatchRepository.deleteStopwatch(id)
+            stopwatchRepository.clearCache(id)
         }
 
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        if (instances.isEmpty()) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            isForeground = false
+            stopSelf()
+        }
+    }
+
+    private fun stopAllInstancesAndService() {
+        instances.keys.toList().forEach { removeStopwatchInstance(it) }
+        if (instances.isEmpty()) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            isForeground = false
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
-        stateObserverJob?.cancel()
-        tickerJob?.cancel()
-        removeOverlayView()
+        instances.values.forEach { instance ->
+            instance.stateObserverJob?.cancel()
+            stopTicker(instance)
+            removeInstanceView(instance)
+        }
+        instances.clear()
         super.onDestroy()
     }
 
@@ -652,8 +631,6 @@ class StopwatchService : LifecycleService() {
         super.onBind(intent)
         return null
     }
-
-    private var isForeground = false
 
     private fun startForegroundServiceIfNeeded() {
         if (isForeground) return
@@ -692,30 +669,17 @@ class StopwatchService : LifecycleService() {
         }
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            dp.toFloat(),
-            resources.displayMetrics
-        ).toInt()
-    }
-
-    private fun playButtonSound() {
-        if (_currentState.value.soundsEnabled) {
+    private fun playButtonSound(instance: StopwatchInstance) {
+        if (instance.state.value.soundsEnabled) {
             playBeepSound()
         }
     }
 
     private fun playBeepSound() {
         try {
-            val toneGen = ToneGenerator(
-                AudioManager.STREAM_NOTIFICATION,
-                100
-            )
+            val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
             toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
-            Handler(Looper.getMainLooper()).postDelayed({
-                toneGen.release()
-            }, 200)
+            Handler(Looper.getMainLooper()).postDelayed({ toneGen.release() }, 200)
         } catch (e: Exception) {
             Log.e(TAG, "Error playing beep sound", e)
         }

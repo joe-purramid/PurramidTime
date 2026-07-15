@@ -124,7 +124,7 @@ class ClockSettingsFragment : Fragment() {
         selectedColor = uiStatePrefs.getInt("clock_${idToLoad}_color", Color.WHITE)
 
         // Clear any existing color swatches
-        binding.colorPaletteContainer.removeAllViews()
+        binding.colorPalette.removeAllViews()
 
         // Create color swatches
         colors.forEachIndexed { index, color ->
@@ -153,7 +153,7 @@ class ClockSettingsFragment : Fragment() {
             }
 
             // Add to container
-            binding.colorPaletteContainer.addView(colorView)
+            binding.colorPalette.addView(colorView)
 
             // Select if this is the current color
             if (color == selectedColor) {

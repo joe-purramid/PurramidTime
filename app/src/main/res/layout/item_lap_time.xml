@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One lap row in the stopwatch lap list. Root is focusable so screen readers
+     expose each lap as an individual entry (spec 10.1.3.2). -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/lapText"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:focusable="true"
+    android:fontFamily="monospace"
+    android:gravity="start"
+    android:paddingVertical="2dp"
+    android:textSize="14sp"
+    tools:text="1.  00:12.34"
+    xmlns:tools="http://schemas.android.com/tools" />

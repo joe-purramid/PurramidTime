@@ -36,7 +36,7 @@
             android:padding="8dp"
             android:scaleType="fitCenter"
             android:background="@drawable/action_button_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:tint="@color/icon_tint_stateful"
             app:srcCompat="@drawable/ic_pause"
             tools:srcCompat="@drawable/ic_pause"
             android:contentDescription="@string/pause" />
@@ -49,7 +49,7 @@
             android:scaleType="fitCenter"
             android:layout_marginStart="16dp"
             android:background="@drawable/action_button_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:tint="@color/icon_tint_stateful"
             app:srcCompat="@drawable/ic_reset"
             android:contentDescription="@string/reset" />
 
@@ -61,7 +61,7 @@
             android:scaleType="fitCenter"
             android:layout_marginStart="16dp"
             android:background="@drawable/action_button_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:tint="@color/icon_tint_stateful"
             app:srcCompat="@drawable/ic_settings"
             android:contentDescription="@string/settings" />
 

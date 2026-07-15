@@ -385,6 +385,9 @@
     <string name="hundredths">Hundredths</string>
     <string name="lap">Lap Times</string>
     <string name="no_laps_recorded">No laps recorded</string>
+    <!-- Lap row: %1$d = lap number, %2$s = elapsed time. Visible label uses "N.  time". -->
+    <string name="lap_row_label">%1$d.  %2$s</string>
+    <string name="lap_row_description">Lap %1$d, %2$s</string>
     <string name="sounds">Stopwatch sounds</string>
     <string name="stopwatch_notification_title">Stopwatch Running</string>
     <string name="stopwatch_notification_content">Stopwatch is active in the background</string>
@@ -511,4 +514,19 @@
     <string name="contact_information_title">Contact Information</string>
     <string name="company_name">Placeholder</string>
     <string name="contact_information_text">Placeholder</string>
+
+    <!-- `` RECONSTRUCTED PLACEHOLDERS `` -->
+    <!-- These string names were referenced by layouts but missing from this file
+         (part of the lost-strings issue), which blocked the build. Replace the
+         values below with the originals when recovered. -->
+    <string name="alarm">Alarm</string>
+    <string name="alarm_label_hint">Alarm label</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="sound">Sound</string>
+    <string name="vibration">Vibration</string>
+    <string name="rotate_left">Rotate Left</string>
+    <string name="rotate_right">Rotate Right</string>
+    <string name="reset_utc">Reset to UTC</string>
+    <string name="time_zone_map">Time Zone Map</string>
+    <string name="data_privacy_text">Placeholder</string>
 </resources>

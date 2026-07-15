@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RECONSTRUCTED PLACEHOLDER (was missing, blocking the build).
+     Borderless-style ripple over a rounded active-state background per the button guide. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#E3F2FD">
+    <item android:id="@android:id/mask">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFFFF" />
+        </shape>
+    </item>
+    <item>
+        <selector>
+            <item android:state_activated="true">
+                <shape android:shape="oval">
+                    <solid android:color="#E3F2FD" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="@android:color/transparent" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

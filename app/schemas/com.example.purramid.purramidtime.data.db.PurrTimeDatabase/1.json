@@ -1,0 +1,492 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "556e0047b642555fe684b204598fe643",
+    "entities": [
+      {
+        "tableName": "cities",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `city_name` TEXT NOT NULL, `country_name` TEXT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `timezone_id` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "city_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country",
+            "columnName": "country_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezone",
+            "columnName": "timezone_id",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cities_timezone_id",
+            "unique": false,
+            "columnNames": [
+              "timezone_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cities_timezone_id` ON `${TABLE_NAME}` (`timezone_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "clock_alarms",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`alarmId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `instanceId` INTEGER NOT NULL, `uuid` TEXT NOT NULL, `time` INTEGER NOT NULL, `timeZoneId` TEXT, `isEnabled` INTEGER NOT NULL, `label` TEXT NOT NULL, `daysOfWeek` INTEGER NOT NULL, `soundEnabled` INTEGER NOT NULL, `vibrationEnabled` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "alarmId",
+            "columnName": "alarmId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "instanceId",
+            "columnName": "instanceId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeZoneId",
+            "columnName": "timeZoneId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isEnabled",
+            "columnName": "isEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "label",
+            "columnName": "label",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "daysOfWeek",
+            "columnName": "daysOfWeek",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soundEnabled",
+            "columnName": "soundEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vibrationEnabled",
+            "columnName": "vibrationEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "alarmId"
+          ]
+        }
+      },
+      {
+        "tableName": "clock_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`instanceId` INTEGER NOT NULL, `uuid` TEXT NOT NULL, `timeZoneId` TEXT NOT NULL, `isPaused` INTEGER NOT NULL, `displaySeconds` INTEGER NOT NULL, `is24Hour` INTEGER NOT NULL, `clockColor` INTEGER NOT NULL, `mode` TEXT NOT NULL, `isNested` INTEGER NOT NULL, `windowX` INTEGER NOT NULL, `windowY` INTEGER NOT NULL, `windowWidth` INTEGER NOT NULL, `windowHeight` INTEGER NOT NULL, `manuallySetTimeSeconds` INTEGER, PRIMARY KEY(`instanceId`))",
+        "fields": [
+          {
+            "fieldPath": "instanceId",
+            "columnName": "instanceId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeZoneId",
+            "columnName": "timeZoneId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPaused",
+            "columnName": "isPaused",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displaySeconds",
+            "columnName": "displaySeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "is24Hour",
+            "columnName": "is24Hour",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clockColor",
+            "columnName": "clockColor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mode",
+            "columnName": "mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isNested",
+            "columnName": "isNested",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowX",
+            "columnName": "windowX",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowY",
+            "columnName": "windowY",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowWidth",
+            "columnName": "windowWidth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowHeight",
+            "columnName": "windowHeight",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "manuallySetTimeSeconds",
+            "columnName": "manuallySetTimeSeconds",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "instanceId"
+          ]
+        }
+      },
+      {
+        "tableName": "stopwatch_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`stopwatchId` INTEGER NOT NULL, `uuid` TEXT NOT NULL, `currentMillis` INTEGER NOT NULL, `isRunning` INTEGER NOT NULL, `lapsJson` TEXT NOT NULL, `showCentiseconds` INTEGER NOT NULL, `overlayColor` INTEGER NOT NULL, `windowX` INTEGER NOT NULL, `windowY` INTEGER NOT NULL, `windowWidth` INTEGER NOT NULL, `windowHeight` INTEGER NOT NULL, `soundsEnabled` INTEGER NOT NULL, `selectedSoundUri` TEXT, `musicUrl` TEXT, `recentMusicUrlsJson` TEXT NOT NULL, `showLapTimes` INTEGER NOT NULL, PRIMARY KEY(`stopwatchId`))",
+        "fields": [
+          {
+            "fieldPath": "stopwatchId",
+            "columnName": "stopwatchId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentMillis",
+            "columnName": "currentMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRunning",
+            "columnName": "isRunning",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lapsJson",
+            "columnName": "lapsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "showCentiseconds",
+            "columnName": "showCentiseconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overlayColor",
+            "columnName": "overlayColor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowX",
+            "columnName": "windowX",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowY",
+            "columnName": "windowY",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowWidth",
+            "columnName": "windowWidth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowHeight",
+            "columnName": "windowHeight",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soundsEnabled",
+            "columnName": "soundsEnabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selectedSoundUri",
+            "columnName": "selectedSoundUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "musicUrl",
+            "columnName": "musicUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recentMusicUrlsJson",
+            "columnName": "recentMusicUrlsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "showLapTimes",
+            "columnName": "showLapTimes",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "stopwatchId"
+          ]
+        }
+      },
+      {
+        "tableName": "timer_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`timerId` INTEGER NOT NULL, `uuid` TEXT NOT NULL, `initialDurationMillis` INTEGER NOT NULL, `currentMillis` INTEGER NOT NULL, `isRunning` INTEGER NOT NULL, `playSoundOnEnd` INTEGER NOT NULL, `overlayColor` INTEGER NOT NULL, `windowX` INTEGER NOT NULL, `windowY` INTEGER NOT NULL, `windowWidth` INTEGER NOT NULL, `windowHeight` INTEGER NOT NULL, `isNested` INTEGER NOT NULL, `nestedX` INTEGER NOT NULL, `nestedY` INTEGER NOT NULL, `selectedSoundUri` TEXT, `musicUrl` TEXT, `recentMusicUrlsJson` TEXT NOT NULL, `presetTimesJson` TEXT NOT NULL, `showPresetButton` INTEGER NOT NULL, PRIMARY KEY(`timerId`))",
+        "fields": [
+          {
+            "fieldPath": "timerId",
+            "columnName": "timerId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uuid",
+            "columnName": "uuid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "initialDurationMillis",
+            "columnName": "initialDurationMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentMillis",
+            "columnName": "currentMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRunning",
+            "columnName": "isRunning",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "playSoundOnEnd",
+            "columnName": "playSoundOnEnd",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "overlayColor",
+            "columnName": "overlayColor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowX",
+            "columnName": "windowX",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowY",
+            "columnName": "windowY",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowWidth",
+            "columnName": "windowWidth",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "windowHeight",
+            "columnName": "windowHeight",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isNested",
+            "columnName": "isNested",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nestedX",
+            "columnName": "nestedX",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nestedY",
+            "columnName": "nestedY",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selectedSoundUri",
+            "columnName": "selectedSoundUri",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "musicUrl",
+            "columnName": "musicUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recentMusicUrlsJson",
+            "columnName": "recentMusicUrlsJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "presetTimesJson",
+            "columnName": "presetTimesJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "showPresetButton",
+            "columnName": "showPresetButton",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "timerId"
+          ]
+        }
+      },
+      {
+        "tableName": "time_zone_boundaries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tzid` TEXT NOT NULL, `polygonWkt` TEXT NOT NULL, PRIMARY KEY(`tzid`))",
+        "fields": [
+          {
+            "fieldPath": "tzid",
+            "columnName": "tzid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "polygonWkt",
+            "columnName": "polygonWkt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "tzid"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '556e0047b642555fe684b204598fe643')"
+    ]
+  }
+}

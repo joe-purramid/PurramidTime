@@ -20,7 +20,7 @@
             android:layout_alignParentEnd="true"
             android:src="@drawable/ic_close"
             android:background="@drawable/action_button_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:tint="@color/icon_tint_stateful"
             android:scaleType="centerInside"
             android:contentDescription="@string/close" />
     </RelativeLayout>
@@ -51,7 +51,7 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_settings"
             android:background="@drawable/action_button_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:tint="@color/icon_tint_stateful"
             android:scaleType="centerInside"
             android:contentDescription="@string/settings" />
 
@@ -63,7 +63,7 @@
             android:src="@drawable/ic_play"
             android:layout_marginHorizontal="16dp"
             android:background="@drawable/action_button_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:tint="@color/icon_tint_stateful"
             android:scaleType="centerInside"
             android:contentDescription="@string/play" />
 
@@ -74,7 +74,7 @@
             android:layout_height="48dp"
             android:src="@drawable/ic_reset"
             android:background="@drawable/action_button_background"
-            android:imageTintList="@color/icon_tint_stateful"
+            android:tint="@color/icon_tint_stateful"
             android:scaleType="centerInside"
             android:visibility="gone"
             android:contentDescription="@string/reset" />
