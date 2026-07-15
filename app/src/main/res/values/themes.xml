@@ -19,10 +19,12 @@
         <item name="android:fontFamily">@font/balsamiq_sans</item>
         <item name="fontFamily">@font/balsamiq_sans</item>
 
-        <!-- Apply custom text appearances -->
-        <item name="textAppearanceHeadline1">@styles/TextAppearance.PurramidTime.Headline1</item>
-        <item name="textAppearanceHeadline2">@style/TextAppearance.PurramidTime.Headline2</item>
-        <item name="textAppearanceBody1">@style/TextAppearance.PurramidTime.Body1</item>
+        <!-- Apply custom text appearances (styles.xml defines these under
+             Display*/Body* names; map the legacy Headline1/2 + Body1 theme
+             attributes to their equivalently-parented styles) -->
+        <item name="textAppearanceHeadline1">@style/TextAppearance.PurramidTime.DisplayLarge</item>
+        <item name="textAppearanceHeadline2">@style/TextAppearance.PurramidTime.DisplayMedium</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.PurramidTime.BodyLarge</item>
         <item name="textAppearanceButton">@style/TextAppearance.PurramidTime.Button</item>
 
         <!-- Default text appearance for all text -->
