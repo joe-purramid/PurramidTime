@@ -222,10 +222,14 @@ data class StopwatchStateEntity(
     @ColumnInfo(name = "window_height")
     val windowHeight: Int = -1,
     
-    // Sound fields for lap notifications
+    // Sound field: Stopwatch audio is a local monotone beep only (spec 8.2.2.4).
     @ColumnInfo(name = "sounds_enabled")
     val soundsEnabled: Boolean = false,
     
+    // NOTE: selectedSoundUri / musicUrl / recentMusicUrlsJson are vestigial —
+    // copied from TimerStateEntity but unused by the Stopwatch (no sound picker,
+    // no music URL; see purramid_audio_requirements.md). Prefer removing these
+    // three columns in the next schema migration rather than wiring them up.
     @ColumnInfo(name = "selected_sound_uri")
     val selectedSoundUri: String? = null,
     
@@ -277,9 +281,11 @@ data class TimeZoneBoundaryEntity(
     val tzid: String, // IANA timezone identifier
     
     @ColumnInfo(name = "polygon_wkt")
-    val polygonWkt: String // WKT format polygon data
+    val polygonWkt: String // WKT form of the boundary polygon (normalized at load time)
 )
 ```
+
+> **Source format vs stored format:** the on-disk asset is **GeoJSON** (`app/src/main/assets/time_zones.geojson`), not WKT. `DatabaseInitializer` reads the GeoJSON, converts each feature's geometry to a JTS `Geometry`, and stores its WKT serialization in `polygonWkt`. Keep the stored column WKT so the Clock globe overlay can round-trip boundaries through JTS (`WKTReader`/`WKTWriter`) without re-parsing GeoJSON at runtime. If you would rather store GeoJSON directly, rename the column and update both this entity and `TimeZoneGlobeActivity` — do not leave the doc and the loader disagreeing.
 
 ## DAO Interfaces
 
@@ -475,7 +481,15 @@ abstract class PurramidTimeDatabase : RoomDatabase() {
 }
 ```
 
+> **`exportSchema = true` needs a schema directory.** With Room 2.7 + KSP, configure it in `app/build.gradle.kts` so the generated JSON schemas are written and committed (they are the diff RELEASE migrations are validated against):
+> ```kotlin
+> room { schemaDirectory("$projectDir/schemas") }   // requires the `androidx.room` Gradle plugin
+> ```
+> Without this, `exportSchema = true` only emits a build warning and no schema is saved.
+
 ## Type Converters
+
+> **Gson vs kotlinx.serialization:** the converters below use Gson, but the project already applies the `kotlin-serialization` plugin (`app/build.gradle.kts`). Gson is in maintenance-only mode; for new converters prefer `kotlinx.serialization` (`Json.encodeToString` / `decodeFromString`) so the app standardizes on one JSON library. If the codebase still depends on Gson elsewhere, keep these as-is until that is migrated rather than mixing both in new code.
 
 ```kotlin
 class PurramidTimeConverters {
@@ -576,14 +590,18 @@ class DatabaseInitializer @Inject constructor(
     }
     
     private suspend fun loadCitiesFromCsv() {
-        context.assets.open("cities.csv").use { inputStream ->
+        // Actual asset filename (verified in app/src/main/assets/)
+        context.assets.open("cities_timezones.csv").use { inputStream ->
             val cities = parseCityCsv(inputStream)
             cityDao.insertAll(cities)
         }
     }
     
     private suspend fun loadTimezoneBoundaries() {
-        context.assets.open("timezone_boundaries.json").use { inputStream ->
+        // Source of truth on disk is GeoJSON (time_zones.geojson), NOT WKT.
+        // Parse each feature's geometry with JTS and store its WKT form in
+        // TimeZoneBoundaryEntity.polygonWkt (see the note on that entity).
+        context.assets.open("time_zones.geojson").use { inputStream ->
             val boundaries = parseTimezoneBoundaries(inputStream)
             timeZoneDao.insertAll(boundaries)
         }

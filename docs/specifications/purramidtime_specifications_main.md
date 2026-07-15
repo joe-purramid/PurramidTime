@@ -1,5 +1,5 @@
-// MainActivity.kt
-
+# PurramidTime - Main (Launcher) - App-Intent Development Specifications
+The launcher (`MainActivity`) is the floating entry point that unfolds the four app-intents (Clock, Timer, Stopwatch, About).
 
 ## Technical Implementation Notes
 - Service/Activity type: Activity only (MainActivity)
@@ -15,7 +15,7 @@
 Purramid Time is an application built in Kotlin for Android 13 or more current versions to be run on large-screen tablets (55" or larger). It is represented by an actionable button shown on the screen as an app icon (purramidtime_launcher.webp). The app icon serves as the button itself, allowing users to interact directly with it to trigger specific actions. This icon should visually convey its purpose and fit seamlessly into the design. Include animations or visual cues to indicate interactivity, such as highlighting, pulsating, or transitioning effects when tapped.
 
 (1) When the user interacts with the app icon button
-	(1.1) a list of availabe intents unfolds in a smooth animation.
+	(1.1) a list of available intents unfolds in a smooth animation.
 		(1.1.1) Each app-intent
 			(1.1.1.1) has a corresponding launcher image
 			(1.1.1.2) lists its name as a string
@@ -25,7 +25,7 @@ Purramid Time is an application built in Kotlin for Android 13 or more current v
 				(1.1.1.3.3) Stopwatch (tp_stopwatch_launcher.webp)
 				(1.1.1.3.4) About (tp_about_launcher.webp)
 		(1.1.2) The list displays in a pleasing fashion
-			(1.1.1.3) Perhaps with a slight curve
+			(1.1.2.1) Perhaps with a slight curve
 
 (2) When the user interactis with the app icon when the app-intent list is open, the list folds closed in a smooth animation.
 	
@@ -33,11 +33,11 @@ Purramid Time is an application built in Kotlin for Android 13 or more current v
 	(3.1) highlight the icon and string with a light blue border
 		(3.1.1) If there is a best practice for showing an app being activated, use that in place of the blue border
 	(3.2) the app-intent list folds closed in a smooth animation.
-	(3.3) the corresponding app-intent activity or service launches.
-		(3.3.1) ClockOverlayService.kt
-		(3.3.2) TimerService.kt
-		(3.3.3) StopwatchService.kt
-		(3.3.4) AboutActivity.kt
+	(3.3) the corresponding app-intent launches. For Clock/Timer/Stopwatch, MainActivity starts the settings Activity, which in turn starts (and binds to) the foreground overlay Service that owns the window (see purramidtime_architecture_decisions.md, "Service + Activity pairing"). MainActivity does not start the Service directly.
+		(3.3.1) Clock: ClockActivity → ClockOverlayService
+		(3.3.2) Timer: TimerActivity → TimerService
+		(3.3.3) Stopwatch: StopwatchActivity → StopwatchService
+		(3.3.4) About: AboutActivity (no service)
 		
 (4) If the user touches anywhere on the screen that is not an app-intent icon, the app-intent list folds closed with a smooth animation. 
 

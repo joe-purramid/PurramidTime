@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides step-by-step instructions for implementing consistent active/inactive states for action button icons in our Android Kotlin application targeting Android 13.
+This document provides step-by-step instructions for implementing consistent active/inactive states for action button icons in our Android Kotlin application. It applies across the full supported range (Android 13 / API 33 through the current target, API 36); the color-state-list + ripple approach below is version-independent.
 
 ## Benefits of Background Tinting for Touch Interfaces
 
@@ -21,6 +21,7 @@ Adding background tinting addresses several critical touch interface challenges:
 - **Active Background**: `#E3F2FD` (Light Blue - provides subtle contrast without overwhelming the icon)
 - **Touch Feedback**: Ripple effect on all interactive buttons
 - **State Management**: Use `isActivated` property for boolean on/off states
+- **Disabled (non-interactable) State**: set `isEnabled = false` and `alpha = 0.5f` on the button (per the implementation-decisions log, 20 Aug 2025). This is distinct from the *inactive* state above: *inactive* (`#757575`) is an enabled button in its off position; *disabled* is a button that currently cannot be pressed (e.g., "Add Another" once four windows exist, or "Lap" after ten laps).
 
 ---
 

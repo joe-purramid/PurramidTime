@@ -28,7 +28,7 @@ Timer is the second PurramidTime app-intent
   - Shared: MultiWindowManager
 
 
- --- RUNTIME EVENTS ---
+## RUNTIME EVENTS
 (1) On first app-intent launch, the timer opens in a windowed state.
 (2) The most recent timer user preferences are saved. Save the following:
 	(2.1) Timer size
@@ -39,16 +39,16 @@ Timer is the second PurramidTime app-intent
 (3) On future app-intent launches, the timer loads saved user preferences.
 
 
- --- USER INTERFACE ---
+## USER INTERFACE
 (4) A Settings button is positioned in the bottom left corner.
 	(4.1) Default icon state uses ic_settings.xml.
-	(4.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+	(4.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 (5) A Close button is positioned in the top right corner.
 	(5.1) Default icon state uses ic_close.xml.
-	(5.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+	(5.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 (6) All timers use a digital clock face HH:MM:SS
 
-``BUTTONS``
+### BUTTONS
 (7) Below the timer clock is two buttons:
 	(7.1) Play/Pause
 		(7.1.1) Default state: ic_pause.xml
@@ -59,7 +59,7 @@ Timer is the second PurramidTime app-intent
 	(7.3) Play/Pause is on the left, and Reset is on the right.
 		(7.3.1) This order is reversed for right-to-left languages.
 
-``NESTED``
+### NESTED
 (8) A nested timer:
     (8.1) is reduced in size, 75px by 75px
     (8.2) is affixed to the top right corner of the screen
@@ -70,8 +70,8 @@ Timer is the second PurramidTime app-intent
 		(8.5.1) Nested timers are are stacked one above the other, with the newest timer on the bottom.
 
 
- --- USER EXPERIENCE ---
-(9) ``SETTINGS SUMMARY``
+## USER EXPERIENCE
+### (9) SETTINGS SUMMARY
 	(9.1) When a user touches the settings button
 		(9.1.1) its icon changes from (4.1) Default to (4.2) Active.
 		(9.1.2) time is paused if it is actively counting
@@ -113,18 +113,18 @@ Timer is the second PurramidTime app-intent
 					(9.2.2.2.2.7) If the user press-hold-drags a number, the behavior is the same as (9.2.2.2.3.6) except time changes only one number at a time.
 				(9.2.2.2.3) The maximum time that can be set is 99:59:59.00
 			(9.2.2.3) "Play Sound on Finish"
-				(9.2.2.3.1) This setting option is only visible if timer mode is set to Countdown Timer.
+				(9.2.2.3.1) The Timer only counts down, so this setting is always visible. (Historical note: an earlier draft gated it behind a "Countdown Timer" mode that no longer exists; there is no timer mode toggle.)
 				(9.2.2.3.2) Following the phrase "Play Sound on Finish" is a drop-down arrow.
 					(9.2.2.3.2.1) The drop-down arrow's default state is ic_arrow_drop_down.xml
 					(9.2.2.3.2.2) The drop-down arrow's active state is ic_arrow_drop_up.xml
-				(9.2.2.3.3) If the user taps the word "Mode" or the drop-down arrow
+				(9.2.2.3.3) If the user taps the phrase "Play Sound on Finish" or the drop-down arrow
 					(9.2.2.3.3.1) A horizontal drop-down menu opens with a smooth animation.
 						(9.2.2.3.3.1.1) The menu displays a "sounds" button and a "music" button
 							(9.2.2.3.3.1.1.1) "Sounds" displays a list of sounds available on the device
 							(9.2.2.3.3.1.1.2) "Music" displays the (9.2.2.4) Music URL interface
 							(9.2.2.3.3.1.1.3) The functionality and behavior here is similar to the sounds/music options in the Android system alarm clock.
 			(9.2.2.4) "Music URL"
-				(9.2.2.4.1) Following the phrase "Set Music URL" is an edit button
+				(9.2.2.4.1) Following the phrase "Music URL" is an edit button
 					(9.2.2.4.1.1) Default state: ic_edit.xml
 					(9.2.2.4.1.2) Active state: Programmatically change fill colors for default state icons to #808080
 				(9.2.2.4.2) If the user taps the phrase "Music URL" or the edit button
@@ -132,12 +132,12 @@ Timer is the second PurramidTime app-intent
 					(9.2.2.4.2.2) The top of the window includes:
 						(9.2.2.4.2.2.1) A back arrow in the top left corner of the window. 
 							(9.2.2.4.2.2.1.1) Default icon state uses ic_back.xml.
-							(9.2.2.4.2.2.1.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+							(9.2.2.4.2.2.1.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 							(9.2.2.4.2.2.1.3) When activated the Music URL display closes.
 								(9.2.2.4.2.2.1.3.1) The user returns to the main settings window.
 						(9.2.2.4.2.2.2) A close button in the top right corner of the window.
 							(9.2.2.4.2.2.2.1) Default icon state uses ic_close.xml.
-							(9.2.2.4.2.2.2.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+							(9.2.2.4.2.2.2.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 							(9.2.2.4.2.2.2.3) When activated all settings related windows close.
 					(9.2.2.4.2.3) Below the back arrow and close button is a row consisting of:
 						(9.2.2.4.2.3.1) the string "Music URL"
@@ -178,7 +178,7 @@ Timer is the second PurramidTime app-intent
 			(9.2.2.6) "Add Another"
 				(9.2.2.6.1) Following the phrase "Add Another" is an add icon.
 					(9.2.2.6.1.1) Default icon state: ic_add_circle.xml.
-					(9.2.2.6.1.2) The active icon state: programatically changes the fill color of the default icon to #808080.
+					(9.2.2.6.1.2) The active icon state: programmatically changes the fill color of the default icon to #808080.
 				(9.2.2.6.2) When a user touches the Add Another button
 					(9.2.2.6.2.1) its icon changes from Default to Active for the duration of the onTouch event
 					(9.2.2.6.2.2) a new timer appears at the geometric center of the screen.
@@ -188,8 +188,8 @@ Timer is the second PurramidTime app-intent
 					(9.2.2.6.2.3) If four timers already exist on the screen, the Add Another setting is inactivated.
 
 
- --- Non-Settings UX ---
-(10) ``PLAY/PAUSE``
+## Non-Settings UX
+### (10) PLAY/PAUSE
 	(10.1) When a user taps the play/pause button while it is in its default state:
 		(10.1.1) the icon changes to its active state
 		(10.1.2) the time counting animation stops (is paused)
@@ -197,7 +197,7 @@ Timer is the second PurramidTime app-intent
 		(10.2.1) the icon changes to its default state
 		(10.2.2) time resumes counting (plays) from the point at which it was paused
 			
-(11) ``RESET``
+### (11) RESET
 	(11.1) When a user taps the reset button
 		(11.1.1) the icon changes to its active state for the duration of the onTouch event
 		(11.1.2) a countdown timer resets to the set time
@@ -209,10 +209,10 @@ Timer is the second PurramidTime app-intent
 
 (12) TODO: Is "Enable Overlay" implemented correctly? It should be an auto-prompt and not a button.
 
-(13) ``PRESET TIME``
+### (13) PRESET TIME
 	(13.1) A Preset Time icon appears in the bottom right corner of the User Interface
 		(13.1) Default icon state uses ic_lap.xml.
-		(13.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+		(13.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 	(13.2) When a user touches the Preset Time button
 		(13.2.1) its icon changes from (13.1) Default to (13.2) Active.
 		(13.2.2) time is not paused if it is actively counting

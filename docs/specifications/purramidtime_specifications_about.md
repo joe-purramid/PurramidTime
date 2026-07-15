@@ -27,7 +27,7 @@ About is the fourth and final PurramidTime app-intent
 	(3.1) Default icon state uses ic_close.xml.
 	(3.2) Active state: Programmatically change fill colors per Button Implementation Guidelines.
 
-(4) ``CLOSE``
+### (4) CLOSE
 	(4.1) When a user touches the Close button, its icon changes from (3.1) Default to (3.2) Active.
 	(4.2) The window closes.
 	(4.3) The About activity ends.

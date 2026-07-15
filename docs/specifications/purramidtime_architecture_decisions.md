@@ -63,6 +63,8 @@ object DispatcherModule {
 
 ## State Management
 
+> **Reactive type (best practice):** Expose UI state from ViewModels as Kotlin `StateFlow`/`SharedFlow` collected with `repeatOnLifecycle`/`flowWithLifecycle`, not `LiveData`. The project still pulls in `lifecycle-livedata-ktx` for legacy paths, but new ViewModel/Repository code should be Flow-based end to end; reserve `LiveData` only where an existing API forces it.
+
 ### **UI State Pattern**
 ```kotlin
 sealed class ClockUiState {
@@ -297,17 +299,33 @@ object TestAppModule
 ```xml
 <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 <uses-permission android:name="android.permission.INTERNET" /> <!-- Used for streaming music URLs only -->
 <uses-permission android:name="android.permission.WAKE_LOCK" />
 <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
 <application android:supportsRtl="true">
-    <service android:name=".service.ClockOverlayService" 
-             android:foregroundServiceType="specialUse" />
+    <service android:name=".clock.ClockOverlayService"
+             android:foregroundServiceType="specialUse">
+        <property
+            android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+            android:value="persistent_classroom_overlay" />
+    </service>
 </application>
 ```
+
+**Foreground-service type (Android 14/15):** The overlay services (`ClockOverlayService`, `TimerService`, `StopwatchService`) use `foregroundServiceType="specialUse"` (permission `FOREGROUND_SERVICE_SPECIAL_USE`) with a declared `PROPERTY_SPECIAL_USE_FGS_SUBTYPE`. Do **not** revert them to `dataSync`:
+- On **Android 14 (API 34)** the system enforces a match between the declared FGS type and the granted permission, and `dataSync` is intended for finite sync work.
+- On **Android 15 (API 35)** `dataSync` foreground services are subject to a cumulative **~6-hour-per-24h runtime cap**, after which the system invokes `onTimeout()` and stops the service. Roughly half of PurramidTime's install base runs Android 15, so an all-day classroom clock/timer would be force-stopped mid-lesson.
+
+`specialUse` has no such runtime cap and honestly describes a persistent, user-visible overlay. The services call the two-arg `startForeground(id, notification)`, so the type is taken from the manifest — there is no `startForeground(..., type)` constant to keep in sync. When alarm/timer audio is actively playing, `mediaPlayback` may additionally be declared for that window if desired. Note: publishing with `specialUse` requires a short justification in the Play Console.
+
+**Exact alarms across the split install base:** `USE_EXACT_ALARM` (API 33+) is auto-granted to alarm-clock apps and is the correct backing for the Clock alarm feature. `SCHEDULE_EXACT_ALARM` is user-revocable on Android 13; before scheduling, check `AlarmManager.canScheduleExactAlarms()` and degrade gracefully (in-app rationale + `ACTION_REQUEST_SCHEDULE_EXACT_ALARM`) rather than crashing.
+
+PurramidTime has no microphone or noise-monitoring features. Do not add `RECORD_AUDIO` — see [purramid_audio_requirements.md](purramid_audio_requirements.md).
 
 ## Performance Requirements
 
@@ -320,7 +338,6 @@ object TestAppModule
 ### **Responsiveness**
 - UI interactions: < 16ms response time
 - Database operations: < 100ms for simple queries
-- Audio detection: 2-second polling interval
 - Animation frame rate: 60 FPS target, 30 FPS minimum
 
 ## Security Considerations
@@ -328,7 +345,6 @@ object TestAppModule
 ### **Data Protection**
 - No sensitive user data collection
 - Local storage only (no cloud sync); INTERNET permission is used exclusively for streaming music URLs
-- Audio data processed locally, never stored
 - Overlay permission usage limited to app functionality
 
 ### **Permission Handling**

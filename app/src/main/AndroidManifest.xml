@@ -4,7 +4,7 @@
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -62,7 +62,10 @@
         <service android:name=".clock.ClockOverlayService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync">
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="persistent_classroom_overlay" />
         </service>
 
         <activity android:name=".clock.ui.TimeZoneGlobeActivity"
@@ -99,7 +102,11 @@
         <service android:name=".stopwatch.StopwatchService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="persistent_classroom_overlay" />
+        </service>
 
         <!-- TIMER -->
         <activity android:name=".timer.TimerActivity"
@@ -124,7 +131,11 @@
         <service android:name=".timer.TimerService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="persistent_classroom_overlay" />
+        </service>
 
         <!-- ABOUT -->
         <activity android:name=".AboutActivity"

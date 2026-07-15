@@ -8,65 +8,65 @@ Stopwatch is the third PurramidTime app-intent
 - Service/Activity type: Foreground Service (StopwatchService) + Settings Activity (StopwatchActivity)
 - Free-form window support: Yes
 - Multi-instance support: Yes (up to 4 simultaneous stopwatches)
-- Window tracking: UUID per timer window
+- Window tracking: UUID per stopwatch window
 - Shares single service: Yes
 - Requires permissions:
   - SYSTEM_ALERT_WINDOW (for overlay)
   - FOREGROUND_SERVICE
   - POST_NOTIFICATIONS
-  - INTERNET (music access)
   - WAKE_LOCK
   - RECEIVE_BOOT_COMPLETED
+  - (No INTERNET: the Stopwatch has no music/streaming feature; its only audio is a local monotone beep — see purramid_audio_requirements.md.)
 - Instance tracking: 
   - Uses standardized instanceId (1-4) pattern
   - Persists with UUID for crash recovery
   - Managed by InstanceManager
-- Database entities: TimerStateEntity
+- Database entities: StopwatchStateEntity
 - Key dependencies:
   - ViewModels: StopwatchViewModel
   - DAO: StopwatchDao
   - Shared: MultiWindowManager
 
 
- --- RUNTIME EVENTS ---
+## RUNTIME EVENTS
 (1) On first app-intent launch, the stopwatch opens in a windowed state.
 (2) The most recent stopwatch user preferences are saved. Save the following:
 	(2.1) Stopwatch size
 	(2.2) Background color
-	(2.3) Set countdown time
-	(2.4) Hundredths toggle state
-    (2.5) Lap toggle state
-    (2.6) Sounds toggle state
+	(2.3) Hundredths toggle state
+    (2.4) Lap toggle state
+    (2.5) Sounds toggle state
+    (Note: the Stopwatch counts up from zero and has no "set time"; there is no countdown to persist.)
 (3) On future app-intent launches, the stopwatch loads saved user preferences.
 
 
- --- USER INTERFACE ---
+## USER INTERFACE
 (4) A Settings button is positioned in the bottom left corner.
 	(4.1) Default icon state uses ic_settings.xml.
-	(4.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+	(4.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 (5) A Close button is positioned in the top right corner.
 	(5.1) Default icon state uses ic_close.xml.
-	(5.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+	(5.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 (6) All stopwatches use a digital clock face HH:MM:SS
     (6.1) Hundredths will be abbreviated as cs (centiseconds) in the instructions, but all user-facing strings say Hundredths.
     (6.2) If Hundredths is toggled on, time displays as HH:MM:SS.cs
         (6.2.1) Hundredths appear 0.6f the size of the other numbers.
         (6.2.2) Hundredths are separated from seconds with a period not a colon.
 
-``BUTTONS``
+### BUTTONS
 (7) Below the stopwatch clock is two buttons:
 	(7.1) Play/Pause
 		(7.1.1) Default state: ic_pause.xml
 		(7.1.2) Active state: ic_play.xml
 	(7.2) Reset
 		(7.2.1) Default state: ic_reset.xml
-		(7.2.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+		(7.2.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 	(7.3) Play/Pause is on the left, and Reset is on the right.
 		(7.3.1) This order is reversed for right-to-left languages.
 
 
- --- USER EXPERIENCE ---
-(8) ``SETTINGS SUMMARY``
+## USER EXPERIENCE
+### (8) SETTINGS SUMMARY
 	(8.1) When a user touches the settings button
 		(8.1.1) its icon changes from (4.1) Default to (4.2) Active.
 		(8.1.2) time is paused if it is actively counting
@@ -75,12 +75,12 @@ Stopwatch is the third PurramidTime app-intent
 		(8.2.2) The settings window is rows of strings and an icon:
 			(8.2.2.1) "Colors"
 				(8.2.2.1.1) Following the word "Color" is a color square
-					(8.2.2.1.1.1) The fill for this square is the color current used for the timer background
+					(8.2.2.1.1.1) The fill for this square is the color currently used for the stopwatch background
 					(8.2.2.1.1.2) The default color is White.
 				(8.2.2.1.2) If the user taps the word "Color" or the color square, a color picker opens.
 				(8.2.2.1.3) The color picker displays the six color options from PurramidPalette.kt
-					(8.2.2.1.3.1) This color applies to the timer background
-					(8.2.2.1.3.2) Timer numbers are either black and white depending on which option creates the best color contrast with the background color.
+					(8.2.2.1.3.1) This color applies to the stopwatch background
+					(8.2.2.1.3.2) Stopwatch numbers are either black or white depending on which option creates the best color contrast with the background color.
 			(8.2.2.2) "Hundredths"
 				(8.2.2.2.1) Following the word "Hundredths" is an on/off toggle.
 					(8.2.2.2.1.1) The toggle includes the strings "On" and "Off"
@@ -94,7 +94,7 @@ Stopwatch is the third PurramidTime app-intent
 				(8.2.2.3.2) If the setting is toggled on
 					(8.2.2.3.2.1) a "Lap" button appears beside the reset button
 						(8.2.2.3.2.1.1) Default state: ic_lap.xml
-						(8.2.2.3.2.1.2) Active state: programatically changes the fill color of the default icon to #808080
+						(8.2.2.3.2.1.2) Active state: programmatically changes the fill color of the default icon to #808080
 			(8.2.2.4) "Sounds"
 				(8.2.2.4.1) Following the word "Sounds" is an on/off toggle.
 					(8.2.2.4.1.1) The toggle includes the strings "On" and "Off"
@@ -103,7 +103,7 @@ Stopwatch is the third PurramidTime app-intent
 			(8.2.2.5) "Add Another"
 				(8.2.2.5.1) Following the phrase "Add Another" is an add icon.
 					(8.2.2.5.1.1) Default icon state: ic_add_circle.xml.
-					(8.2.2.5.1.2) The active icon state: programatically changes the fill color of the default icon to #808080.
+					(8.2.2.5.1.2) The active icon state: programmatically changes the fill color of the default icon to #808080.
 				(8.2.2.5.2) When a user touches the Add Another button
 					(8.2.2.5.2.1) its icon changes from Default to Active for the duration of the onTouch event
 					(8.2.2.5.2.2) a new stopwatch appears at the geometric center of the screen.
@@ -113,8 +113,8 @@ Stopwatch is the third PurramidTime app-intent
 					(8.2.2.5.2.3) If four stopwatches already exist on the screen, the Add Another setting is inactivated.
 
 
- --- Non-Settings UX ---
-(9) ``PLAY/PAUSE``
+## Non-Settings UX
+### (9) PLAY/PAUSE
 	(9.1) When a user taps the play/pause button while it is in its default state:
 		(9.1.1) the icon changes to its active state
 		(9.1.2) the time counting animation stops (is paused)
@@ -122,7 +122,7 @@ Stopwatch is the third PurramidTime app-intent
 		(9.2.1) the icon changes to its default state
 		(9.2.2) time resumes counting (plays) from the point at which it was paused
 			
-(10) ``LAP``
+### (10) LAP
 	(10.1) When a user taps the lap button
 		(10.1.1) the icon changes to its active state for the duration of the onTouch event
 		(10.1.2) The header string "Lap Times" appears beside the digital clock
@@ -131,9 +131,9 @@ Stopwatch is the third PurramidTime app-intent
 				(10.1.3.1.1) The first lapped time appears on top
 				(10.1.3.1.2) Each successive lap is added to the bottom of the list.
 				(10.1.3.1.3) When ten lap times are displayed, the lap button becomes inactive.
-			(10.1.3.2) Reference "Announce" in the randomizers app-intent for examples of how this text should appear.
+			(10.1.3.2) Each lap row shows the lap number and the elapsed time at the moment the lap was recorded (formatted per the current Hundredths setting), left-aligned beside the "Lap Times" header. Lap rows must be exposed to screen readers as individual, readable entries.
 
-(11) ``RESET``
+### (11) RESET
 	(11.1) When a user taps the reset button
 		(11.1.1) the icon changes to its active state for the duration of the onTouch event
 		(11.1.2) the timer resets to 00:00:00.00

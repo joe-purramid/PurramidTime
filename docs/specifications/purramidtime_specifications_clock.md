@@ -5,7 +5,7 @@ Purramid Time is a classroom management tool that displays three time-keeping ap
 Clock is the first PurramidTime app-intent
 
 ## **Technical Implementation Notes**
-- Service/Activity type: Foreground Service (PurrPetsService) + Settings Activity (PurrPetsActivity)
+- Service/Activity type: Foreground Service (ClockOverlayService) + Settings Activity (ClockActivity)
 - Free-form window support: Yes
 - Multi-instance support: Yes (up to 4 simultaneous clocks)
 - Window tracking: UUID per clock window
@@ -27,8 +27,8 @@ Clock is the first PurramidTime app-intent
   - TimeZoneBoundaryEntity (timezone boundaries)
 - Key dependencies:
   - ViewModel: ClockViewModel (time state, settings)
-  - DAO: 
-	-- CithDao
+  - DAO:
+	-- CityDao
 	-- ClockDao (implements standardized methods)
 	-- TimeZoneDao
   - Repository: TimeZoneRepository (for timezone data)
@@ -37,7 +37,7 @@ Clock is the first PurramidTime app-intent
   - Shared: PurramidPalette, MultiWindowManager
 
 
- --- RUNTIME EVENTS ---
+## RUNTIME EVENTS
 (1) On first app-intent launch, the clock opens in a windowed state.
 (2) The most recent clock user preferences are saved. Save the following:
 	(2.1) Clock size
@@ -52,18 +52,18 @@ Clock is the first PurramidTime app-intent
 (3) On future app-intent launches, the clock loads saved user preferences.
 
 
- --- USER INTERFACE ---
+## USER INTERFACE
 (4) A Settings button is positioned in the bottom left corner.
 	(4.1) Default icon state uses ic_settings.xml.
-	(4.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+	(4.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 (5) A Close button is positioned in the top right corner.
 	(5.1) Default icon state uses ic_close.xml.
-	(5.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+	(5.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 
 (6) A clock face appears in the middle of the window
 	(6.1) The face can be one of two types:
 
-``ANALOG``
+### ANALOG
 		(6.1.1) A circular analog clock with the following components:
 			(6.1.1.1) Numbers 1 - 12 ordered around the interior circumference of the circle
 				(6.1.1.1.1) A second series of numbers, 13 - 24, can be turned on in the settings.
@@ -77,7 +77,7 @@ Clock is the first PurramidTime app-intent
 			(6.1.1.5) A minute hand
 			(6.1.1.6) An hour hand.
 
-``DIGITAL``
+### DIGITAL
 		(6.1.2) A rectangular digital clock displayed as HH:MM:SS.
 			(6.1.2.1) If seconds are turned off in settings, time is displayed HH:MM.
 				(6.1.2.1.1) If the clock is set to 12-hour:
@@ -94,7 +94,7 @@ Clock is the first PurramidTime app-intent
 		(6.2.1) Analog hands rotate around the clock face
 		(6.2.2) Digital numbers count upward
 			
-``BUTTONS``
+### BUTTONS
 (7) Below the clock face are two buttons:
 	(7.1) Play/pause
 		(7.1.1) Default state: ic_pause.xml
@@ -105,7 +105,7 @@ Clock is the first PurramidTime app-intent
 	(7.3) Play/Pause is on the left, and Reset is on the right.
 		(7.3.1) This order is reversed for right-to-left languages.
 
-``NESTED``
+### NESTED
 (8) A nested clock:
     (8.1) is reduced in size
         (8.1.1) An analog clock is 75px by 75px
@@ -117,7 +117,7 @@ Clock is the first PurramidTime app-intent
     (8.5) is stacked if multiple nested clocks are added, with multiple clocks in the top right corner of the screen 
 		(8.5.1) Nested clocks are are stacked one above the other, with the newest clock on the bottom.
 
-``TIME ZONE DISPLAY``
+### TIME ZONE DISPLAY
 (9) The time zone selection menu is an interactive 3D globe (scene.gltf)
 	(9.1) An overlay divides the globe into time zone sections
 	(9.2) Time zones are colored to better show their entire coverage space.
@@ -131,18 +131,18 @@ Clock is the first PurramidTime app-intent
 	(9.3) The top of the window includes: 
 		(9.3.1) A back arrow in the top left corner of the window. 
 			(9.3.1.1) Default icon state uses ic_back.xml.
-			(9.3.1.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+			(9.3.1.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 			(9.3.1.3) When activated the time zone display closes.
 				(9.3.1.3.1) The user returns to the main settings window.
 		(9.3.2) A close button in the top right corner of the window.
 			(9.3.2.1) Default icon state uses ic_close.xml.
-			(9.3.2.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+			(9.3.2.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 			(9.3.2.3) When activated all settings related windows close.
 	(9.4) Below the back arrow and close button and above the globe is listed two cities in that time zone.
 		(9.4.1) City listings include:
-			(9.4.1) City names
-			(9.4.2) Country names
-			(9.4.3) UTC offset
+			(9.4.1.1) City names
+			(9.4.1.2) Country names
+			(9.4.1.3) UTC offset
 		(9.4.2) At least one city is in the northern hemisphere whenever possible.
 		(9.4.3) At least one city is in the southern hemisphere whenever possible.
 		(9.4.4) If only one city is available in that time zone, only one city is displayed.
@@ -166,8 +166,8 @@ Clock is the first PurramidTime app-intent
 			(9.6.3.2) Active state: Programmatically change fill colors for default state icons to #808080
 
 
- --- USER EXPERIENCE ---
-(10) ``SETTINGS SUMMARY``
+## USER EXPERIENCE
+### (10) SETTINGS SUMMARY
 	(10.1) When a user touches the settings button, its icon changes from (4.1) Default to (4.2) Active.
 	(10.2) When activated, a settings window opens with a smooth transition animation, as per the universal specifications.
 		(10.2.1) The settings button remains active while the settings window is open.
@@ -225,8 +225,8 @@ Clock is the first PurramidTime app-intent
 						(10.2.2.4.2.3.3) by pressing the circle between the left and right arrows
 							(10.2.2.4.2.3.3.1) Pressing this button centers the globe on the current time zone.
 					(10.2.2.4.2.4) UTC offset, city, and country information are included in a database.
-                        (10.2.2.4.2.4.1) See ThePurramid01\app\src\main\assets\cities_timezones.csv
-                        (10.2.2.4.2.4.2) See ThePurramid01\app\src\main\assets\time_zones.geojson
+                        (10.2.2.4.2.4.1) See app/src/main/assets/cities_timezones.csv
+                        (10.2.2.4.2.4.2) See app/src/main/assets/time_zones.geojson (GeoJSON polygons; parsed to JTS geometry at load — see purramidtime_database_schema.md, TimeZoneBoundaryEntity)
 					(10.2.2.4.2.5) When a user taps on a time zone:
 						(10.2.2.4.2.5.1) it becomes the active time zone
 						(10.2.2.4.2.5.2) it no longer has a colored overlay
@@ -247,12 +247,12 @@ Clock is the first PurramidTime app-intent
 						(10.2.2.6.2.1.1) It also includes at the top of the window:
 							(10.2.2.6.2.1.1.1) A back arrow in the top left corner
 								(10.2.2.6.2.1.1.1.1) Default icon state uses ic_back.xml.
-								(10.2.2.6.2.1.1.1.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+								(10.2.2.6.2.1.1.1.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 								(10.2.2.6.2.1.1.1.3) When activated the time zone display closes.
 									(10.2.2.6.2.1.1.1.3.1) The user returns to the main settings window.
 							(10.2.2.6.2.1.1.2) A close button in the top right corner of the window.
 								(10.2.2.6.2.1.1.2.1) Default icon state uses ic_close.xml.
-								(10.2.2.6.2.1.1.2.2) Active state: Programmatically change fill colores as per the Button Iplementation Guidelines.
+								(10.2.2.6.2.1.1.2.2) Active state: Programmatically change fill colors as per the Button Implementation Guidelines.
 								(10.2.2.6.2.1.1.2.3) When activated all settings related windows close.
 					(10.2.2.6.2.2) This setting should not use the Android system alarm unless that feature can be integrated into this app-intent.
 						(10.2.2.6.2.2.1) Teachers should not have to use a second clock app for alarms. All features should be contained within this app-intent.
@@ -275,8 +275,8 @@ Clock is the first PurramidTime app-intent
 					(10.2.2.8.2.3) If four clocks already exist on the screen, the Add Another setting is inactivated.
 
 
- --- Non-Settings UX ---
-(11) ``PLAY/PAUSE/RESET``
+## Non-Settings UX
+### (11) PLAY/PAUSE/RESET
 	(11.1) When a user taps the play/pause button while it is in its default state:
 		(11.1.1) the icon changes to its active state
 		(11.1.2) the time counting animation stops (is paused)
@@ -296,7 +296,7 @@ Clock is the first PurramidTime app-intent
 		(11.3.4) if time is playing
 			(11.3.4.1) time continues counting.
 			
-(12) ``MANUAL MANIPULATION``
+### (12) MANUAL MANIPULATION
 	(12.1) When an analog clock is paused, a user can press-hold-drag the seconds, minute, or hour hands to change time.
 		(12.1.1) Hands can be rotated clockwise or counterclockwise
 		(12.1.2) Moving the minute hand also moves the seconds hand
@@ -310,11 +310,11 @@ Clock is the first PurramidTime app-intent
 	(12.3) If the user resets time after moving the clock hands, behavior is the same as (11.3)
 		(12.3.1) Surplus time accrued by advancing time would reset in the same fashion as a time deficit.
 					
-(13) ``CLOSE``
+### (13) CLOSE
 	(13.1) When a user touches the Close button, its icon changes from (5.1) Default to (5.2) Active.
 	(13.2) The clock to which the Close button is attached closes.
 		(13.2.1) When a clock is closed:
-			(13.2.1.1) If it is the only clock currently open, its size, position (if not fullscreen), and settings selecitons are saved as the most recent user preferences, as per (2).
+			(13.2.1.1) If it is the only clock currently open, its size, position (if not fullscreen), and settings selections are saved as the most recent user preferences, as per (2).
 			(13.2.1.2) If it is one of multiple clocks currently open, its preferences are cleared.
 		(13.2.2) If the clock is the only clock open, the clock service ends.
 
