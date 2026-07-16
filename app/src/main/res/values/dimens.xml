@@ -4,6 +4,29 @@
 	<dimen name="default_padding">16dp</dimen>
 	<dimen name="large_screen_padding">32dp</dimen>
 
+	<!-- Icon button sizing: see docs/design/README.md ("Control sizing").
+	     Secondary controls (close/settings/back) must read as clearly smaller
+	     than the primary transport controls (play/reset). -->
+	<dimen name="icon_button_secondary_size">32dp</dimen>
+	<dimen name="icon_button_secondary_radius">9dp</dimen>
+	<dimen name="icon_button_border_width">1.5dp</dimen>
+	<dimen name="icon_button_transport_size">44dp</dimen>
+	<dimen name="icon_button_transport_gap">22dp</dimen>
+
+	<!-- Clock overlay window. Text sizes are dp, not sp: the overlay is a
+	     fixed-size window whose layout must not shift under font scaling
+	     (purramid_code_style_guide.md). -->
+	<dimen name="clock_digital_text_size">60dp</dimen>
+	<dimen name="clock_ampm_text_size">19dp</dimen>
+	<dimen name="clock_numeral_primary_size">20dp</dimen>
+	<dimen name="clock_numeral_secondary_size">12dp</dimen>
+	<dimen name="clock_transport_bottom_margin">42dp</dimen>
+	<dimen name="clock_transport_bottom_margin_min">30dp</dimen>
+	<dimen name="clock_face_min_gap_above_transport">10dp</dimen>
+
+	<!-- Settings rows use sp: standard screen, font scaling applies. -->
+	<dimen name="settings_row_label_size">18sp</dimen>
+
 	<!-- Timer specific dimensions -->
 	<dimen name="timer_duration_text_size">48sp</dimen>
 	<dimen name="timer_arrow_size">24sp</dimen>

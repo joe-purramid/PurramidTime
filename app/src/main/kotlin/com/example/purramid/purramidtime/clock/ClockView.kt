@@ -13,7 +13,9 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
-import com.example.purramid.purramidtime.ui.PurramidPalette
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
+import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.util.dpToPx
 import java.time.LocalTime
 import java.time.ZoneId
@@ -79,9 +81,19 @@ class ClockView @JvmOverloads constructor(
     private var isDraggingHand = false
 
     // --- Drawing Tools ---
+    // Typography follows docs/design/README.md ("Design Tokens"). Sizes there are
+    // quoted against the reference window (340x230dp digital / 220dp analog face);
+    // this view is resizable, so each size is scaled from that reference rather
+    // than pinned, and hits the design value exactly at the reference size.
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.MONOSPACE, WEIGHT_DIGITAL_TIME, false)
         textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 48f, resources.displayMetrics)
+    }
+
+    private val amPmPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.MONOSPACE, WEIGHT_AM_PM, false)
     }
 
     private val handPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -91,11 +103,25 @@ class ClockView @JvmOverloads constructor(
 
     private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
-        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        typeface = Typeface.create(Typeface.DEFAULT, WEIGHT_NUMERAL_PRIMARY, false)
     }
+
+    private val secondaryNumberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create(Typeface.DEFAULT, WEIGHT_NUMERAL_SECONDARY, false)
+    }
+
+    // Design tokens, resolved once (values/colors.xml).
+    private val colorTextPrimary = ContextCompat.getColor(context, R.color.clock_text_primary)
+    private val colorAccentActive = ContextCompat.getColor(context, R.color.icon_state_active)
 
     private lateinit var timeFormatter: DateTimeFormatter
     private val bounds = Rect()
+
+    // Localized period labels, refreshed with the formatter so a locale change
+    // carries through (the design draws both, so both are needed up front).
+    private var amLabel: String = ""
+    private var pmLabel: String = ""
 
     // --- Initialization ---
     init {
@@ -183,27 +209,58 @@ class ClockView @JvmOverloads constructor(
         textPaint.color = contrastColor
         handPaint.color = contrastColor
         numberPaint.color = contrastColor
+        secondaryNumberPaint.color = secondaryNumeralColor()
     }
 
+    /** The face colour, forced opaque — contrast maths needs an opaque backdrop. */
+    private fun opaqueFace(): Int = ColorUtils.setAlphaComponent(clockColor, 255)
+
+    /**
+     * Picks whichever ink contrasts better against the face (spec 6.1.1). The
+     * design's #1c1c1c stands in for black, which is what it is on the white face.
+     *
+     * This replaced a hardcoded per-palette map that assigned white ink to VIOLET
+     * (#EE82EE) — a light colour, where white lands at 2.32:1 and fails AA. Reading
+     * contrast off the colour keeps custom faces honest too.
+     */
     private fun getContrastColor(backgroundColor: Int): Int {
-        // Use the PurramidPalette color mapping
-        return when (backgroundColor) {
-            PurramidPalette.WHITE.colorInt,
-            PurramidPalette.GOLDENROD.colorInt,
-            PurramidPalette.LIGHT_BLUE.colorInt -> Color.BLACK
+        val face = ColorUtils.setAlphaComponent(backgroundColor, 255)
+        val darkContrast = ColorUtils.calculateContrast(colorTextPrimary, face)
+        val lightContrast = ColorUtils.calculateContrast(Color.WHITE, face)
+        return if (darkContrast >= lightContrast) colorTextPrimary else Color.WHITE
+    }
 
-            PurramidPalette.BLACK.colorInt,
-            PurramidPalette.TEAL.colorInt,
-            PurramidPalette.VIOLET.colorInt -> Color.WHITE
+    /**
+     * The 13-24 ring reads as a dimmer tier of the ink. The design states that
+     * relationship once — #6b6b6b against #1c1c1c ink on a white face, i.e. the ink
+     * dimmed ~35% toward the face — so applying it as a ratio carries the tier onto
+     * every face rather than only the white one.
+     *
+     * Dimming costs contrast, and the mid-luminance palette entries have none to
+     * spare (#6b6b6b is 1.12:1 on teal). Where the dimmed value cannot hold AA, fall
+     * back to full ink and let the smaller size and lighter weight carry the
+     * hierarchy on their own.
+     */
+    private fun secondaryNumeralColor(): Int {
+        val face = opaqueFace()
+        val ink = getContrastColor(face)
+        val dimmed = ColorUtils.blendARGB(ink, face, SECONDARY_NUMERAL_FACE_BLEND)
+        return if (ColorUtils.calculateContrast(dimmed, face) >= MIN_TEXT_CONTRAST) dimmed else ink
+    }
 
-            else -> {
-                // Fallback luminance calculation
-                val r = Color.red(backgroundColor) / 255.0
-                val g = Color.green(backgroundColor) / 255.0
-                val b = Color.blue(backgroundColor) / 255.0
-                val luminance = 0.299 * r + 0.587 * g + 0.114 * b
-                if (luminance > 0.5) Color.BLACK else Color.WHITE
-            }
+    /**
+     * The design lights the active period in #1976D2. That accent only clears AA on
+     * the white and black faces (~2:1 on goldenrod, teal and violet), so fall back
+     * to the face's ink where it cannot hold. Since only the active period is drawn
+     * (spec 6.1.2.1.1.2.2), the colour is decoration rather than the state signal —
+     * the label itself says which period it is — so nothing is lost by dropping it.
+     */
+    private fun amPmColor(): Int {
+        val face = opaqueFace()
+        return if (ColorUtils.calculateContrast(colorAccentActive, face) >= MIN_TEXT_CONTRAST) {
+            colorAccentActive
+        } else {
+            getContrastColor(face)
         }
     }
 
@@ -215,6 +272,10 @@ class ClockView @JvmOverloads constructor(
             if (displaySeconds) patternWithSeconds else basePattern,
             locale
         )
+
+        val amPmFormatter = DateTimeFormatter.ofPattern("a", locale)
+        amLabel = SAMPLE_AM_TIME.format(amPmFormatter)
+        pmLabel = SAMPLE_PM_TIME.format(amPmFormatter)
     }
 
     // --- Main Drawing Method ---
@@ -288,43 +349,42 @@ class ClockView @JvmOverloads constructor(
     }
 
     private fun drawClockNumbers(canvas: Canvas) {
-        numberPaint.textSize = radius * 0.15f // Scale with clock size
-
-        // Calculate text baseline offset
-        val textBounds = Rect()
-        numberPaint.getTextBounds("12", 0, 2, textBounds)
-        val textHeight = textBounds.height()
+        numberPaint.textSize = radius * NUMERAL_PRIMARY_RADIUS_RATIO
 
         // Draw 12-hour numbers
+        val primaryBounds = Rect()
+        numberPaint.getTextBounds("12", 0, 2, primaryBounds)
+        val primaryHeight = primaryBounds.height()
+
         for (number in 1..12) {
             val angle = Math.toRadians((number * 30 - 90).toDouble())
-            val numberRadius = radius * 0.75f // Position numbers at 75% of radius
+            val numberRadius = radius * NUMERAL_PRIMARY_ORBIT_RATIO
 
             val x = centerX + (numberRadius * cos(angle)).toFloat()
-            val y = centerY + (numberRadius * sin(angle)).toFloat() + textHeight / 2f
+            val y = centerY + (numberRadius * sin(angle)).toFloat() + primaryHeight / 2f
 
             canvas.drawText(number.toString(), x, y, numberPaint)
         }
 
         // Draw 24-hour numbers if enabled
         if (is24Hour) {
-            numberPaint.textSize = radius * 0.10f // Smaller size for 24-hour numbers
-            val savedAlpha = numberPaint.alpha
-            numberPaint.alpha = (savedAlpha * 0.7f).toInt() // Slightly transparent
+            secondaryNumberPaint.textSize = radius * NUMERAL_SECONDARY_RADIUS_RATIO
+
+            val secondaryBounds = Rect()
+            secondaryNumberPaint.getTextBounds("24", 0, 2, secondaryBounds)
+            val secondaryHeight = secondaryBounds.height()
 
             for (number in 13..24) {
                 val displayNumber = if (number == 24) "00" else number.toString()
                 val hourNumber = if (number == 24) 12 else number - 12
                 val angle = Math.toRadians((hourNumber * 30 - 90).toDouble())
-                val numberRadius = radius * 0.55f // Inner circle for 24-hour numbers
+                val numberRadius = radius * NUMERAL_SECONDARY_ORBIT_RATIO
 
                 val x = centerX + (numberRadius * cos(angle)).toFloat()
-                val y = centerY + (numberRadius * sin(angle)).toFloat() + textHeight / 2f
+                val y = centerY + (numberRadius * sin(angle)).toFloat() + secondaryHeight / 2f
 
-                canvas.drawText(displayNumber, x, y, numberPaint)
+                canvas.drawText(displayNumber, x, y, secondaryNumberPaint)
             }
-
-            numberPaint.alpha = savedAlpha // Restore original alpha
         }
     }
 
@@ -430,44 +490,68 @@ class ClockView @JvmOverloads constructor(
 
         // Draw AM/PM indicator if needed
         if (!is24Hour) {
-            val amPmFormatter = DateTimeFormatter.ofPattern("a", Locale.getDefault())
-            val amPmString = try {
-                displayedTime.format(amPmFormatter)
-            } catch (e: Exception) {
-                ""
-            }
-
-            val amPmPaint = Paint(textPaint).apply {
-                textSize *= 0.4f // Smaller size for AM/PM
-            }
-
-            val mainTextWidth = textPaint.measureText(formattedTime)
-            val amPmTextWidth = amPmPaint.measureText(amPmString)
-            val padding = context.dpToPx(4)
-
-            // Position AM/PM to the right of the main time
-            val amPmX = x + (mainTextWidth / 2f) + (amPmTextWidth / 2f) + padding
-            val amPmY = y
-
-            canvas.drawText(amPmString, amPmX, amPmY, amPmPaint)
+            drawAmPmIndicator(canvas, x, textPaint.measureText(formattedTime))
         }
     }
 
-    private fun getDigitalTextSize(availableWidth: Int): Float {
-        var textSize = min(width, height) * 0.4f
-        val minSize = context.dpToPx(12).toFloat()
+    /**
+     * Draws the active period to the right of the readout. AM and PM occupy a
+     * two-line stack with AM on top and PM below, but only the active one is drawn
+     * (spec 6.1.2.1.1.2.1 through 6.1.2.1.1.2.3) — so each label keeps its own slot
+     * rather than being centred on the readout.
+     *
+     * Both the horizontal offset and the reserved width are measured from the wider
+     * of the two labels, so the readout does not shift at noon or midnight, in
+     * locales where the period labels differ in width.
+     */
+    private fun drawAmPmIndicator(canvas: Canvas, timeCenterX: Float, timeWidth: Float) {
+        amPmPaint.textSize = textPaint.textSize * AM_PM_TO_TIME_RATIO
 
-        textPaint.textSize = textSize
+        val isAm = displayedTime.hour < 12
+        val label = if (isAm) amLabel else pmLabel
+        val labelWidth = max(amPmPaint.measureText(amLabel), amPmPaint.measureText(pmLabel))
+        val x = timeCenterX + (timeWidth / 2f) + (labelWidth / 2f) + context.dpToPx(4)
+
+        // The stack straddles the readout's vertical centre: AM's slot above it,
+        // PM's below.
+        val metrics = amPmPaint.fontMetrics
+        val lineHeight = metrics.descent - metrics.ascent
+        val amBaseline = (height / 2f) - lineHeight - metrics.ascent
+        val baseline = if (isAm) amBaseline else amBaseline + lineHeight
+
+        amPmPaint.color = amPmColor()
+        canvas.drawText(label, x, baseline, amPmPaint)
+    }
+
+    /**
+     * The design pins the readout at 60dp in the reference 340dp-wide window. The
+     * window is resizable, so scale from that reference — hitting 60dp exactly at
+     * reference width — then shrink to fit if the AM/PM stack would not clear.
+     */
+    private fun getDigitalTextSize(availableWidth: Int): Float {
+        val referenceWidth = context.dpToPx(REFERENCE_WINDOW_WIDTH_DP).toFloat()
+        val minSize = context.dpToPx(MIN_DIGITAL_TEXT_SIZE_DP).toFloat()
+        var textSize =
+            context.dpToPx(DESIGN_DIGITAL_TEXT_SIZE_DP) * (availableWidth / referenceWidth)
+
         val sampleText = if (displaySeconds) "00:00:00" else "00:00"
-        var textWidth = textPaint.measureText(sampleText)
         val maxWidth = availableWidth * 0.9f
 
-        while (textWidth > maxWidth && textSize > minSize) {
-            textSize *= 0.95f
-            textPaint.textSize = textSize
-            textWidth = textPaint.measureText(sampleText)
+        // The AM/PM stack sits beside the readout in 12-hour mode and has to fit too.
+        fun composedWidth(size: Float): Float {
+            textPaint.textSize = size
+            if (is24Hour) return textPaint.measureText(sampleText)
+            amPmPaint.textSize = size * AM_PM_TO_TIME_RATIO
+            return textPaint.measureText(sampleText) +
+                    max(amPmPaint.measureText(amLabel), amPmPaint.measureText(pmLabel)) +
+                    context.dpToPx(4)
         }
 
+        while (composedWidth(textSize) > maxWidth && textSize > minSize) {
+            textSize *= 0.95f
+        }
+
+        textPaint.textSize = textSize
         return max(textSize, minSize)
     }
 
@@ -608,5 +692,42 @@ class ClockView @JvmOverloads constructor(
     private fun isAngleNear(angle1: Float, angle2: Float, tolerance: Float): Boolean {
         val diff = abs(angleDifference(angle1, angle2))
         return diff < tolerance
+    }
+
+    companion object {
+        // Font weights (docs/design/README.md, "Typography").
+        private const val WEIGHT_DIGITAL_TIME = 600
+        private const val WEIGHT_AM_PM = 700
+        private const val WEIGHT_NUMERAL_PRIMARY = 600
+        private const val WEIGHT_NUMERAL_SECONDARY = 500
+
+        // Digital readout: 60dp in the 340dp-wide reference window; AM/PM is 19dp
+        // against that 60dp, so the pair keeps its proportion as the window resizes.
+        private const val REFERENCE_WINDOW_WIDTH_DP = 340
+        private const val DESIGN_DIGITAL_TEXT_SIZE_DP = 60
+        private const val MIN_DIGITAL_TEXT_SIZE_DP = 12
+        private const val AM_PM_TO_TIME_RATIO = 19f / 60f
+
+        // Analog numerals, as ratios of the drawn face radius. The design quotes
+        // 20dp (1-12) and 12dp (13-24) on a 220dp face, i.e. a 110dp radius.
+        private const val NUMERAL_PRIMARY_RADIUS_RATIO = 20f / 110f
+        private const val NUMERAL_SECONDARY_RADIUS_RATIO = 12f / 110f
+
+        // Hour ticks run from 0.95r inward to 0.85r; the 1-12 ring is seated far
+        // enough in that the glyphs clear them.
+        private const val NUMERAL_PRIMARY_ORBIT_RATIO = 0.72f
+        private const val NUMERAL_SECONDARY_ORBIT_RATIO = 0.55f
+
+        // Sample times used only to read the locale's AM and PM labels back out.
+        private val SAMPLE_AM_TIME: LocalTime = LocalTime.of(9, 0)
+        private val SAMPLE_PM_TIME: LocalTime = LocalTime.of(21, 0)
+
+        // WCAG 2.2 AA for normal-size text. The clock's own numerals are large, but
+        // the 13-24 ring is small enough to want the stricter bar.
+        private const val MIN_TEXT_CONTRAST = 4.5
+
+        // The design's #6b6b6b inner numerals against #1c1c1c ink on a white face:
+        // (0x6b - 0x1c) / (0xff - 0x1c) = 0.348 of the way from ink toward the face.
+        private const val SECONDARY_NUMERAL_FACE_BLEND = 0.348f
     }
 }

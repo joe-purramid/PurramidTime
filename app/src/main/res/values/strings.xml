@@ -521,6 +521,11 @@
          values below with the originals when recovered. -->
     <string name="alarm">Alarm</string>
     <string name="alarm_label_hint">Alarm label</string>
+    <string name="alarm_invalid_clock">Invalid clock ID</string>
+    <string name="alarm_error_saving">Error saving alarm</string>
+    <string name="alarm_set_message">Alarm set for %1$s (%2$s)</string>
+    <string name="alarm_set_message_labeled">Alarm ‘%1$s’ set for %2$s (%3$s)</string>
+    <string name="alarm_set_inexact">%1$s. Turn on exact alarms in Settings for precise timing.</string>
     <string name="dismiss">Dismiss</string>
     <string name="sound">Sound</string>
     <string name="vibration">Vibration</string>

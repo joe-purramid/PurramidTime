@@ -45,10 +45,13 @@
             android:layout_height="wrap_content"
             tools:text="City (S)" />
 
+        <!-- #595959 rather than a lighter grey: this sits on white and has to
+             clear WCAG 2.2 AA (docs/design/README.md, 1e). -->
         <TextView
             android:id="@+id/utcOffsetTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/globe_utc_offset"
             tools:text="UTC Offset" />
 
     </LinearLayout>

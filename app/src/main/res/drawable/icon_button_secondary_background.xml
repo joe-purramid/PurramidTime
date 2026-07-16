@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Secondary icon buttons: close, settings, back.
+     32x32dp, 9dp radius, 1.5dp border (docs/design/README.md "Control sizing").
+     Inactive border #757575; active border #1976D2 over an #E3F2FD chip
+     (purramid_button_implementation_guide.md). Pair with @color/icon_tint_stateful
+     on the icon itself so tint and border change together. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/icon_state_active_background">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/icon_button_secondary_radius" />
+            <solid android:color="@android:color/white" />
+        </shape>
+    </item>
+    <item>
+        <selector>
+            <item android:state_enabled="false">
+                <shape android:shape="rectangle">
+                    <corners android:radius="@dimen/icon_button_secondary_radius" />
+                    <solid android:color="@android:color/transparent" />
+                    <stroke
+                        android:width="@dimen/icon_button_border_width"
+                        android:color="@color/icon_state_disabled" />
+                </shape>
+            </item>
+            <item android:state_activated="true">
+                <shape android:shape="rectangle">
+                    <corners android:radius="@dimen/icon_button_secondary_radius" />
+                    <solid android:color="@color/icon_state_active_background" />
+                    <stroke
+                        android:width="@dimen/icon_button_border_width"
+                        android:color="@color/icon_state_active" />
+                </shape>
+            </item>
+            <item android:state_selected="true">
+                <shape android:shape="rectangle">
+                    <corners android:radius="@dimen/icon_button_secondary_radius" />
+                    <solid android:color="@color/icon_state_active_background" />
+                    <stroke
+                        android:width="@dimen/icon_button_border_width"
+                        android:color="@color/icon_state_active" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <corners android:radius="@dimen/icon_button_secondary_radius" />
+                    <solid android:color="@android:color/transparent" />
+                    <stroke
+                        android:width="@dimen/icon_button_border_width"
+                        android:color="@color/icon_state_inactive" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

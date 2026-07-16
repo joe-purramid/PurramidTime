@@ -29,4 +29,18 @@
     <color name="timer_arrow_color">#424242</color>
     <color name="timer_active_color">#1976D2</color>
     <color name="icon_inactive">#9E9E9E</color>
+
+    <!-- Design tokens: see docs/design/README.md ("Design Tokens") and
+         purramid_button_implementation_guide.md. Shared across app-intents. -->
+    <color name="icon_state_inactive">#757575</color>
+    <color name="icon_state_active">#1976D2</color>
+    <color name="icon_state_active_background">#E3F2FD</color>
+    <color name="icon_state_disabled">#BDBDBD</color>
+
+    <!-- Clock design tokens.
+         The design's inner-numeral grey (#6b6b6b) is not a token here: it only
+         holds AA against the default white face, so ClockView derives that tier
+         from the face's ink instead. See ClockView.secondaryNumeralColor(). -->
+    <color name="clock_text_primary">#1c1c1c</color>
+    <color name="globe_utc_offset">#595959</color>
 </resources>

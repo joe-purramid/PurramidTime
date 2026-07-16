@@ -109,17 +109,6 @@ class TimerActivity : AppCompatActivity() {
         ContextCompat.startForegroundService(this, serviceIntent)
     }
 
-    // Add theme support for transparent activity
-    override fun onStart() {
-        super.onStart()
-        // Ensure activity doesn't block the overlay
-        window?.apply {
-            val params = attributes
-            params.alpha = 0f // Make activity window transparent
-            attributes = params
-        }
-    }
-
     private fun showSettingsFragment(timerId: Int) {
         if (supportFragmentManager.findFragmentByTag(TimerSettingsFragment.TAG) == null) {
             Log.d(TAG, "Showing settings fragment for timerId: $timerId")

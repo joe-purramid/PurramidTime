@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".PurramidTimeApplication"
@@ -67,6 +68,36 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="persistent_classroom_overlay" />
         </service>
+
+        <!-- CLOCK ALARM -->
+        <activity android:name=".clock.ClockAlarmActivity"
+            android:exported="false"
+            android:label="@string/set_alarm"
+            android:parentActivityName=".clock.ClockActivity"
+            android:resizeableActivity="true"
+            android:windowLayoutInDisplayCutoutMode="shortEdges" />
+
+        <activity android:name=".clock.AlarmRingingActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.PurramidTime" />
+
+        <receiver android:name=".clock.AlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+        <receiver android:name=".clock.BootReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:directBootAware="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <activity android:name=".clock.ui.TimeZoneGlobeActivity"
             android:exported="false"

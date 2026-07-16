@@ -1,6 +1,8 @@
 package com.example.purramid.purramidtime.clock.ui
 
+import android.app.Dialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
@@ -8,13 +10,15 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
+import androidx.fragment.app.DialogFragment
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.clock.ClockOverlayService
 import com.example.purramid.purramidtime.clock.ClockAlarmActivity
@@ -25,8 +29,17 @@ import java.time.ZoneId
 import androidx.core.content.edit
 import com.example.purramid.purramidtime.ui.PurramidPalette
 
+/**
+ * Clock settings, shown as a floating dialog over the transparent ClockActivity —
+ * the same shape as TimerSettingsFragment and StopwatchSettingsFragment.
+ *
+ * This was a plain Fragment committed into `clock_fragment_container`, a container
+ * declared `visibility="gone"` that nothing ever made visible, inside an activity
+ * with a transparent theme. It could not render, so the clock's settings button did
+ * nothing. Matching the other two app-intents is what fixes it.
+ */
 @AndroidEntryPoint
-class ClockSettingsFragment : Fragment() {
+class ClockSettingsFragment : DialogFragment() {
 
     private var _binding: FragmentClockSettingsBinding? = null
     private val binding get() = _binding!!
@@ -77,6 +90,29 @@ class ClockSettingsFragment : Fragment() {
     ): View {
         _binding = FragmentClockSettingsBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState)
+
+        dialog.window?.apply {
+            // The layout root carries the settings surface, so the window itself is
+            // transparent and sized to it.
+            setBackgroundDrawableResource(android.R.color.transparent)
+            setLayout(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+
+            // Leave the clock behind the dialog visible and touchable.
+            clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+            addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL)
+
+            attributes = attributes.apply { gravity = Gravity.CENTER }
+        }
+
+        dialog.setCanceledOnTouchOutside(true)
+        return dialog
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -267,6 +303,15 @@ class ClockSettingsFragment : Fragment() {
     private fun updateAddAnotherButtonState() {
         val activeCount = serviceStatePrefs.getInt(KEY_ACTIVE_COUNT, 0)
         binding.addAnotherClockButton.isEnabled = activeCount < 4 // MAX_CLOCKS from ClockOverlayService
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        // ClockActivity is a transparent shim whose only job on this path is to host
+        // this dialog. Without finishing it, it lingers invisibly over the clock.
+        // (TimerActivity/StopwatchActivity have the same gap, worked around there by
+        // forcing window alpha to 0 in onStart.)
+        activity?.finish()
     }
 
     override fun onDestroyView() {

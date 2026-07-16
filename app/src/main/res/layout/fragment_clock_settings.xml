@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Shown as a dialog over a transparent activity, so this root carries the
+     settings surface itself (white, rounded) — the dialog window is transparent.
+     Width follows the ~360dp single column in docs/design/README.md (1d). -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="16dp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:minWidth="360dp"
+    android:background="@drawable/dialog_background"
     tools:context=".clock.ui.ClockSettingsFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -22,18 +26,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
-            android:id="@+id/enableOverlayButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="16dp"
-            android:text="@string/enable_floating_clock"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/settingsTitle" />
-
         <LinearLayout
             android:id="@+id/layoutMode"
             android:layout_width="0dp"
@@ -43,12 +35,14 @@
             android:padding="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/enableOverlayButton">
+            app:layout_constraintTop_toBottomOf="@id/settingsTitle">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:textSize="@dimen/settings_row_label_size"
+                android:textFontWeight="600"
                 android:text="@string/clock_mode" />
 
             <ToggleButton
@@ -72,6 +66,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textSize="@dimen/settings_row_label_size"
+                android:textFontWeight="600"
                 android:text="@string/app_color" />
 
             <LinearLayout
@@ -97,6 +93,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:textSize="@dimen/settings_row_label_size"
+                android:textFontWeight="600"
                 android:text="@string/clock_setting_24_hour" />
 
             <ToggleButton
@@ -134,6 +132,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:textSize="@dimen/settings_row_label_size"
+                android:textFontWeight="600"
                 android:text="@string/display_seconds" />
 
             <ToggleButton
@@ -171,6 +171,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:textSize="@dimen/settings_row_label_size"
+                android:textFontWeight="600"
                 android:text="@string/nest_clock" />
 
             <ToggleButton

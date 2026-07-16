@@ -2,6 +2,7 @@
 package com.example.purramid.purramidtime.stopwatch.ui
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -213,6 +214,14 @@ class StopwatchSettingsFragment : DialogFragment() {
 
         // Dismiss settings
         dismiss()
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        // StopwatchActivity is a transparent shim whose only job on this path is to
+        // host this dialog. Without finishing it, it lingers invisibly over the
+        // stopwatch overlay and swallows touches meant for it.
+        activity?.finish()
     }
 
     override fun onDestroyView() {

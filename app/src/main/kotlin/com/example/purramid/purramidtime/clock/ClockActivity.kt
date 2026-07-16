@@ -10,17 +10,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import com.example.purramid.purramidtime.R
 import com.example.purramid.purramidtime.clock.ui.ClockSettingsFragment
 import com.example.purramid.purramidtime.clock.viewmodel.ClockViewModel
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import com.example.purramid.purramidtime.clock.viewmodel.ClockState
 
 @AndroidEntryPoint
 class ClockActivity : AppCompatActivity() {
@@ -58,11 +54,12 @@ class ClockActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_clock)
 
-        // Initialize ViewModel with instance ID if provided
+        // Kept for its side effect only: initialize() -> loadInitialState() writes a
+        // default ClockState row when the instance has none. Nothing here consumes
+        // uiState — this activity draws no clock (see activity_clock.xml).
         val instanceId = intent.getIntExtra(ClockOverlayService.EXTRA_CLOCK_ID, -1)
         if (instanceId > 0) {
             clockViewModel.initialize(instanceId)
-            observeClockState()
         }
 
         // Check if this is for showing settings
@@ -85,26 +82,22 @@ class ClockActivity : AppCompatActivity() {
         }
     }
 
-    private fun observeClockState() {
-        lifecycleScope.launch {
-            clockViewModel.uiState.collectLatest { state ->
-                updateUI(state)
-            }
-        }
-    }
-
-    private fun updateUI(state: ClockState) {
-        // Update UI elements based on clock state
-        // This is primarily for the settings fragment to show current values
-    }
-
+    /**
+     * Shows settings as a dialog, matching TimerActivity/StopwatchActivity. The
+     * previous version committed the fragment into `clock_fragment_container` — a
+     * container declared GONE in a transparent activity — so it never appeared.
+     */
     private fun showSettingsFragment(instanceId: Int) {
-        if (instanceId > 0) {
-            val fragment = ClockSettingsFragment.newInstance(instanceId)
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.clock_fragment_container, fragment)
-                .commit()
+        if (instanceId <= 0) {
+            Log.e(TAG, "Cannot show settings, invalid clock id: $instanceId")
+            finish()
+            return
         }
+        if (supportFragmentManager.findFragmentByTag(ClockSettingsFragment.TAG_FRAGMENT) != null) {
+            return
+        }
+        ClockSettingsFragment.newInstance(instanceId)
+            .show(supportFragmentManager, ClockSettingsFragment.TAG_FRAGMENT)
     }
 
     private fun checkAndRequestOverlayPermission() {

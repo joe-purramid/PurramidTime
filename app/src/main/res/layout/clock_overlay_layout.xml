@@ -11,13 +11,16 @@
     app:layoutDescription="@xml/clock_motion_scene"
     tools:context=".clock.ClockOverlayService">
 
-    <!-- Clock View Container -->
+    <!-- Clock face. Takes the space left above the transport row, keeping at
+         least clock_face_min_gap_above_transport (10dp) clear of it, and stays
+         centred in whatever space remains (docs/design/README.md, 1a resize rule). -->
     <FrameLayout
         android:id="@+id/clockContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginBottom="@dimen/clock_face_min_gap_above_transport"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/controlButtonsContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -29,62 +32,76 @@
 
     </FrameLayout>
 
-    <!-- Control Buttons Container -->
+    <!-- Transport row: 44dp circular play/reset, 22dp apart, centred and
+         anchored 42dp from the bottom edge. ClockOverlayService compresses that
+         margin toward clock_transport_bottom_margin_min (30dp) as the window
+         approaches its minimum height. -->
     <LinearLayout
         android:id="@+id/controlButtonsContainer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:background="@drawable/control_buttons_background"
-        android:padding="4dp"
-        app:layout_constraintTop_toBottomOf="@id/clockContainer"
+        android:layout_marginBottom="@dimen/clock_transport_bottom_margin"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <!-- Play/Pause Button -->
         <ImageButton
             android:id="@+id/buttonPlayPause"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="@dimen/icon_button_transport_size"
+            android:layout_height="@dimen/icon_button_transport_size"
             android:src="@drawable/ic_play"
-            android:background="@drawable/action_button_background"
+            android:scaleType="fitCenter"
+            android:padding="10dp"
+            android:background="@drawable/icon_button_transport_background"
             android:tint="@color/icon_tint_stateful"
             android:contentDescription="@string/play"
-            android:layout_marginEnd="4dp" />
+            android:layout_marginEnd="@dimen/icon_button_transport_gap" />
 
         <!-- Reset Button -->
         <ImageButton
             android:id="@+id/buttonReset"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="@dimen/icon_button_transport_size"
+            android:layout_height="@dimen/icon_button_transport_size"
             android:src="@drawable/ic_reset"
-            android:background="@drawable/action_button_background"
+            android:scaleType="fitCenter"
+            android:padding="10dp"
+            android:background="@drawable/icon_button_transport_background"
             android:tint="@color/icon_tint_stateful"
-            android:contentDescription="@string/reset"
-            android:layout_marginEnd="4dp" />
-
-        <!-- Settings Button -->
-        <ImageButton
-            android:id="@+id/buttonSettings"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_settings"
-            android:background="@drawable/action_button_background"
-            android:tint="@color/icon_tint_stateful"
-            android:contentDescription="@string/settings" />
+            android:contentDescription="@string/reset" />
     </LinearLayout>
 
-    <!-- Nest Button (for toggling nested state) -->
+    <!-- Settings: secondary control, bottom-left, deliberately smaller than the
+         transport row above. -->
     <ImageButton
-        android:id="@+id/buttonNest"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/ic_minimize"
-        android:background="@drawable/action_button_background"
+        android:id="@+id/buttonSettings"
+        android:layout_width="@dimen/icon_button_secondary_size"
+        android:layout_height="@dimen/icon_button_secondary_size"
+        android:src="@drawable/ic_settings"
+        android:scaleType="fitCenter"
+        android:padding="6dp"
+        android:background="@drawable/icon_button_secondary_background"
         android:tint="@color/icon_tint_stateful"
-        android:contentDescription="@string/nest_clock"
+        android:contentDescription="@string/settings"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_margin="4dp" />
+
+    <!-- Close: secondary control, top-right (spec 13). Replaces a nest button that
+         used to sit here; Nest is a Settings toggle per spec 10.2.2.7 and is wired
+         there already. -->
+    <ImageButton
+        android:id="@+id/buttonClose"
+        android:layout_width="@dimen/icon_button_secondary_size"
+        android:layout_height="@dimen/icon_button_secondary_size"
+        android:src="@drawable/ic_close"
+        android:scaleType="fitCenter"
+        android:padding="6dp"
+        android:background="@drawable/icon_button_secondary_background"
+        android:tint="@color/icon_tint_stateful"
+        android:contentDescription="@string/close"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_margin="4dp" />

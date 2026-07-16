@@ -2,6 +2,7 @@
 package com.example.purramid.purramidtime.timer.ui
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -294,6 +295,14 @@ class TimerSettingsFragment : DialogFragment() {
         val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
         val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
         return String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        // TimerActivity is a transparent shim whose only job on this path is to host
+        // this dialog. Without finishing it, it lingers invisibly over the timer
+        // overlay and swallows touches meant for it.
+        activity?.finish()
     }
 
     override fun onDestroyView() {

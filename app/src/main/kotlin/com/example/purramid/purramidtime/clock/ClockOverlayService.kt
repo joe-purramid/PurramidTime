@@ -181,9 +181,8 @@ class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListen
             imageTintList = ContextCompat.getColorStateList(this@ClockOverlayService, R.color.button_tint_state_list)
         }
 
-        // Update nest button state if present
-        rootView.findViewById<ImageButton>(R.id.buttonNest)?.apply {
-            isActivated = state.isNested
+        // Update close button
+        rootView.findViewById<ImageButton>(R.id.buttonClose)?.apply {
             imageTintList = ContextCompat.getColorStateList(this@ClockOverlayService, R.color.button_tint_state_list)
         }
 
@@ -387,15 +386,11 @@ class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListen
             }
         }
 
-        // Nest button (if present in layout)
-        rootView.findViewById<ImageButton>(R.id.buttonNest)?.apply {
-            val isNested = clockStateManager.clockStates.value[instanceId]?.isNested ?: false
-            isActivated = isNested
-
+        // Close button (spec 13) — mirrors TimerService/StopwatchService.
+        rootView.findViewById<ImageButton>(R.id.buttonClose)?.apply {
             setOnClickListener {
-                val currentNested = clockStateManager.clockStates.value[instanceId]?.isNested ?: false
-                clockStateManager.updateClockSettings(instanceId, isNested = !currentNested)
-                repositionNestedClocks()
+                isActivated = true
+                removeClockInstance(instanceId)
             }
         }
     }
@@ -684,11 +679,11 @@ class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListen
             params.width = dpToPx(75)
             params.height = if (isAnalog) dpToPx(75) else dpToPx(50)
 
-            // Hide control buttons
+            // Hide control buttons — a nested clock is a bare face (spec 8).
             clockRootView.findViewById<View>(R.id.buttonPlayPause)?.visibility = View.GONE
             clockRootView.findViewById<View>(R.id.buttonReset)?.visibility = View.GONE
             clockRootView.findViewById<View>(R.id.buttonSettings)?.visibility = View.GONE
-            clockRootView.findViewById<View>(R.id.buttonNest)?.visibility = View.GONE
+            clockRootView.findViewById<View>(R.id.buttonClose)?.visibility = View.GONE
 
         } else {
             params.width = WindowManager.LayoutParams.WRAP_CONTENT
@@ -698,7 +693,7 @@ class ClockOverlayService : LifecycleService(), ClockView.ClockInteractionListen
             clockRootView.findViewById<View>(R.id.buttonPlayPause)?.visibility = View.VISIBLE
             clockRootView.findViewById<View>(R.id.buttonReset)?.visibility = View.VISIBLE
             clockRootView.findViewById<View>(R.id.buttonSettings)?.visibility = View.VISIBLE
-            clockRootView.findViewById<View>(R.id.buttonNest)?.visibility = View.VISIBLE
+            clockRootView.findViewById<View>(R.id.buttonClose)?.visibility = View.VISIBLE
         }
 
         try {
